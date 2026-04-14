@@ -18,7 +18,7 @@ The `stiff-physics` package provides a self-contained pre-compiled engine. No C+
 ### 1. Install the engine (from GitHub Release)
 
 ```bash
-pip install https://github.com/<username>/stiff-physics/releases/download/v0.1.0/stiff_physics-0.1.0-cp310-cp310-linux_x86_64.whl
+pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.1.0/stiff_physics-0.1.0-cp310-cp310-linux_x86_64.whl
 ```
 
 ### 2. Install visualization dependencies
@@ -30,7 +30,7 @@ pip install polyscope scipy
 ## Quick Start
 
 ```bash
-git clone https://github.com/<username>/stiff-physics.git
+git clone https://github.com/haoxiangNtu/stiff-physics.git
 cd stiff-physics
 python examples/case_26_arm_cloth_semi_implicit.py
 ```
