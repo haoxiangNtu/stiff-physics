@@ -126,6 +126,8 @@ All examples auto-locate the bundled `assets/` directory. Most require `polyscop
 | `case_25_shirt_freefall_semi_implicit.py` | Shirt free-fall (semi-implicit) | |
 | **Interactive Demo** | | |
 | `case_26_arm_cloth_semi_implicit.py` | XArm7 + shirt with live joint sliders | scipy |
+| `case_26_render_obj_indices.py` | XArm7 + shirt with per-body coloured rendering | scipy |
+| `case_26_perf_tuned.py` | Same as `case_26` with tuned solver tolerances (~1.26× faster) | scipy |
 
 ### Headless / Scripted Control
 
@@ -146,6 +148,47 @@ for frame in range(100):
     engine.step()
     verts = engine.get_vertices()  # read back vertex positions
 ```
+
+## Performance Tuning
+
+The default `Config` is tuned for **accuracy first** — it is conservative on
+solver tolerances so simulation results stay close to a fully-converged
+reference solution. If your scene tolerates a small amount of per-step
+convergence slack (e.g. visual demos, prototyping, simple cloth + light
+contact), you can trade a bit of accuracy for noticeable speedup.
+
+### Tunable Config knobs
+
+| Knob | Default | Loosen for speed | Effect when loosened |
+|---|---|---|---|
+| `semi_implicit_beta_tol` | `1e-3` | `5e-2` (50× looser) | Newton early-exits sooner; biggest single speedup knob |
+| `newton_tol` | `1e-2` | `5e-2` (5× looser) | Per-step Newton convergence threshold relaxed |
+| `relative_dhat` | `1e-3` | (leave alone) | Tightening to `5e-4` reduces collision-pair count but yields ~0% net speedup in practice and risks missing fast contacts |
+| `pcg_tol` | `1e-4` | (leave alone) | Loosening hurts inner PCG search direction; net win unclear |
+
+### Measured speedup on `case_26` (RTX 4090, 100 free-fall steps)
+
+| Configuration | ms/step | Speedup | Cloth shape drift (sorted L∞) |
+|---|---|---|---|
+| All defaults (`case_26_arm_cloth_semi_implicit.py`) | 42.7 | 1.00× | — |
+| `beta_tol=5e-2` only | 37.2 | **1.15×** | 4.2 mm |
+| `beta_tol=5e-2` + `newton_tol=5e-2` (`case_26_perf_tuned.py`) | 33.9 | **1.26×** | 3.1 mm |
+
+Cloth shape drift of ~3–4 mm on a ~30 cm cloth is below visual perception
+threshold; Y-fall trajectory is identical to within sub-mm.
+
+### When to use which
+
+| Use case | Recommended script |
+|---|---|
+| Visual demo / interactive prototyping | `case_26_perf_tuned.py` |
+| Force-accurate contact study | `case_26_arm_cloth_semi_implicit.py` |
+| Convergence ablation / research baseline | `case_26_arm_cloth_semi_implicit.py` |
+
+The tuning above is **measured on `case_26` specifically** (XArm7 + single
+falling shirt, mostly self-contact). Re-measure on your own scene before
+assuming the same speedup or accuracy holds — complex multi-body contact
+or fast-moving rigid scenes may behave differently.
 
 ## Project Structure
 
