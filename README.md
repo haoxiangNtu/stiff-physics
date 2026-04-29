@@ -18,7 +18,7 @@ The `stiff-physics` package provides a self-contained pre-compiled engine. No C+
 ### 1. Install the engine (from GitHub Release)
 
 ```bash
-pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.2.0/stiff_physics-0.2.0-cp311-cp311-linux_x86_64.whl
+pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.3.0/stiff_physics-0.3.0-cp311-cp311-linux_x86_64.whl
 ```
 
 ### 2. Install visualization dependencies
