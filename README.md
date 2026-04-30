@@ -8,7 +8,9 @@ The `stiff-physics` package provides a self-contained pre-compiled engine. No C+
 
 `examples/case_replay_user_gui.py` plays a 477-frame xarm7 + cloth trajectory at the v0.3.0 `perf_extreme` defaults (`joint_strength_ratio=100`, `gripper-mul=0.1`, `dt=0.020s`). The HUD shows live wall-clock fps, per-step timing, and current frame index. Recorded directly off the rendering window — no slow-mo, no edits:
 
-[![Click to play real-time wall-clock demo](media/case_26_replay_demo_thumb.png)](media/case_26_replay_demo.mp4)
+![Demo: case_26 perf_extreme replay (real-time wall-clock)](media/case_26_replay_demo.gif)
+
+(Higher-quality MP4: [media/case_26_replay_demo.mp4](media/case_26_replay_demo.mp4))
 
 Run it yourself:
 
