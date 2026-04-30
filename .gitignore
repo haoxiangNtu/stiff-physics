@@ -1,1 +1,14 @@
 timeCost.txt
+
+# Mesh repair backups (created by examples/fix_obj_winding.py).
+# We ship pre-repaired meshes; users running the tool on their own
+# URDFs will get .orig files which they can keep locally.
+*.orig
+
+# Polyscope/ImGui runtime config dumps
+imgui.ini
+.polyscope.ini
+
+# Misc local-only
+examples/test_main.py
+assets/sorted_mesh/
