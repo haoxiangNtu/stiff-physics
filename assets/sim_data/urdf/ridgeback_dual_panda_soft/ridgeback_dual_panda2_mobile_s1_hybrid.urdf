@@ -27,7 +27,7 @@
     <visual>
       <origin rpy="1.5707963267948966 0 1.5707963267948966" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/rocker.stl"/>
+        <mesh filename="meshes/ridgeback/rocker.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -48,7 +48,7 @@
     <visual>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/wheel.stl"/>
+        <mesh filename="meshes/ridgeback/wheel.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -74,7 +74,7 @@
     <visual>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/wheel.stl"/>
+        <mesh filename="meshes/ridgeback/wheel.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -100,7 +100,7 @@
     <visual>
       <origin rpy="1.5707963267948966 0 1.5707963267948966" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/rocker.stl"/>
+        <mesh filename="meshes/ridgeback/rocker.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -121,7 +121,7 @@
     <visual>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/wheel.stl"/>
+        <mesh filename="meshes/ridgeback/wheel.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -147,7 +147,7 @@
     <visual>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/wheel.stl"/>
+        <mesh filename="meshes/ridgeback/wheel.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -173,14 +173,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/body.stl"/>
+        <mesh filename="meshes/ridgeback/body.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
     <collision>
       <origin xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/body-collision.stl"/>
+        <mesh filename="meshes/ridgeback/body-collision.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -190,13 +190,13 @@
     </inertial>
   </link>
 
-    <link name="base_link"><collision><geometry><mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/franka/tiny_meshes/imu_link_placeholder.obj"/></geometry></collision></link>
+    <link name="base_link"><collision><geometry><mesh filename="franka/tiny_meshes/imu_link_placeholder.obj"/></geometry></collision></link>
   <link name="base_link_1">
     <inertial>
       <mass value="0"/>
       <inertia ixx="0.00" ixy="0.00" ixz="0.00" iyy="0.00" iyz="0.00" izz="0.00"/>
     </inertial>
-  <collision><geometry><mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/franka/tiny_meshes/imu_link_placeholder.obj"/></geometry></collision></link>
+  <collision><geometry><mesh filename="franka/tiny_meshes/imu_link_placeholder.obj"/></geometry></collision></link>
   <joint name="base_x_axis_joint" type="fixed">
     <parent link="base_link"/>
     <child link="base_link_1"/>
@@ -209,7 +209,7 @@
       <mass value="0"/>
       <inertia ixx="0.00" ixy="0.00" ixz="0.00" iyy="0.00" iyz="0.00" izz="0.00"/>
     </inertial>
-  <collision><geometry><mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/franka/tiny_meshes/imu_link_placeholder.obj"/></geometry></collision></link>
+  <collision><geometry><mesh filename="franka/tiny_meshes/imu_link_placeholder.obj"/></geometry></collision></link>
   <joint name="base_y_axis_joint" type="fixed">
     <parent link="base_link_1"/>
     <child link="base_link_2"/>
@@ -260,7 +260,7 @@
     <visual>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/side-cover.stl"/>
+        <mesh filename="meshes/ridgeback/side-cover.stl"/>
       </geometry>
       <material name="yellow"/>
     </visual>
@@ -269,7 +269,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/side-cover.stl"/>
+        <mesh filename="meshes/ridgeback/side-cover.stl"/>
       </geometry>
       <material name="yellow"/>
     </visual>
@@ -283,7 +283,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/end-cover.stl"/>
+        <mesh filename="meshes/ridgeback/end-cover.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -297,7 +297,7 @@
     <visual>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/end-cover.stl"/>
+        <mesh filename="meshes/ridgeback/end-cover.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -316,7 +316,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/lights.stl"/>
+        <mesh filename="meshes/ridgeback/lights.stl"/>
       </geometry>
       <material name="white"/>
     </visual>
@@ -325,7 +325,7 @@
     <visual>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/lights.stl"/>
+        <mesh filename="meshes/ridgeback/lights.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -339,14 +339,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/top.stl"/>
+        <mesh filename="meshes/ridgeback/top.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/top.stl"/>
+        <mesh filename="meshes/ridgeback/top.stl"/>
       </geometry>
     </collision>
   </link>
@@ -359,7 +359,7 @@
     <visual>
       <origin rpy="0 1.5707963267948966 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/ridgeback/axle.stl"/>
+        <mesh filename="meshes/ridgeback/axle.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -396,14 +396,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/plate_link.dae"/>
+        <mesh filename="meshes/plate/visual/plate_link.dae"/>
       </geometry>
       <material name="dark_grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/collision/plate_link.stl"/>
+        <mesh filename="meshes/plate/collision/plate_link.stl"/>
       </geometry>
     </collision>
   </link>
@@ -416,14 +416,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/arm_mount_link.dae"/>
+        <mesh filename="meshes/plate/visual/arm_mount_link.dae"/>
       </geometry>
       <material name="dark_grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/collision/arm_mount_link.stl"/>
+        <mesh filename="meshes/plate/collision/arm_mount_link.stl"/>
       </geometry>
     </collision>
   </link>
@@ -466,7 +466,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/base_link.STL" />
+          filename="meshes/head/base_link.STL" />
       </geometry>
       <material
         name="">
@@ -480,7 +480,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/base_link.STL" />
+          filename="meshes/head/base_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -506,7 +506,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/link_motora.STL" />
+          filename="meshes/head/link_motora.STL" />
       </geometry>
       <material
         name="">
@@ -520,7 +520,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/link_motora.STL" />
+          filename="meshes/head/link_motora.STL" />
       </geometry>
     </collision>
   </link>
@@ -559,7 +559,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/link_yaw.STL" />
+          filename="meshes/head/link_yaw.STL" />
       </geometry>
       <material
         name="">
@@ -573,7 +573,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/link_yaw.STL" />
+          filename="meshes/head/link_yaw.STL" />
       </geometry>
     </collision>
   </link>
@@ -621,7 +621,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/link_motorb.STL" />
+          filename="meshes/head/link_motorb.STL" />
       </geometry>
       <material
         name="">
@@ -635,7 +635,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/link_motorb.STL" />
+          filename="meshes/head/link_motorb.STL" />
       </geometry>
     </collision>
   </link>
@@ -674,7 +674,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/link_pitch.STL" />
+          filename="meshes/head/link_pitch.STL" />
       </geometry>
       <material
         name="">
@@ -688,7 +688,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/link_pitch.STL" />
+          filename="meshes/head/link_pitch.STL" />
       </geometry>
     </collision>
   </link>
@@ -735,7 +735,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/link_cameraconnector.STL" />
+          filename="meshes/head/link_cameraconnector.STL" />
       </geometry>
       <material
         name="">
@@ -749,7 +749,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/link_cameraconnector.STL" />
+          filename="meshes/head/link_cameraconnector.STL" />
       </geometry>
     </collision>
   </link>
@@ -790,7 +790,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/zed.stl" />
+          <mesh filename="meshes/head/zed.stl" />
         </geometry>
         <material name="">
           <color rgba="1 1. 1. 0.9"/>
@@ -798,7 +798,7 @@
       </visual>
       <collision>
         <geometry>
-          <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/head/zed.stl" />
+          <mesh filename="meshes/head/zed.stl" />
         </geometry>
       </collision>
     </link>
@@ -852,7 +852,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/mid_mount_link.dae"/>
+        <mesh filename="meshes/plate/visual/mid_mount_link.dae"/>
       </geometry>
       <material name="">
         <color rgba="1 1 1 1"/>
@@ -861,7 +861,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/collision/mid_mount_link.stl"/>
+        <mesh filename="meshes/plate/collision/mid_mount_link.stl"/>
       </geometry>
     </collision>
   </link>
@@ -880,12 +880,12 @@
   <link name="left_arm_link0">
     <visual name="left_arm_link0_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link0.dae"/>
+        <mesh filename="meshes/fr3/visual/link0.dae"/>
       </geometry>
     </visual>
     <collision name="left_arm_link0_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link0.stl"/>
+        <mesh filename="meshes/fr3/collision/link0.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -898,12 +898,12 @@
   <link name="left_arm_link1">
     <visual name="left_arm_link1_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link1.dae"/>
+        <mesh filename="meshes/fr3/visual/link1.dae"/>
       </geometry>
     </visual>
     <collision name="left_arm_link1_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link1.stl"/>
+        <mesh filename="meshes/fr3/collision/link1.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -925,12 +925,12 @@
   <link name="left_arm_link2">
     <visual name="left_arm_link2_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link2.dae"/>
+        <mesh filename="meshes/fr3/visual/link2.dae"/>
       </geometry>
     </visual>
     <collision name="left_arm_link2_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link2.stl"/>
+        <mesh filename="meshes/fr3/collision/link2.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -952,12 +952,12 @@
   <link name="left_arm_link3">
     <visual name="left_arm_link3_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link3.dae"/>
+        <mesh filename="meshes/fr3/visual/link3.dae"/>
       </geometry>
     </visual>
     <collision name="left_arm_link3_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link3.stl"/>
+        <mesh filename="meshes/fr3/collision/link3.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -979,12 +979,12 @@
   <link name="left_arm_link4">
     <visual name="left_arm_link4_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link4.dae"/>
+        <mesh filename="meshes/fr3/visual/link4.dae"/>
       </geometry>
     </visual>
     <collision name="left_arm_link4_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link4.stl"/>
+        <mesh filename="meshes/fr3/collision/link4.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1006,12 +1006,12 @@
   <link name="left_arm_link5">
     <visual name="left_arm_link5_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link5.dae"/>
+        <mesh filename="meshes/fr3/visual/link5.dae"/>
       </geometry>
     </visual>
     <collision name="left_arm_link5_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link5.stl"/>
+        <mesh filename="meshes/fr3/collision/link5.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1033,12 +1033,12 @@
   <link name="left_arm_link6">
     <visual name="left_arm_link6_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link6.dae"/>
+        <mesh filename="meshes/fr3/visual/link6.dae"/>
       </geometry>
     </visual>
     <collision name="left_arm_link6_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link6.stl"/>
+        <mesh filename="meshes/fr3/collision/link6.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1060,12 +1060,12 @@
   <link name="left_arm_link7">
     <visual name="left_arm_link7_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link7.dae"/>
+        <mesh filename="meshes/fr3/visual/link7.dae"/>
       </geometry>
     </visual>
     <collision name="left_arm_link7_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link7.stl"/>
+        <mesh filename="meshes/fr3/collision/link7.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1097,12 +1097,12 @@
   <link name="left_arm_hand">
     <visual name="left_hand_hand_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/franka_hand/visual/left_hand.dae"/>
+        <mesh filename="meshes/franka_hand/visual/left_hand.dae"/>
       </geometry>
     </visual>
     <collision name="left_hand_hand_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/franka_hand/collision/hand.stl"/>
+        <mesh filename="meshes/franka_hand/collision/hand.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1123,14 +1123,14 @@
     <visual name="left_hand_leftfinger_visual">
     <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/mesh_part_black.dae"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/mesh_part_black.dae"/>
       </geometry>
     </visual>
     <!-- screw mount -->
     <collision name="left_hand_leftfinger_collision">
     <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/mesh_part_black_lite.obj"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/mesh_part_black_lite.obj"/>
       </geometry>
     </collision>
     <inertial>
@@ -1144,13 +1144,13 @@
     <visual name="left_hand_rightfinger_visual">
       <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/mesh_part_black.dae"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/mesh_part_black.dae"/>
       </geometry>
     </visual>
     <collision name="left_hand_rightfinger_collision">
       <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/mesh_part_black_lite.obj"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/mesh_part_black_lite.obj"/>
       </geometry>
     </collision>
     <inertial>
@@ -1184,14 +1184,14 @@
     <visual name="left_hand_leftfinger_material_visual">
     <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned.dae"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned.dae"/>
       </geometry>
     </visual>
     <!-- screw mount -->
     <collision name="left_hand_leftfinger_soft_material_collision">
     <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned_lite.obj"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned_lite.obj"/>
       </geometry>
     </collision>
     <inertial>
@@ -1211,14 +1211,14 @@
     <visual name="left_hand_rightfinger_material_visual">
     <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned.dae"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned.dae"/>
       </geometry>
     </visual>
     <!-- screw mount -->
     <collision name="left_hand_rightfinger_soft_material_collision">
     <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned_lite.obj"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned_lite.obj"/>
       </geometry>
     </collision>
     <inertial>
@@ -1242,12 +1242,12 @@
   <link name="right_arm_link0">
     <visual name="right_arm_link0_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link0.dae"/>
+        <mesh filename="meshes/fr3/visual/link0.dae"/>
       </geometry>
     </visual>
     <collision name="right_arm_link0_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link0.stl"/>
+        <mesh filename="meshes/fr3/collision/link0.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1260,12 +1260,12 @@
   <link name="right_arm_link1">
     <visual name="right_arm_link1_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link1.dae"/>
+        <mesh filename="meshes/fr3/visual/link1.dae"/>
       </geometry>
     </visual>
     <collision name="right_arm_link1_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link1.stl"/>
+        <mesh filename="meshes/fr3/collision/link1.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1287,12 +1287,12 @@
   <link name="right_arm_link2">
     <visual name="right_arm_link2_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link2.dae"/>
+        <mesh filename="meshes/fr3/visual/link2.dae"/>
       </geometry>
     </visual>
     <collision name="right_arm_link2_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link2.stl"/>
+        <mesh filename="meshes/fr3/collision/link2.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1314,12 +1314,12 @@
   <link name="right_arm_link3">
     <visual name="right_arm_link3_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link3.dae"/>
+        <mesh filename="meshes/fr3/visual/link3.dae"/>
       </geometry>
     </visual>
     <collision name="right_arm_link3_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link3.stl"/>
+        <mesh filename="meshes/fr3/collision/link3.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1341,12 +1341,12 @@
   <link name="right_arm_link4">
     <visual name="right_arm_link4_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link4.dae"/>
+        <mesh filename="meshes/fr3/visual/link4.dae"/>
       </geometry>
     </visual>
     <collision name="right_arm_link4_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link4.stl"/>
+        <mesh filename="meshes/fr3/collision/link4.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1368,12 +1368,12 @@
   <link name="right_arm_link5">
     <visual name="right_arm_link5_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link5.dae"/>
+        <mesh filename="meshes/fr3/visual/link5.dae"/>
       </geometry>
     </visual>
     <collision name="right_arm_link5_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link5.stl"/>
+        <mesh filename="meshes/fr3/collision/link5.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1395,12 +1395,12 @@
   <link name="right_arm_link6">
     <visual name="right_arm_link6_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link6.dae"/>
+        <mesh filename="meshes/fr3/visual/link6.dae"/>
       </geometry>
     </visual>
     <collision name="right_arm_link6_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link6.stl"/>
+        <mesh filename="meshes/fr3/collision/link6.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1422,12 +1422,12 @@
   <link name="right_arm_link7">
     <visual name="right_arm_link7_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/visual/link7.dae"/>
+        <mesh filename="meshes/fr3/visual/link7.dae"/>
       </geometry>
     </visual>
     <collision name="right_arm_link7_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/fr3/collision/link7.stl"/>
+        <mesh filename="meshes/fr3/collision/link7.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1459,12 +1459,12 @@
   <link name="right_arm_hand">
     <visual name="right_hand_hand_visual">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/franka_hand/visual/right_hand.dae"/>
+        <mesh filename="meshes/franka_hand/visual/right_hand.dae"/>
       </geometry>
     </visual>
     <collision name="right_hand_hand_collision">
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/franka_hand/collision/hand.stl"/>
+        <mesh filename="meshes/franka_hand/collision/hand.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -1484,14 +1484,14 @@
     <visual name="right_hand_leftfinger_visual">
       <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/mesh_part_black.dae"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/mesh_part_black.dae"/>
       </geometry>
     </visual>
     <!-- screw mount -->
     <collision name="right_hand_leftfinger_collision">
       <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/mesh_part_black_lite.obj"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/mesh_part_black_lite.obj"/>
       </geometry>
     </collision>
     <inertial>
@@ -1504,13 +1504,13 @@
     <visual name="right_hand_rightfinger_visual">
       <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/mesh_part_black.dae"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/mesh_part_black.dae"/>
       </geometry>
     </visual>
     <collision name="right_hand_rightfinger_collision">
       <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/mesh_part_black_lite.obj"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/mesh_part_black_lite.obj"/>
       </geometry>
     </collision>
     <inertial>
@@ -1544,14 +1544,14 @@
     <visual name="right_hand_leftfinger_material_visual">
     <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned.dae"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned.dae"/>
       </geometry>
     </visual>
     <!-- screw mount -->
     <collision name="right_hand_leftfinger_soft_material_collision">
     <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned_lite.obj"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned_lite.obj"/>
       </geometry>
     </collision>
     <inertial>
@@ -1571,14 +1571,14 @@
     <visual name="right_hand_rightfinger_material_visual">
     <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned.dae"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned.dae"/>
       </geometry>
     </visual>
     <!-- screw mount -->
     <collision name="right_hand_rightfinger_soft_material_collision">
     <origin rpy="-1.57079632679 0.20245819348 -1.57079632679" xyz="-0.0165 0.0165 0.12773331296"/>
       <geometry>
-        <mesh filename="/home/ps/Downloads/Stiff-GIPC-dailyv2/assets/sim_data/urdf/ridgeback_dual_panda_soft/meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned_lite.obj"/>
+        <mesh filename="meshes/plate/visual/soft_hard_segmenation/soft_gripper_aligned_lite.obj"/>
       </geometry>
     </collision>
     <inertial>
