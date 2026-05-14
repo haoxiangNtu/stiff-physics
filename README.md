@@ -17,7 +17,7 @@ Run it yourself:
 ```bash
 git clone https://github.com/haoxiangNtu/stiff-physics.git
 cd stiff-physics
-pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.4.1/stiff_physics-0.4.1-cp311-cp311-linux_x86_64.whl polyscope scipy h5py
+pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.5.0/stiff_physics-0.5.0-cp311-cp311-linux_x86_64.whl polyscope scipy h5py
 PYTHONPATH=. python examples/case_replay_user_gui.py
 ```
 
@@ -28,14 +28,14 @@ PYTHONPATH=. python examples/case_replay_user_gui.py
 | OS | Linux x86_64 (Ubuntu 20.04+) |
 | GPU | NVIDIA RTX 4090 (sm_89) or RTX 5090 (sm_120) |
 | Driver | NVIDIA driver with CUDA 12.x support |
-| Python | 3.11 |
+| Python | 3.11 or 3.12 |
 
 ## Installation
 
 ### 1. Install the engine (from GitHub Release)
 
 ```bash
-pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.4.1/stiff_physics-0.4.1-cp311-cp311-linux_x86_64.whl
+pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.5.0/stiff_physics-0.5.0-cp311-cp311-linux_x86_64.whl
 ```
 
 ### 2. Install visualization dependencies
