@@ -20,12 +20,11 @@ Differences from case_38:
   ground_offset         -0.5   → -1.67
 """
 import sys, os, math, time, re
-
-from pathlib import Path
-_ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "assets") + "/"
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
+from pathlib import Path
+_ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "assets") + "/"
 from scipy.spatial.transform import Rotation
 import polyscope as ps
 import polyscope.imgui as psim
@@ -41,9 +40,40 @@ URDF_PATH    = _ASSETS_DIR + "sim_data/urdf/ridgeback_dual_panda_soft/ridgeback_
 # (prismatic=0 baseline).  We do the same so the hybrid sits at the same
 # location as case_27's softpad.
 ORIGINAL_URDF = _ASSETS_DIR + "sim_data/urdf/ridgeback_dual_panda_soft/ridgeback_dual_panda2_mobile_s1_full.urdf"
-RIGID_MSH    = _ASSETS_DIR + "sim_data/hybrid_d/CASE40_UNIFIED_rigid.msh"
-RIGID_REMAP  = _ASSETS_DIR + "sim_data/hybrid_d/CASE40_UNIFIED_rigid_remap.npz"
-UNIFIED_NPZ  = _ASSETS_DIR + "sim_data/hybrid_d/CASE40_UNIFIED_unified.npz"
+# Mesh variant selector. DEFAULT = CASE40_BRIDGE_B (the winner):
+#   - bridge geometry fills the finger↔soft 5mm gap
+#   - fTetWild → 0% bad tet
+#   - rigid = bridge anchor only (rigid:FEM = 0.18, few stitch springs)
+#   - paired with CASE36_FEM_YOUNG default 1e7 → 54.8ms mean / 120ms pain
+#     (vs old COARSE 95ms/304ms; vs old UNIFIED 113ms/360ms)
+# Overrides (set the env var to "1") for A/B comparison:
+#   CASE40_UNIFIED_MESH=1 -> CASE40_UNIFIED (old boolean union, 15.6% bad)
+#   CASE40_COARSE=1       -> CASE40_COARSE  (decimated + q1.4, 12.8% bad)
+#   CASE40_STRATEGY=1     -> CASE40_STRATEGY / CASE40_TRIMFEM=1 / CASE40_TRIMMED=1
+#   CASE40_BRIDGE=1 / _400=1 / _LOD=0..3  -> earlier BRIDGE variants
+if os.environ.get("CASE40_UNIFIED_MESH") == "1":
+    _MESH_PREFIX = "CASE40_UNIFIED"
+elif os.environ.get("CASE40_BRIDGE_B") == "1":
+    _MESH_PREFIX = "CASE40_BRIDGE_B"
+elif os.environ.get("CASE40_BRIDGE_400") == "1":
+    _MESH_PREFIX = "CASE40_BRIDGE_400"
+elif os.environ.get("CASE40_BRIDGE_LOD") in ("0", "1", "2", "3"):
+    _MESH_PREFIX = f"CASE40_BRIDGE_LOD{os.environ['CASE40_BRIDGE_LOD']}"
+elif os.environ.get("CASE40_BRIDGE") == "1":
+    _MESH_PREFIX = "CASE40_BRIDGE"
+elif os.environ.get("CASE40_TRIMFEM") == "1":
+    _MESH_PREFIX = "CASE40_TRIMFEM"
+elif os.environ.get("CASE40_TRIMMED") == "1":
+    _MESH_PREFIX = "CASE40_TRIMMED"
+elif os.environ.get("CASE40_STRATEGY") == "1":
+    _MESH_PREFIX = "CASE40_STRATEGY"
+elif os.environ.get("CASE40_COARSE") == "1":
+    _MESH_PREFIX = "CASE40_COARSE"
+else:
+    _MESH_PREFIX = "CASE40_BRIDGE_B"   # DEFAULT = the winner
+RIGID_MSH    = _ASSETS_DIR + f"sim_data/hybrid_d/{_MESH_PREFIX}_rigid.msh"
+RIGID_REMAP  = _ASSETS_DIR + f"sim_data/hybrid_d/{_MESH_PREFIX}_rigid_remap.npz"
+UNIFIED_NPZ  = _ASSETS_DIR + f"sim_data/hybrid_d/{_MESH_PREFIX}_unified.npz"
 CUP_MSH      = _ASSETS_DIR + "sim_data/tetmesh/softgriper_cup.msh"
 # Shirt: 2D FEM triangle mesh as in case_27_mobile_s1_hybrid.py
 SHIRT_OBJ    = _ASSETS_DIR + "triMesh/shirt_6436v.obj"
@@ -161,18 +191,52 @@ def main():
         poisson_rate=0.49, friction_rate=0.4, relative_dhat=1e-4,
         joint_strength_ratio=joint_K,
         revolute_driving_strength_ratio=revolute_K,
-        semi_implicit_enabled=True, semi_implicit_beta_tol=5e-2,
+        # CASE40_SEMI=1 enables semi-implicit early-exit (+88% fps in motion+contact
+        # per case_42 2x2 study).  Default OFF for stable reference; see
+        # case_40_unified_semi.py for the semi-implicit variant.
+        semi_implicit_enabled=bool(int(os.environ.get("CASE40_SEMI", "0"))),
+        semi_implicit_beta_tol=5e-2,
         semi_implicit_min_iter=1, newton_tol=5e-2,
         preconditioner_type=0, ground_offset=-1.67,   # case_39 full-scale
-        assets_dir=_ASSETS_DIR,
+        assets_dir=_ASSETS_DIR + "",
     )
-    cfg._cfg.collision_detection_buff_scale = 64.0
+    cfg._cfg.collision_detection_buff_scale = float(
+        os.environ.get("CASE40_CCD_BUFF", "64.0"))
     eng = Engine(cfg)
     print("\n[case36] === ridgeback + 4 hybrid grippers ===", flush=True)
 
-    # --- 1. Load URDF (37 ABD bodies including 4 fingers) ---
+    # --- 1. Load URDF + capture joint constraint indices (for Option B) ---
+    # URDF importer skips joints with unresolved bodies → source order ≠
+    # engine's joint_constraints[] index.  fd-redirect captures stdout to
+    # parse "[UrdfSceneImporter] Joint constraint 'NAME' (TYPE):" lines.
+    def _load_urdf_capture(eng, urdf_path, arm_tf, *load_urdf_args):
+        import os as _os, sys as _sys, tempfile as _tf
+        log_path = _tf.mktemp(prefix='urdf_load_log_', suffix='.txt')
+        saved_fd1 = _os.dup(1)
+        f = _os.open(log_path, _os.O_WRONLY | _os.O_CREAT | _os.O_TRUNC)
+        _os.dup2(f, 1); _os.close(f)
+        try:
+            ret = eng.native.load_urdf(urdf_path, arm_tf, *load_urdf_args)
+            _sys.stdout.flush(); _os.fsync(1)
+        finally:
+            _os.dup2(saved_fd1, 1); _os.close(saved_fd1)
+        log = open(log_path).read()
+        _os.unlink(log_path)
+        print(log, end='', flush=True)
+        out = {}; idx = 0
+        for m in re.finditer(
+                r"\[UrdfSceneImporter\] Joint constraint '([^']+)' \((Fixed|Revolute)\):",
+                log):
+            out[m.group(1)] = idx; idx += 1
+        return ret, out
+
     arm_tf = make_arm_tf(ARM_SCALE)
-    eng.native.load_urdf(URDF_PATH, arm_tf, True, False, 1e7, {})
+    # URDF ABD affine stiffness. Default bumped 1e7→1e8 so the blue finger ABD
+    # stays rigid under gripper+cloth load (at 1e7 it visibly squished — affine
+    # body deformation, not joint lag). Matches the green rigid sub-mesh (1e8).
+    urdf_young = float(os.environ.get("CASE40_URDF_YOUNG", "1e8"))
+    _, joint_constraint_indices = _load_urdf_capture(
+        eng, URDF_PATH, arm_tf, True, False, urdf_young, {})
     n_urdf = eng.abd_body_count
     urdf_recs = list(eng.get_load_records())
     finger_recs = {r.label: r for r in urdf_recs if r.body_type == 0
@@ -246,25 +310,32 @@ def main():
         T[:3, 3]  = t
         return T
 
-    import trimesh as _tm
-    _finger_obj_path = (_ASSETS_DIR + "sim_data/urdf/"
-                        "ridgeback_dual_panda_soft/meshes/plate/visual/"
-                        "soft_hard_segmenation/finger_clean.obj")
-    _finger_mesh = _tm.load(_finger_obj_path, process=False)
-    _comps = _finger_mesh.split(only_watertight=False)
-    # Largest component = lower segment
-    _largest_comp = max(_comps, key=lambda c: len(c.vertices))
-    # Map comp vertices back to original-mesh vertex indices via position match
-    _orig_v = np.asarray(_finger_mesh.vertices)
-    _comp_v = np.asarray(_largest_comp.vertices)
-    # Build position → orig-index map (within float tolerance)
-    _orig_lookup = {tuple(np.round(p, 8)): i for i, p in enumerate(_orig_v)}
-    _lower_seg_idx = np.array([
-        _orig_lookup[tuple(np.round(p, 8))] for p in _comp_v
-        if tuple(np.round(p, 8)) in _orig_lookup
-    ], dtype=int)
-    print(f"[case36] finger.stl lower segment: {len(_lower_seg_idx)}/{len(_orig_v)} verts",
-          flush=True)
+    # Lower-segment vertex indices of the finger collision mesh — only needed by
+    # the 'lower_seg' / 'procrustes' tf_modes.  The default 'finger_full' mode
+    # never uses them, so skip the trimesh import entirely (trimesh is an
+    # optional example dep, not a wheel runtime dep).
+    _lower_seg_idx = np.array([], dtype=int)
+    _orig_v = None
+    if tf_mode in ("lower_seg", "procrustes"):
+        import trimesh as _tm
+        _finger_obj_path = (_ASSETS_DIR + "sim_data/urdf/"
+                            "ridgeback_dual_panda_soft/meshes/plate/visual/"
+                            "soft_hard_segmenation/finger_clean.obj")
+        _finger_mesh = _tm.load(_finger_obj_path, process=False)
+        _comps = _finger_mesh.split(only_watertight=False)
+        # Largest component = lower segment
+        _largest_comp = max(_comps, key=lambda c: len(c.vertices))
+        # Map comp vertices back to original-mesh vertex indices via position match
+        _orig_v = np.asarray(_finger_mesh.vertices)
+        _comp_v = np.asarray(_largest_comp.vertices)
+        # Build position → orig-index map (within float tolerance)
+        _orig_lookup = {tuple(np.round(p, 8)): i for i, p in enumerate(_orig_v)}
+        _lower_seg_idx = np.array([
+            _orig_lookup[tuple(np.round(p, 8))] for p in _comp_v
+            if tuple(np.round(p, 8)) in _orig_lookup
+        ], dtype=int)
+        print(f"[case36] finger.stl lower segment: {len(_lower_seg_idx)}/{len(_orig_v)} verts",
+              flush=True)
 
     all_v_pre = eng.native.get_vertices_host()
     finger_lower_world_center = {}
@@ -272,7 +343,7 @@ def main():
     for label in FINGER_LABELS:
         rec = finger_recs[label]
         v = all_v_pre[rec.vertex_offset:rec.vertex_offset + rec.vertex_count]
-        if len(v) == len(_orig_v) and len(_lower_seg_idx) > 0:
+        if _orig_v is not None and len(v) == len(_orig_v) and len(_lower_seg_idx) > 0:
             lower_v = v[_lower_seg_idx]
             finger_lower_world_center[label] = (lower_v.min(0) + lower_v.max(0)) * 0.5
             finger_lower_world_verts[label] = lower_v
@@ -331,7 +402,7 @@ def main():
               flush=True)
 
     # --- 3. For each finger, load hybrid rigid + FEM and wire stitch + fj ---
-    fem_young = float(os.environ.get("CASE36_FEM_YOUNG", "1e6"))
+    fem_young = float(os.environ.get("CASE36_FEM_YOUNG", "1e8"))  # 1e8: stiffer softpad (better grip feel; ~+10ms vs 1e7)
     fj_kappa = float(os.environ.get("CASE36_FJ_KAPPA", "1e3"))
 
     rigid_remap = np.load(RIGID_REMAP, allow_pickle=True)
@@ -352,7 +423,8 @@ def main():
         finger_rec = finger_recs[label]
         gripper_T = soft_T[label]
         eng.load_mesh(RIGID_MSH, dimensions=3, body_type="ABD",
-                      transform=gripper_T, young_modulus=1e8,
+                      transform=gripper_T,
+                      young_modulus=1e8,
                       boundary_type="Free")
         rigid_rec = eng.get_load_records()[-1]
         grippers.append(dict(
@@ -411,13 +483,25 @@ def main():
         g['fem_global_id'] = n_abd_total + g['fem_rec'].body_offset
 
     # Pass 3: stitch springs + fixed joints per gripper
+    # Option A: subsample stitch springs to reduce ABD↔FEM coupling overhead.
+    # CASE40_STITCH_STRIDE=1 (default) stitches every rigid vert; =2 every other, etc.
+    stitch_stride = max(1, int(os.environ.get("CASE40_STITCH_STRIDE", "1")))
+    n_stitch_actual = 0
     for g in grippers:
-        for i in range(n_rigid_v):
+        for i in range(0, n_rigid_v, stitch_stride):
             eng.add_stitch_spring(
                 g['fem_v_off'] + int(rigid_v_idx[i]),
                 g['abd_v_off'] + i,
                 g['abd_id'],
                 rest_offset_world=(0.0, 0.0, 0.0))
+            n_stitch_actual += 1
+        # Fixed joint(s) green↔finger.  Default: 1 anchor at gripper origin +
+        # direction constraint.  CASE40_FJ_ANCHORS=N (>1) spreads N extra
+        # point-only fixed joints across the green body via farthest-point
+        # sampling — multi-point rigidly resists relative ROTATION (single
+        # anchor + direction penalty lets the green lag-rotate behind a fast-
+        # rotating finger; multiple spread points lock rotation by leverage).
+        n_anchors = max(1, int(os.environ.get("CASE40_FJ_ANCHORS", "3")))
         anchor = g['gripper_T'][:3, 3]
         g['fj_idx'] = eng.native.add_fixed_joint(
             parent_body=g['finger_id'], child_body=g['abd_id'],
@@ -425,9 +509,25 @@ def main():
             world_normal=np.array([1.0, 0.0, 0.0]),
             world_bitangent=np.array([0.0, 0.0, 1.0]),
         )
-        print(f"[case36] {g['label']}: finger={g['finger_id']}, "
-              f"hybrid_abd={g['abd_id']}, fem={g['fem_rec'].body_offset}, "
-              f"fj={g['fj_idx']}", flush=True)
+        g['fj_extra'] = []
+        if n_anchors > 1:
+            rl = rigid_remap['rigid_local']
+            gw = (g['gripper_T'][:3, :3] @ rl.T).T + g['gripper_T'][:3, 3]
+            # farthest-point sampling of n_anchors-1 extra points (1st is origin)
+            picks = [int(np.argmax(np.linalg.norm(gw - anchor, axis=1)))]
+            while len(picks) < (n_anchors - 1):
+                d = np.min([np.linalg.norm(gw - gw[p], axis=1) for p in picks], axis=0)
+                picks.append(int(np.argmax(d)))
+            for p in picks:
+                jx = eng.native.add_fixed_joint(
+                    parent_body=g['finger_id'], child_body=g['abd_id'],
+                    world_anchor=gw[p],
+                    world_normal=np.array([1.0, 0.0, 0.0]),
+                    world_bitangent=np.array([0.0, 0.0, 1.0]))
+                g['fj_extra'].append(jx)
+    if stitch_stride > 1:
+        print(f"[case40] stitch stride={stitch_stride}: {n_stitch_actual//len(grippers)} "
+              f"stitch/gripper (was {n_rigid_v})", flush=True)
 
     # --- 4. Collision exclusions ---
     # For each gripper:
@@ -487,6 +587,16 @@ def main():
     else:
         print(f"[case38] hybrid FEM × ground collision: ENABLED", flush=True)
 
+    # Hybrid GREEN rigid ABD ↔ ground: SKIP by default.  The green anchor is
+    # the rigid core buried inside the FEM softpad — it should never contact the
+    # ground.  It was NOT ground-skipped before (only URDF bodies + FEM were),
+    # so at large drag angles the green could hit the ground and the contact
+    # force propagated through the finger fixed-joint → finger↔hand drift.
+    if int(os.environ.get("CASE40_GREEN_GROUND_SKIP", "1")):
+        for g in grippers:
+            eng.add_ground_collision_skip(g['abd_id'])
+        print(f"[case40] hybrid GREEN ABD × ground collision: SKIPPED", flush=True)
+
     # Cross-gripper exclusion within the same arm pair
     def _arm_prefix(label):
         return 'left' if label.startswith('left_') else 'right'
@@ -511,9 +621,29 @@ def main():
     # --- 6. Per-fixed-joint kappa override (default ~20 too weak) ---
     for g in grippers:
         eng.native.set_fixed_joint_strength(g['fj_idx'], fj_kappa)
+        for jx in g.get('fj_extra', []):   # multi-anchor green→finger
+            eng.native.set_fixed_joint_strength(jx, fj_kappa)
+
+    # --- 6b. Option B: bump URDF link8→hand fj (joint6 rotation jitter fix) ---
+    # URDF importer initializes link8→hand fj kappa = joint_K * mass ≈ 140
+    # (default joint_K=100, mass~1.4kg).  Too soft → user observed green/blue
+    # tracking lag when joint6 rotates.  Bump to absolute kappa 1000.
+    hand_link8_K = float(os.environ.get("CASE40_HAND_LINK8_K", "1000"))
+    bumped = 0
+    for jname, jidx in joint_constraint_indices.items():
+        if "_arm_link8" in jname and "hand_joint" in jname:
+            eng.native.set_fixed_joint_strength(jidx, hand_link8_K)
+            print(f"[case40] bumped fixed_joint '{jname}' (idx={jidx}) "
+                  f"kappa = {hand_link8_K}", flush=True)
+            bumped += 1
+    if bumped == 0:
+        print(f"[case40] WARN: no *_hand_joint_*_arm_link8 found "
+              f"({len(joint_constraint_indices)} joints) — Option B not applied",
+              flush=True)
 
     eng.native.set_max_revolute_step_per_frame(
-        float(os.environ.get("CASE36_MAX_RAD_PER_FRAME", "0.5")))
+        float(os.environ.get("CASE40_MAX_REV_STEP",
+                             os.environ.get("CASE36_MAX_RAD_PER_FRAME", "0.04"))))
 
     robot = Robot(eng)
     # --- 7. Bump prismatic strength so finger keeps up with slider ---
