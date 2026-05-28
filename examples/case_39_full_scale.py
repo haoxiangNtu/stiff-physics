@@ -654,7 +654,7 @@ def main():
     def callback():
         psim.SetNextWindowPos((10, 10), psim.ImGuiCond_Once)
         psim.SetNextWindowSize((520, 0), psim.ImGuiCond_Once)
-        psim.Begin("case_39 — full scale (ARM=1.0) A variant")
+        psim.Begin("case_39 — full scale (ARM=1.0) A variant", True)
         psim.Text(f"step #{state['step_count']}: {state['last_step_ms']:.1f} ms")
         # FPS row: instantaneous (last frame) + sliding avg over last 30 frames
         last_ms = state['last_step_ms']

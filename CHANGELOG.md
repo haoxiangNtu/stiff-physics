@@ -4,6 +4,44 @@ All notable changes to **stiff-physics** are documented here. This project
 follows the spirit of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] — 2026-05-28
+
+### Fixed
+
+- **`set_vertex_boundary` now pins the correct vertices under MAS** (`sim_engine.cu`):
+  the boundary flag was written in engine (metis-sorted) order, but callers pick the
+  index from `get_vertex_position_host`, which returns input-mesh order.  When the MAS
+  vertex unscramble (v0.4.0) switched every other per-vertex API to input order,
+  `set_vertex_boundary` was the lone straggler, so pinned cloth corners landed on the
+  wrong vertices and the sheet collapsed.  The `case_3_fixed_cloth`,
+  `case_5_box_pipe_large_cloth` and `case_19_arm_hanging_cloth` demos were affected.
+  Fixed by translating the index through the same inverse permutation as the getter;
+  identity (unchanged) when no metis perm is present.  Pre-existing since v0.4.0 — not
+  a v0.6.x regression.  Reproduces with MAS on and off.
+- **polyscope 2.5.x compatibility** (`case_36/38/39/40/41`): these demos called
+  `psim.Begin("title")`, but polyscope 2.5 made the second `open` argument mandatory,
+  so the GUI crashed with `TypeError: Begin(): incompatible function arguments` on the
+  first frame.  Now pass `Begin(title, True)` like the rest of the examples.
+  `pyproject` still pins `polyscope>=2.4,<2.6`.
+
+### Performance
+
+- **Solver step speedups** across the IPC pipeline: CUDA-Graph capture of the PCG
+  inner loop and a dual-stream contact-pair build, warp-divergence elimination via a
+  pair-type sort, a sparsity-cache skip path, and an ABD block-size retune.  Measured
+  end-to-end: the wrecking-ball benchmark ~18% higher fps (36.1 s → 30.4 s for 1000
+  frames), the `case_39` replay ~40% faster, and the bundled fold-shirt replay
+  169 s → 97 s.  Pure-physics trajectories are numerically unchanged.
+
+### Added
+
+- **Env-gated CUDA error diagnostics** (`cuda_tools.h`): set `STIFF_CUDA_DEBUG=1` to
+  synchronize after each solver phase and attribute an asynchronous kernel error to the
+  phase that produced it, instead of having it surface at a later innocent
+  `cudaFree`/`cudaMemcpy`.  Off by default with no measurable hot-path cost.  Also
+  swallows `cudaErrorCudartUnloading` during interpreter teardown, so a clean exit no
+  longer ends in "Aborted (core dumped)".
+
 ## [0.6.1] — 2026-05-27
 
 ### Fixed

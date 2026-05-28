@@ -607,7 +607,7 @@ def main():
     def callback():
         psim.SetNextWindowPos((10, 10), psim.ImGuiCond_Once)
         psim.SetNextWindowSize((520, 0), psim.ImGuiCond_Once)
-        psim.Begin("case_38 — gripper + cup + cloth")
+        psim.Begin("case_38 — gripper + cup + cloth", True)
         psim.Text(f"step #{state['step_count']}: {state['last_step_ms']:.1f} ms")
         psim.Text(f"URDF bodies: {n_urdf}, hybrid: {len(grippers)} ABD + {len(grippers)} FEM")
         psim.Separator()
