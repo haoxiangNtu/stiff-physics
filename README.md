@@ -38,6 +38,19 @@ PYTHONPATH=. python examples/case_replay_user_gui.py
 pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.7.1/stiff_physics-0.7.1-cp311-cp311-linux_x86_64.whl
 ```
 
+> **Two release tracks.** `v0.7.x` is the latest (performance) line shown above.
+> `v0.6.x` is the conservative line **recommended for RL data collection / long
+> replays** (it omits the v0.7.0 perf rewrite — see CHANGELOG). The newest
+> conservative build is **v0.6.3**, which adds the UMI fin-ray gripper example
+> suite (fold-shirt + beaker grasp, detailed and OBB arms) plus GPU
+> collision-buffer overflow and metis sort-cache fixes:
+>
+> ```bash
+> pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.6.3/stiff_physics-0.6.3-cp311-cp311-linux_x86_64.whl
+> ```
+>
+> (cp312 wheel also attached to the v0.6.3 release.)
+
 ### 2. Install visualization dependencies
 
 ```bash

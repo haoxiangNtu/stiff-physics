@@ -31,11 +31,11 @@ replay_case39_UMI.py.
 
 Usage (GUI, uses the bundled fold-shirt trajectory by default):
     CASE39_PRECOND=0 STIFF_SKIP_CCD_SANITY=1 \
-        python examples/replay_case39_UMI_sf.py
+        python examples/replay_case39_UMI_sf_obb.py
 
     # headless timing:
-    CASE39_HEADLESS=1 CASE39_FRAME_END=30 CASE39_PRECOND=0 \
-        STIFF_SKIP_CCD_SANITY=1 python examples/replay_case39_UMI_sf.py --quiet
+    CASE39_HEADLESS=1 CASE39_FRAME_END=30 \
+        STIFF_SKIP_CCD_SANITY=1 python examples/replay_case39_UMI_sf_obb.py --quiet
 """
 import sys, os, math, time, re
 from pathlib import Path
@@ -52,7 +52,8 @@ from stiff_physics.robot import Robot
 import polyscope as ps
 import polyscope.imgui as psim
 
-URDF_PATH = _ASSETS_DIR + "sim_data/urdf/ridgeback_dual_panda_UMI/ridgeback_dual_panda2.urdf"
+URDF_PATH = _ASSETS_DIR + "sim_data/urdf/ridgeback_dual_panda_UMI/" + \
+    os.environ.get("CASE39_OBB_URDF", "ridgeback_dual_panda2_OBB.urdf")
 # STRATEGY_F hybrid assets (built by build_umi_finray_strategyF.py): per side,
 # a unified tet mesh + a rigid sub-mesh .msh extracted from it + the rigid_v_idx
 # remap.  CASE39UMI_FEM_SRC is accepted for CLI compat but the sf assets live in
@@ -162,13 +163,13 @@ def main():
     prismatic_mult = float(os.environ.get("CASE36_PRISMATIC_K", "15"))
 
     default_cfg = dict(
-        dt=0.020,
+        dt=float(os.environ.get("CASE39UMI_DT", "0.020")),
         cloth_thickness=1e-3, cloth_young_modulus=1e4, bend_young_modulus=1e3,
         cloth_density=200, strain_rate=100,
         soft_motion_rate=float(os.environ.get("CASE36_SOFT_RATE", "1e4")),
         poisson_rate=0.49,
         friction_rate=float(os.environ.get("CASE39_FRICTION", "0.8")),
-        relative_dhat=1e-3,
+        relative_dhat=float(os.environ.get("CASE39UMI_REL_DHAT", "1e-3")),
         joint_strength_ratio=joint_K,
         revolute_driving_strength_ratio=revolute_K,
         prismatic_strength_ratio=prismatic_constraint_K,
@@ -188,6 +189,11 @@ def main():
     print("record_cfg:\n", env_cfg)
 
     cfg = Config(**default_cfg)
+    # OBB arm boxes are fatter than the detailed meshes, so they generate more
+    # collision pairs against the cloth/finray — bump the collision buffer to
+    # avoid an overflow (illegal memory access in SelfCollisionDetect).
+    cfg._cfg.collision_detection_buff_scale = float(
+        os.environ.get("CASE39UMI_BUFF_SCALE", "64.0"))
     eng = Engine(cfg)
     print("\n[replay_case39_UMI] === building case_39 (UMI gripper) scene ===", flush=True)
 
@@ -257,30 +263,24 @@ def main():
         g['rigid_rec'] = rigid_rec
 
     ################################################################
-    # load actors from the recorded init_info. FEM actors (the cloth/shirt) are
-    # loaded straight by the engine (eng.load_mesh); only ABD actors (e.g. a
-    # rigid cup) need trimesh to read their surface mesh. The fold-shirt replay
-    # has no ABD actors, so trimesh is imported lazily below — keeping it off the
-    # required-dependency list for this example.
+    # load actors (cup/beaker ABD + cloth FEM) from the recorded init_info.
+    # FEM actors (cloth/shirt) are loaded straight by the engine; only ABD
+    # actors (e.g. a rigid cup/beaker) need trimesh to read their surface mesh.
+    # The fold-shirt replay has no ABD actors, so trimesh is imported lazily
+    # below — keeping it off the required-dependency list for that example.
     abd_objs = []
     fem_objs = []
     for key, value in init_info.items():
         init_pose = value['initial_pose']
-        # Resolve the recorded collision-mesh path to a file under THIS repo's
-        # assets/ dir. The shipped trajectory stores a clean `assets/...` path;
-        # older recordings stored an absolute data-generation path — strip any
-        # such known prefix so both resolve under _ASSETS_DIR.
         collision_mesh = value["collision_mesh"]
-        for _pre in ("/data/stiff-physics/franka_sim/assets_new/",
-                     "/data/stiff-physics/franka_sim/assets/",
-                     "/data/stiff-physics/assets/",
-                     "assets/"):
-            if collision_mesh.startswith(_pre):
-                collision_mesh = _ASSETS_DIR + collision_mesh[len(_pre):]
-                break
-        else:
-            if not os.path.isabs(collision_mesh):
-                collision_mesh = _ASSETS_DIR + collision_mesh
+        if "/data/stiff-physics/franka_sim/assets_new" in collision_mesh:
+            collision_mesh = collision_mesh.replace(
+                "/data/stiff-physics/franka_sim/assets_new/", _ASSETS_DIR)
+            print(f"remapped collision mesh path to {collision_mesh}")
+        if "/data/stiff-physics/franka_sim/assets" in collision_mesh:
+            collision_mesh = collision_mesh.replace(
+                "/data/stiff-physics/franka_sim/assets/", _ASSETS_DIR)
+            print(f"remapped collision mesh path to {collision_mesh}")
         body_type = value["body_type"]
         if body_type == "ABD":
             abd_objs.append([init_pose, collision_mesh])
@@ -402,12 +402,15 @@ def main():
         for abd_rec in abd_records:
             eng.native.add_collision_exclusion(arm_id, abd_rec.body_offset)
 
-    # cloth (shirt) FEM ↔ all arm ABDs
+    # cloth (shirt) FEM ↔ all arm ABDs, and ↔ finray rigid roots (the rigid
+    # mount root never touches the cloth — only the FEM truss grasps it).
     n_abd_total_for_shirt = sum(1 for r in eng.get_load_records() if r.body_type == 0)
     for fem_rec in fem_records:
         fem_global_id = n_abd_total_for_shirt + fem_rec.body_offset
         for arm_id in arm_ids:
             eng.native.add_collision_exclusion(arm_id, fem_global_id)
+        for g in grippers:
+            eng.native.add_collision_exclusion(g['rigid_abd_id'], fem_global_id)
 
     for g in grippers:
         eng.add_ground_collision_skip(g['fem_global_id'])
@@ -430,6 +433,16 @@ def main():
             # gi's finger vs gj's rigid/fem
             eng.native.add_collision_exclusion(gi['finger_id'], gj['rigid_abd_id'])
             eng.native.add_collision_exclusion(gi['finger_id'], gj['fem_global_id'])
+
+    # Optional: exclude finray FEM self-collision. DEFAULT OFF (self-collision
+    # KEPT — physically complete). Set CASE39_NO_FINRAY_SELF=1 to remove the dense
+    # finray-self CCD pairs (~1.2x faster over a full replay, no effect on Newton
+    # convergence) at the cost of the truss being able to self-penetrate.
+    if int(os.environ.get("CASE39_NO_FINRAY_SELF", "0")):
+        for g in grippers:
+            eng.native.add_collision_exclusion(g['fem_global_id'], g['fem_global_id'])
+        print("[DIAG] finray FEM self-collision DISABLED for bodies "
+              + str([g['fem_global_id'] for g in grippers]), flush=True)
 
     eng.finalize()
 
@@ -558,13 +571,7 @@ def main():
     def _refresh_bvh_viz():
         """(Re)build the edge-BVH box wireframe from the engine's edge BVH.
         get_edge_bvh_aabbs() is empty until after finalize + first step."""
-        # get_edge_bvh_aabbs() is an optional debug-viz API not present in every
-        # released wheel (e.g. v0.6.2). Degrade gracefully: if the binding lacks
-        # it, the "show edge BVH" toggle just does nothing.
-        try:
-            aabbs = eng.native.get_edge_bvh_aabbs()
-        except AttributeError:
-            return
+        aabbs = eng.native.get_edge_bvh_aabbs()
         if aabbs.shape[0] == 0:
             return  # BVH not built yet (no step taken / no collisions)
         # The BVH array is internal nodes first, leaves last. The top internal

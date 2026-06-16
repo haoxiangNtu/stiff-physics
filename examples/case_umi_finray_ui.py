@@ -1,41 +1,29 @@
 #!/usr/bin/env python3
-"""Replay a pre-recorded qpos trajectory on the case_39 fold-shirt scene with the
-UMI finray gripper rebuilt in the STRATEGY_F HYBRID pattern (mirroring
-replay_case39_general.py), instead of the direct-stitch route of
-replay_case39_UMI.py.
+"""Interactive (UI-driven, NO replay) demo of the UMI finray gripper grasping
+the case_39 fold-shirt cloth, with an ABD cup/beaker in the scene.
 
-The key difference vs replay_case39_UMI.py (direct stitch):
+Same physics scene as replay_case39_UMI_sf.py — non-OBB (detailed) arm
+collision + STRATEGY_F hybrid finray gripper (rigid mount root + FEM truss,
+gap-0 stitch) — but instead of replaying a recorded qpos trajectory, the arm
+joints and gripper open/close are driven LIVE by polyscope/imgui sliders.
 
-  * The finray's SOLID MOUNTING ROOT (bottom band, centroid Z < 0.032) is split
-    off as a SEPARATE RIGID ABD body (young 1e8), extracted from the SAME
-    unified tet mesh by build_umi_finray_strategyF.py.  Only the hollow fin-ray
-    truss + solid tip above stays FEM.
+Scene:
+  * ridgeback dual-panda UMI arm (detailed URDF collision)
+  * 4 STRATEGY_F finray grippers (FEM truss + rigid root)
+  * case_39 shirt (cloth FEM), placed from the bundled trajectory's init pose
+  * case_39 cup/beaker (softgriper_cup.msh) as a rigid ABD on the table
+    (pose anchored to the shirt + CASE_UMI_CUP_OFF; set CASE_UMI_CUP=0 to skip)
 
-  * Per finger: load `UMI_finray_{side}_rigid.msh` as a rigid ABD at the gripper
-    transform, AND load the full unified finray mesh as FEM at the same
-    transform.  Stitch each unified rigid vert (`rigid_v_idx[i]`) to rigid-ABD
-    vert i with rest_offset=(0,0,0) — GAP IS ZERO because the .msh verts are
-    coincident with the unified mesh's rigid verts.  This + the engine DEFAULT
-    high soft_motion_rate (1e4) gives a wrinkle-free join (no soft_rate=1e2
-    workaround needed, unlike the direct-stitch version).
+The bundled .hdf5 is read ONLY for the shirt placement + the arm's initial
+pose (actions[0]); no trajectory is played back.
 
-  * An add_fixed_joint pins the finray rigid ABD to the FINGER ABD seat, so the
-    rigid root is driven by the prismatic joint (same as case_39's STRATEGY_F).
+UI: "Run/Pause", "Reset pose", per-arm gripper sliders (0=open, 1=closed),
+and per-joint sliders for both 7-DOF arms. The engine steps continuously while
+Run is on and drives toward the slider targets.
 
-This fixes the local wrinkling we got from soft-spring-stitching the WHOLE
-finray to the finger: now only the truss is deformable, the root is rigid.
-
-Everything else (URDF load, cloth FEM actors, joint mapping with UMI's mirrored
-prismatic limits, headless timing loop, polyscope GUI) matches
-replay_case39_UMI.py.
-
-Usage (GUI, uses the bundled fold-shirt trajectory by default):
+Usage (GUI):
     CASE39_PRECOND=0 STIFF_SKIP_CCD_SANITY=1 \
-        python examples/replay_case39_UMI_sf.py
-
-    # headless timing:
-    CASE39_HEADLESS=1 CASE39_FRAME_END=30 CASE39_PRECOND=0 \
-        STIFF_SKIP_CCD_SANITY=1 python examples/replay_case39_UMI_sf.py --quiet
+        python examples/case_umi_finray_ui.py
 """
 import sys, os, math, time, re
 from pathlib import Path
@@ -52,7 +40,8 @@ from stiff_physics.robot import Robot
 import polyscope as ps
 import polyscope.imgui as psim
 
-URDF_PATH = _ASSETS_DIR + "sim_data/urdf/ridgeback_dual_panda_UMI/ridgeback_dual_panda2.urdf"
+URDF_PATH = _ASSETS_DIR + "sim_data/urdf/ridgeback_dual_panda_UMI/" + \
+    os.environ.get("CASE39_OBB_URDF", "ridgeback_dual_panda2.urdf")
 # STRATEGY_F hybrid assets (built by build_umi_finray_strategyF.py): per side,
 # a unified tet mesh + a rigid sub-mesh .msh extracted from it + the rigid_v_idx
 # remap.  CASE39UMI_FEM_SRC is accepted for CLI compat but the sf assets live in
@@ -143,17 +132,42 @@ def main():
 
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--replay", type=str,
-                        default=_ASSETS_DIR + "trajectories/episode_fold_shirt_umi.hdf5")
+    parser.add_argument("--replay", type=str, default="",
+                        help="optional: an .hdf5 to take the shirt/arm init pose "
+                             "from. If omitted, self-contained hardcoded poses "
+                             "(case_39 fold-shirt setup) are used — NO trajectory "
+                             "is ever played back; the arm is UI-driven.")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args()
 
-    import h5py, json
-    with h5py.File(args.replay, "r") as f:
-        init_info = json.loads(f.attrs["object_init_info"])
-        actions = f["actions"][:]
-        robot_init_pose = f.attrs["robot_init_pose"]
-        env_cfg = json.loads(f.attrs["env_cfg"])
+    # Self-contained scene poses (baked from the case_39 fold-shirt setup) so the
+    # example needs NO replay file. --replay only overrides these if given.
+    SHIRT_POSE = np.array([
+        -0.147693, 0.989033, 0.0, -0.038994,  -0.0, -0.0, 1.0, 1.025979,
+         0.989033, 0.147693, 0.0, -0.059208,   0.0,  0.0, 0.0, 1.0]).reshape(4, 4)
+    SHIRT_MESH = _ASSETS_DIR + "objects/m-panda_single/scaled.obj"
+    ROBOT_INIT_POSE = np.array([-0.8, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+    ARM_INIT_Q = np.array([                       # [L×7, gripL, R×7, gripR]
+        -0.423562, 0.076357, 0.267709, -2.317659, -1.071812, 2.201335, 1.420468, 1.0,
+         0.966705, 0.349781, -1.353784, -1.946211, 1.223486, 1.982947, 0.045421, 1.0])
+
+    import json
+    if args.replay and os.path.exists(args.replay):
+        import h5py
+        with h5py.File(args.replay, "r") as f:
+            init_info = json.loads(f.attrs["object_init_info"])
+            actions = f["actions"][:]
+            robot_init_pose = f.attrs["robot_init_pose"]
+            env_cfg = json.loads(f.attrs["env_cfg"])
+        print(f"[UI] loaded init pose from {args.replay}", flush=True)
+    else:
+        init_info = {"panda_cloth_0_0": {"initial_pose": SHIRT_POSE.tolist(),
+                                         "collision_mesh": SHIRT_MESH,
+                                         "body_type": "FEM"}}
+        actions = ARM_INIT_Q[None, :]
+        robot_init_pose = ROBOT_INIT_POSE
+        env_cfg = {}
+        print("[UI] self-contained scene (no replay file)", flush=True)
 
     # --- Physics config (case_39 values) ---
     prismatic_constraint_K = float(os.environ.get("CASE39_PRISMATIC_CONSTRAINT_K", "2000"))
@@ -198,8 +212,19 @@ def main():
 
     # --- 1. Load URDF (UMI option X: each finger link IS the rigid mount seat;
     #         no separate *_mount ABD links any more) ---
+    # Born-posed: load the arm ALREADY at the start pose (actions[0]) by passing
+    # initial_joint_angles. The importer syncs target_angle = initial_angle_offset
+    # = the given angle, so the joint sits there with ZERO driving force and the
+    # UI sliders (which read get_revolute_target_deg) show that pose. Without this
+    # the arm loads at the URDF default and the joint controller slews toward the
+    # start pose on its own over many steps — which looks exactly like a replay.
+    _q0 = (actions[0] if len(actions) else np.zeros(16)).astype(float)
+    init_joint_angles = {}
+    for _i in range(7):
+        init_joint_angles[f"left_arm_joint{_i+1}"]  = float(_q0[_i])
+        init_joint_angles[f"right_arm_joint{_i+1}"] = float(_q0[8 + _i])
     arm_tf = make_arm_tf(robot_init_pose[:3], ARM_SCALE)
-    eng.native.load_urdf(URDF_PATH, arm_tf, True, False, 1e7, {})
+    eng.native.load_urdf(URDF_PATH, arm_tf, True, False, 1e7, init_joint_angles)
     n_urdf = eng.abd_body_count
     urdf_recs = list(eng.get_load_records())
     rec_by_label = {r.label: r for r in urdf_recs if r.body_type == 0}
@@ -305,6 +330,61 @@ def main():
         )
         abd_records.append(eng.get_load_records()[-1])
 
+    # --- ABD cup/beaker (case_39 asset softgriper_cup.msh), placed beside the
+    #     shirt on the table. Loaded as a rigid ABD; the cup-vs-arm exclusion
+    #     loop below (which iterates abd_records) keeps it from spuriously
+    #     contacting the OBB-free arm links. Pose anchored to the shirt +
+    #     offset so it lands near the gripper; tune with CASE_UMI_CUP_OFF. ---
+    if int(os.environ.get("CASE_UMI_CUP", "0")):
+        CUP_MSH = _ASSETS_DIR + "sim_data/tetmesh/softgriper_cup.msh"
+        # Config matches case_39 exactly (rigid ABD, scale 0.8, young 1e8). The
+        # cup is NOT soft — earlier it just LOOKED soft because it spawned inside
+        # the shirt and the contact solver shoved it around.
+        #
+        # Placement mirrors case_39's philosophy (cup well OFFSET from the shirt,
+        # both resting on the ground) — but in THIS scene's frame, not case_39's.
+        # Shirt world footprint here: x~[-0.36,0.27], z~[-0.35,0.23] @ y~[0.89,1.16];
+        # ground is at ground_offset (=0.75). case_39's literal xyz would land
+        # the cup ~1.7 m below this ground, and the old default (0.15,1.0,-0.06)
+        # sat dead-centre INSIDE the shirt's bbox. So we anchor the cup to the
+        # shirt's (x,z) and drop it onto the ground, offset in -z to clear the
+        # shirt.  Override the offset with CASE_UMI_CUP_OFF="dx,dy,dz" or pin an
+        # absolute position with CASE39_CUP_XYZ="x,y,z".
+        _cup_scale = float(os.environ.get("CASE39_CUP_SCALE", "0.8"))
+        # shirt world translation (first actor in init_info), fallback to bake
+        _shirt_t = np.array([-0.046, 1.025, -0.058])
+        for _v in init_info.values():
+            _shirt_t = np.asarray(_v['initial_pose'], dtype=float).reshape(4, 4)[:3, 3]
+            break
+        _ground_y = float(default_cfg.get('ground_offset', 0.75))
+        # cup mesh local bottom (after scale) ≈ scale*(-0.0016); lift so the cup
+        # bottom rests ~1 cm above the ground, then it settles in a step or two.
+        _cup_off = np.array([float(s) for s in
+                             os.environ.get("CASE_UMI_CUP_OFF", "0.0,0.0,-0.42").split(",")])
+        # cup local bottom after scale ≈ 0.8*(-0.0016) = -0.0013, so cup_y =
+        # ground + 0.0013 puts the bottom exactly on the ground; +~3 mm gap keeps
+        # it clear of the ground contact barrier at spawn.
+        _cup_default = np.array([_shirt_t[0] + _cup_off[0],
+                                 _ground_y + 0.0043 + _cup_off[1],
+                                 _shirt_t[2] + _cup_off[2]])
+        if os.environ.get("CASE39_CUP_XYZ"):
+            _cup_xyz = np.array([float(s) for s in
+                                 os.environ["CASE39_CUP_XYZ"].split(",")])
+        else:
+            _cup_xyz = _cup_default
+        cup_T = np.eye(4)
+        cup_T[:3, :3] *= _cup_scale
+        cup_T[:3, 3] = _cup_xyz
+        eng.load_mesh(CUP_MSH, dimensions=3, body_type="ABD",
+                      transform=cup_T, young_modulus=1e8, boundary_type="Free")
+        cup_rec = eng.get_load_records()[-1]
+        abd_records.append(cup_rec)
+        print(f"[UI] loaded ABD cup: v_off=%d nverts=%d at xyz=%s"
+              % (cup_rec.vertex_offset, cup_rec.vertex_count, cup_T[:3,3].round(3)),
+              flush=True)
+    else:
+        cup_rec = None
+
     #################################
 
     # Pass 2: finray FEM (full unified per-side mesh, same transform as rigid)
@@ -402,12 +482,15 @@ def main():
         for abd_rec in abd_records:
             eng.native.add_collision_exclusion(arm_id, abd_rec.body_offset)
 
-    # cloth (shirt) FEM ↔ all arm ABDs
+    # cloth (shirt) FEM ↔ all arm ABDs, and ↔ finray rigid roots (the rigid
+    # mount root never touches the cloth — only the FEM truss grasps it).
     n_abd_total_for_shirt = sum(1 for r in eng.get_load_records() if r.body_type == 0)
     for fem_rec in fem_records:
         fem_global_id = n_abd_total_for_shirt + fem_rec.body_offset
         for arm_id in arm_ids:
             eng.native.add_collision_exclusion(arm_id, fem_global_id)
+        for g in grippers:
+            eng.native.add_collision_exclusion(g['rigid_abd_id'], fem_global_id)
 
     for g in grippers:
         eng.add_ground_collision_skip(g['fem_global_id'])
@@ -430,6 +513,16 @@ def main():
             # gi's finger vs gj's rigid/fem
             eng.native.add_collision_exclusion(gi['finger_id'], gj['rigid_abd_id'])
             eng.native.add_collision_exclusion(gi['finger_id'], gj['fem_global_id'])
+
+    # Optional: exclude finray FEM self-collision. DEFAULT OFF (self-collision
+    # KEPT — physically complete). Set CASE39_NO_FINRAY_SELF=1 to remove the dense
+    # finray-self CCD pairs (~1.2x faster, no effect on Newton convergence) at the
+    # cost of the truss being able to self-penetrate.
+    if int(os.environ.get("CASE39_NO_FINRAY_SELF", "0")):
+        for g in grippers:
+            eng.native.add_collision_exclusion(g['fem_global_id'], g['fem_global_id'])
+        print("[DIAG] finray FEM self-collision DISABLED for bodies "
+              + str([g['fem_global_id'] for g in grippers]), flush=True)
 
     eng.finalize()
 
@@ -537,9 +630,21 @@ def main():
               flush=True)
         return
 
-    # --- 6. Polyscope + replay loop ---
+    # NOTE: the arm was born already at the start pose (load_urdf
+    # initial_joint_angles, above) with target == initial pose, so it holds with
+    # zero driving force — no pre-pose settle loop is needed and the GUI opens
+    # grasp-ready and static.
+
+    # --- 6. Polyscope + UI loop ---
     verts = eng.get_vertices()
     faces = eng.get_surface_faces()
+
+    if cup_rec is not None:
+        _co = cup_rec.vertex_offset; _cc = cup_rec.vertex_count
+        _cf = int(((faces >= _co) & (faces < _co + _cc)).any(axis=1).sum())
+        print(f"[UI-DIAG] verts={verts.shape[0]} faces={faces.shape[0]}  "
+              f"cup verts[{_co}:{_co+_cc}]  cup surface-faces={_cf}  "
+              f"{'(RENDERS)' if _cf>0 else '(NOT IN SURFACE!)'}", flush=True)
 
     ps.init()
     ps.set_up_dir("y_up")
@@ -593,66 +698,103 @@ def main():
         fo = g['fem_v_off']; fc = g['fem_rec'].vertex_count
         vr = g['vertex_region'][:fc]
         colors[fo:fo + fc] = np.where((vr == 1)[:, None], red, blue)
+    # color the ABD cup green so it's clearly visible vs the gray arm
+    if cup_rec is not None:
+        co = cup_rec.vertex_offset; cc = cup_rec.vertex_count
+        colors[co:co + cc] = np.array([0.20, 0.80, 0.35])
+        # how many render faces actually reference cup verts? (0 => not drawn)
+        _cupfaces = int(((faces >= co) & (faces < co + cc)).any(axis=1).sum())
+        print(f"[UI] render: verts={verts.shape[0]} faces={faces.shape[0]}  "
+              f"cup verts[{co}:{co+cc}]  cup faces in surface={_cupfaces}", flush=True)
     state['mesh'].add_color_quantity(
-        "region (red=rigid root, blue=FEM truss)", colors, defined_on='vertices',
-        enabled=True)
+        "region (red=rigid root, blue=FEM truss, green=cup)", colors,
+        defined_on='vertices', enabled=True)
 
-    qpos_all = actions  # [L×7, gripL, R×7, gripR]
+    # ============ UI-DRIVEN control (no replay) ============
+    # Mirror case_39_full_scale.py's UI-link-control pattern exactly:
+    #   * each slider DISPLAYS the joint's current target (get_revolute_target_deg
+    #     / get_prismatic_target_mm),
+    #   * a target is pushed ONLY when its slider actually changes.
+    # The arm was born at the start pose (load_urdf initial_joint_angles) with
+    # target == that pose, so every slider opens showing the start pose and the
+    # arm holds it with zero driving force. Nothing moves until you drag a slider.
+    a0 = (actions[0] if len(actions) else np.zeros(16)).astype(float)
+    state['running'] = False      # start PAUSED — step only after the user clicks Run
+    # Sliders are 0=open, 1=closed. The finray loads CLOSED (prismatic≈0 = the
+    # near-0 / closed end), so the sliders must START at 1.0 to match the loaded
+    # state; otherwise the first drag jumps the gripper open then closed.
+    state['gripL']   = 1.0
+    state['gripR']   = 1.0
+
+    def _apply_gripper(grip01, idxs):
+        for pi in idxs:
+            lo = robot.prismatic_joints[pi].lower_limit
+            hi = robot.prismatic_joints[pi].upper_limit
+            op = lo if abs(lo) > abs(hi) else hi      # open end (farthest from 0)
+            cl = hi if abs(lo) > abs(hi) else lo      # closed end (near 0)
+            robot.set_prismatic_position(pi, op + grip01 * (cl - op), millimeters=False)
 
     def callback():
+        # run / pause / reset-pose
         if state['running']:
             if psim.Button("Pause"):
                 state['running'] = False
         else:
-            if psim.Button("Start" if state['idx'] == 0 else "Resume"):
+            if psim.Button("Run"):
                 state['running'] = True
         psim.SameLine()
-        if psim.Button("Reset"):
-            state['idx'] = 0
-            state['running'] = False
-        psim.Text(f"frame {state['idx']:>4d} / {len(qpos_all)}")
+        if psim.Button("Reset pose"):
+            # NOTE: robot.reset_all() resets targets to ZERO (URDF default), which
+            # would swing this born-posed arm away — so re-push the START pose.
+            for i, rev_idx in enumerate(left_rev_indices):
+                robot.set_revolute_position(rev_idx, float(a0[i]), degree=False)
+            for i, rev_idx in enumerate(right_rev_indices):
+                robot.set_revolute_position(rev_idx, float(a0[8 + i]), degree=False)
+            _apply_gripper(0.0, left_pris_indices)
+            _apply_gripper(0.0, right_pris_indices)
         psim.Text(f"step: {state['last_ms']:6.1f} ms   "
                   f"FPS {(1000.0/state['last_ms']) if state['last_ms']>0 else 0.0:5.1f}")
 
-        # --- Display toggles ---
         ch_e, val_e = psim.Checkbox("show mesh edges", state['show_edges'])
         if ch_e:
             state['show_edges'] = val_e
             state['mesh'].set_edge_width(0.5 if val_e else 0.0)
-        psim.SameLine()
-        ch_b, val_b = psim.Checkbox("show edge BVH", state['show_bvh'])
-        if ch_b:
-            state['show_bvh'] = val_b
-            if val_b:
-                _refresh_bvh_viz()
-            elif state['bvh_net'] is not None:
-                ps.remove_curve_network("edge_BVH")
-                state['bvh_net'] = None
 
-        if not state['running'] or state['idx'] >= len(qpos_all):
+        # --- gripper sliders (always visible) ---
+        # One 0..1 slider per arm (UMI fingers have mirrored limits). These keep
+        # a local target (the engine has no single "openness" scalar); they only
+        # push on change, so an untouched gripper holds its loaded (open) state.
+        psim.Separator()
+        psim.Text("Grippers  (0 = open,  1 = closed)")
+        ch, v = psim.SliderFloat("left gripper", state['gripL'], 0.0, 1.0)
+        if ch:
+            state['gripL'] = v
+            _apply_gripper(v, left_pris_indices)
+        ch, v = psim.SliderFloat("right gripper", state['gripR'], 0.0, 1.0)
+        if ch:
+            state['gripR'] = v
+            _apply_gripper(v, right_pris_indices)
+
+        # --- arm joint sliders (read live target, push on change) ---
+        psim.Separator()
+        psim.Text("Left arm joints (deg)")
+        for rev_idx in left_rev_indices:
+            ji  = robot.revolute_joints[rev_idx]
+            cur = robot.get_revolute_target_deg(rev_idx)
+            ch, v = psim.SliderFloat(ji.name, cur, ji.lower_limit_deg, ji.upper_limit_deg)
+            if ch:
+                robot.set_revolute_position(rev_idx, v, degree=True)
+        psim.Separator()
+        psim.Text("Right arm joints (deg)")
+        for rev_idx in right_rev_indices:
+            ji  = robot.revolute_joints[rev_idx]
+            cur = robot.get_revolute_target_deg(rev_idx)
+            ch, v = psim.SliderFloat(ji.name, cur, ji.lower_limit_deg, ji.upper_limit_deg)
+            if ch:
+                robot.set_revolute_position(rev_idx, v, degree=True)
+
+        if not state['running']:
             return
-
-        raw = qpos_all[state['idx']]
-        q_left  = raw[0:7]
-        q_right = raw[8:15]
-        grip_L  = float(raw[7])
-        grip_R  = float(raw[15])
-
-        for i, rev_idx in enumerate(left_rev_indices):
-            robot.set_revolute_position(rev_idx, q_left[i], degree=False)
-        for i, rev_idx in enumerate(right_rev_indices):
-            robot.set_revolute_position(rev_idx, q_right[i], degree=False)
-        _close_r = float(os.environ.get("CASE39_CLOSE_RATIO", "0."))
-        # per-finger limits (UMI's two fingers open in mirrored directions:
-        # open = limit farthest from 0, closed = near-0 end — see headless loop)
-        for grip, idxs in ((grip_L, left_pris_indices), (grip_R, right_pris_indices)):
-            for pi in idxs:
-                lo = robot.prismatic_joints[pi].lower_limit
-                hi = robot.prismatic_joints[pi].upper_limit
-                op = lo if abs(lo) > abs(hi) else hi
-                cl = hi if abs(lo) > abs(hi) else lo
-                grip_pos = op if grip >= 0 else (op + (1.0 - _close_r) * (cl - op))
-                robot.set_prismatic_position(pi, grip_pos, millimeters=False)
 
         t0 = time.perf_counter()
         eng.step()
@@ -668,15 +810,9 @@ def main():
         else:
             state['mesh'].update_vertex_positions(v)
 
-        # Keep the edge-BVH wireframe in sync with the stepped geometry.
-        if state['show_bvh']:
-            _refresh_bvh_viz()
-
-        state['idx'] += 1
-
     ps.set_user_callback(callback)
     ps.show()
-    print(f"Replay finished or window closed at frame {state['idx']}/{len(qpos_all)}")
+    print("UI session ended.")
 
 
 if __name__ == "__main__":

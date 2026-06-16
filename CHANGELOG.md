@@ -4,6 +4,67 @@ All notable changes to **stiff-physics** are documented here. This project
 follows the spirit of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/).
 
+## [0.6.3] — 2026-06-16
+
+> v0.6.3 = v0.6.2 + two GPU collision-buffer overflow fixes + a new UMI
+> finray gripper example suite (replay + interactive UI, detailed and
+> OBB-collision arm variants).  Stays on the conservative v0.6.x line — it
+> does **not** pull in the v0.7.x perf rewrite (CUDA-Graph PCG,
+> sparsity-cache, pair-type sort).  Recommended build for RL data collection.
+
+### Fixed
+
+- **CCD reduction-scratch overflow (the OBB-arm + soft-gripper blow-up).**
+  `pcg_data.squeue` was sized for `max(vertexNum, tetrahedraNum)` doubles but
+  reused as the scratch buffer for collision-pair-count reductions.  When the
+  number of CCD pairs exceeded that capacity (e.g. a fin-ray soft gripper
+  reaching deep into cloth behind an OBB-collision arm), the reduction wrote
+  out of bounds and corrupted adjacent GPU memory — `_moveDir` blew up to
+  ~1e29 and the sim exploded.  A dedicated, dynamically-grown reduction
+  scratch buffer (`ensure_reduce_scratch`) now sizes to the actual pair count
+  every frame.  A detailed-collision arm masked the bug only because it
+  produced fewer CCD pairs; it was never arm-specific.
+
+- **Collision pair-emission buffer overflow.**  The narrow-phase /
+  swept-CCD kernels `atomicAdd`-emit pairs into fixed-capacity buffers
+  (`_collisonPairs`, `_ccd_collisonPairs`, `_MatIndex`).  Emits past the cap
+  are now redirected to a guard ("trash") slot so they can never write out of
+  bounds, and the host grows the buffers and re-runs detection until every
+  pair fits — no pairs are silently dropped and overflow is impossible (it
+  degrades to higher VRAM use, never corruption).
+
+- **Stale metis sort-cache corruption (mixed rigid-object + hybrid scenes).**
+  The metis sort/partition disk cache is keyed only on the input mesh's
+  basename-stem.  `load_mesh_from_data` names its temp mesh
+  `tmp_mesh_<load_count>.msh`, so the same finray mesh maps to different stems
+  depending on load order, and one stem can be reused across runs for meshes
+  of different vertex counts.  The cache-hit path trusted any matching-stem
+  file, so a stale permutation sized for a different mesh got applied to a
+  freshly written one — corrupting the hybrid finray FEM offsets (gap=0 stitch
+  wired to wrong vertices → large gaps + ~100× slowdown).  Surfaced by the new
+  beaker-grasp replay with the v800 LOD finrays (L=816, R=820 verts).  The
+  cache hit is now validated against the input mesh's actual vertex count (via
+  the `.idx` sidecar) and regenerated on any mismatch.
+
+### Added
+
+- **UMI finray gripper example suite** (`examples/`):
+  - `replay_case39_UMI_sf.py` — replay a recorded trajectory on the
+    fold-shirt scene with a STRATEGY_F hybrid fin-ray gripper (rigid ABD
+    mounting root + FEM truss, zero-gap stitch).
+  - `replay_case39_UMI_sf_obb.py` — same, with the arm links replaced by
+    oriented-bounding-box collision geometry (faster broad phase).
+  - `case_umi_finray_ui.py` / `case_umi_finray_ui_obb.py` — interactive
+    slider control of the arm joints and grippers (detailed / OBB variants).
+  - `replay_case39_UMI_beaker.py` — beaker-grasp replay (the gripper picks up
+    a rigid 100 ml beaker) + the bundled beaker trajectory and collision mesh.
+- **Level-of-detail fin-ray FEM assets** (`Assets/sim_data/`):
+  `umi_hybrid_sf_v800` (default, ~816 verts/finger), `_v1340`, `_v1690`.
+- **OBB-collision arm URDF variants** plus their `meshes/obb_umi/` boxes
+  under `Assets/sim_data/urdf/ridgeback_dual_panda_UMI/`.
+- **Mesh-prep tools** (`examples/build_umi_obb_urdf.py`,
+  `examples/build_umi_finray_strategyF.py`).
+
 ## [0.6.2] — 2026-06-05
 
 > **For RL data collection / long replays, this is the recommended build.**
@@ -72,131 +133,6 @@ users prefer to avoid for long RL data collection.
 
 v0.6.2 is the conservative path: same numerical core as v0.6.1, only
 backports the proven-safe fixes.
-
-## [0.7.1] — 2026-06-05
-
-### Fixed
-
-- **Newton non-convergence on long contact-dense trajectories** — reverts
-  the v0.7.0 `perf(warp-div): CCD-pair sort` commit (98ac3dc).  Users
-  reported "frozen frame" stutter on cloth-fold replays where one frame
-  occasionally took 1–2 seconds (vs ~25 ms median).  Root cause:
-  `cub::DeviceRadixSort::SortPairs` is unstable, so reordering
-  `_ccd_collisonPairs` by warp-divergence type permutes equal-key elements
-  non-deterministically across runs.  Downstream
-  `_reduct_min_selfTimeStep_to_double` is reduce-order sensitive at ε level,
-  so line-search α decisions occasionally diverge, causing Newton to spend
-  +5–25 extra outer iterations or hit the 50-iter cap.
-
-  Paired n=20 bench on `episode_00000.hdf5` fold-shirt (1551 frames):
-
-  | Version          | runs hitting Newton cap | total cap-hits | worst run |
-  |------------------|------------------------:|---------------:|----------:|
-  | v0.6.1           | 3 / 20                  | 3              | 1         |
-  | v0.7.0           | 10 / 20                 | 18             | 9         |
-  | v0.7.1 (this)    | 3 / 20                  | 12             | 8         |
-
-  After this revert the "runs-with-cap %" is statistically indistinguishable
-  from v0.6.1 (Mann-Whitney p=0.913).  Wall stays within 1% of v0.7.0
-  (the +1.10% the original commit claimed turned out negligible vs. the
-  other v0.7.0 perf work).  Other v0.7.0 pair-sort commits
-  (`199ac1e` barrier-sort, `8ead1f0` friction-sort) were tested
-  individually and found innocent (p=0.236 NS) — kept.
-
-- **`cudaEventDestroy` leak in `IPC_Solver`** (`GIPC.cu`): per-step timing
-  events `start`/`end0` were created but never destroyed.  1551 steps ×
-  10 replays = ~31000 dangling driver event handles per process.  Not a
-  perf bug (micro-bench confirms cudaEventCreate cost is constant past
-  30 K leaked events), but long-running RL collection processes can
-  eventually exhaust the driver's event pool.  Resource-hygiene fix.
-
-### Performance
-
-- **`Statistics` system env-gated** (`gipc/statistics.{h,cpp}`):
-  `Statistics::write_to_file` was called every step and serialized the
-  entire accumulated `m_json["frames"]` array (4-space indent) to disk
-  → O(N²) cumulative writes (~800 MB per 1551-step run).  Plus
-  `m_json["frames"][m_frame]` grew ~50 KB/step in RAM (~8.5 GB after
-  100 episodes → eventual OOM on long RL data collection).
-
-  Gated both behaviors behind `GIPC_STATS_ENABLED` env var (default off).
-  Disabled mode uses a per-frame scratch `Json` for writes so caller code
-  is unchanged.  Measured effects on fold-shirt 1551-step replay:
-
-  - Wall standard deviation across n=20 runs: **10.2 s → 5.7 s** (halved
-    — disk-IO jitter was the dominant variance source).
-  - Mean wall: ~-2 % on this trajectory.  Larger gains on longer trajectories
-    where O(N²) dominates (a friend reports −17 % on a 17000-step bench).
-  - Steady-state Newton cap-hit rate unchanged (the bug only affected
-    wall time, not solver behavior).
-
-  To re-enable full stats.json dumping (debug mode):
-  ```bash
-  GIPC_STATS_ENABLED=1 python your_script.py
-  ```
-
-## [0.7.0] — 2026-05-28
-
-### Performance — major
-
-End-to-end speed-up on `replay_case_39` (1018-frame headless, RTX 4090 D,
-`STIFF_SKIP_CCD_SANITY=1`): **53 → 32 ms / step** (~18.9 → 31.3 fps, +40%)
-vs. v0.6.1 default configuration.
-
-Cumulative changes vs v0.6.1:
-
-- **CUDA Graph capture**: PCG inner loop (commit `958e15e`), `buildCP` body
-  (`e2981df`), sparsity-cache skip path (`3d883df`).  Reduces per-step
-  kernel-launch overhead.
-- **Sparsity-cache for global Hessian assembly** (`c398e62`, `d8bbeec`):
-  detect when (row, col) pattern is unchanged across Newton iters and skip
-  the radix sort.  XOR-fold fingerprint kernel rewritten with hierarchical
-  reduction (warp-shuffle + per-block atomic) to avoid global-atomic
-  serialization (`9a20fe1`).
-- **D2H batching** (`4d72d8a`, `86a281b`, `3986bd5`, `7046398`): coalesce
-  multiple blocking D2H reads into single transfers (3 sites) and defer
-  `_cpNum`/`_gpNum` D2H past `buildCP` so the kernel sequence stays
-  capture-friendly.
-- **Hot-path scratch preallocation** (`46727ba`): eliminate per-step
-  `cudaMalloc`/`cudaFree` for collision-pair sort temp + reduction buffer.
-- **Warp-divergence elimination** via pair-type sort: barrier
-  gradient+Hessian (`590968a`), friction Hessian (`9d7693e`), CCD time-step
-  reduction (`2b7b5a6`).
-- **ABD block-size retuning** (`e6fcefe`, `2e8c22c`, `170eaa4`): per-body
-  ABD kernels were launched with `block_size = 256-768`; for typical body
-  counts (≤ 4 per scene) those grids underfilled the GPU.  Reduced to 32
-  so the grid spans more SMs per launch.
-- **`-maxrregcount=128`** (`3617aca`): cap register use so heavy compute
-  kernels (`_edgeTriIntersectionQuery`, `_calBarrierGradientAndHessian`)
-  reach 2 blocks/SM instead of 1.
-- **FEM tri gradient/Hessian: `__restrict__` + cached loads** (`2d5570e`).
-
-### Performance — opt-in (env-gated)
-
-- **`STIFF_SKIP_CCD_SANITY=1`** (`8b4ad07`): skip the paranoid post-line-
-  search `isIntersected()` check (re-runs full `_edgeTriIntersectionQuery`
-  BVH for every line-search α bisection — 42% of GPU time on `case_39`).
-  CCD line-search already guarantees a non-intersecting step on smooth
-  contact, so the recheck never fires on those scenes.  Default off;
-  opt-in for smooth-contact scenes (`case_39`, etc.) wins ~15%.
-
-### Fixed
-
-- **MAS preconditioner now graph-capturable** (`01879ba`): two synchronous
-  `cudaMemset` calls in `MASPreconditioner::preconditioning` errored with
-  CUDA[900] *"operation not permitted when stream is capturing"* when run
-  inside the new PCG CUDA graph (above).  Switched to `cudaMemsetAsync` on
-  `cudaStreamPerThread`.  Without this, any FEM scene with
-  `preconditioner_type=1` would crash on v0.6.1's optimization path.
-
-### Changed
-
-- **`case_39` / `case_40` examples revert to `preconditioner_type=0`**:
-  measurements on the v0.7.0 code show MAS is now *slower* than diagonal
-  preconditioning on these scenes (cudagraph PCG made each iter cheap
-  enough that MAS's per-call setup overhead exceeds its iter-count
-  savings).  `case_39`: MAS 41.2 ms vs diagonal 32.0 ms (n=3 paired).
-  Users wanting MAS can still set `CASE39_PRECOND=1`.
 
 ## [0.6.1] — 2026-05-27
 
