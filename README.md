@@ -41,15 +41,17 @@ pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.7.
 > **Two release tracks.** `v0.7.x` is the latest (performance) line shown above.
 > `v0.6.x` is the conservative line **recommended for RL data collection / long
 > replays** (it omits the v0.7.0 perf rewrite — see CHANGELOG). The newest
-> conservative build is **v0.6.3**, which adds the UMI fin-ray gripper example
-> suite (fold-shirt + beaker grasp, detailed and OBB arms) plus GPU
-> collision-buffer overflow and metis sort-cache fixes:
+> conservative build is **v0.6.4**, which adds an ABD-joint **force-control**
+> layer — all new APIs are default-OFF, so existing scenes are unchanged:
+> external force/torque/velocity, a prismatic close-limit IPC barrier, on-GPU
+> stitch-grip sensing, plus force/finray grip-control example demos (on top of
+> v0.6.3's UMI fin-ray suite + GPU overflow / metis fixes):
 >
 > ```bash
-> pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.6.3/stiff_physics-0.6.3-cp311-cp311-linux_x86_64.whl
+> pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.6.4/stiff_physics-0.6.4-cp311-cp311-linux_x86_64.whl
 > ```
 >
-> (cp312 wheel also attached to the v0.6.3 release.)
+> (cp312 wheel also attached to the v0.6.4 release.)
 
 ### 2. Install visualization dependencies
 
