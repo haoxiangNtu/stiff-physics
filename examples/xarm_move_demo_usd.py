@@ -30,7 +30,7 @@ from stiff_physics.urdf2usd import Urdf2Usd
 from stiff_physics.usd_scene_parser import StiffGipcUsdParser
 from pathlib import Path
 
-ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "assets") + "/"
+ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "Assets") + "/"
 
 
 

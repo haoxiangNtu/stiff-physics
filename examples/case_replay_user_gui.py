@@ -36,7 +36,7 @@ import polyscope.imgui as psim
 from stiff_physics.engine import Engine, Config
 from stiff_physics.robot import Robot
 
-ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "assets") + "/"
+ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "Assets") + "/"
 # Bundled sample trajectory in the public repo's trajectories/ directory.
 # 477 frames at dt=0.020s recorded for the case_26 arm + cloth scene
 # (8 columns: 7 arm-joint targets in radians + 1 gripper command).

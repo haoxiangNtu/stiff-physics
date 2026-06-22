@@ -19,7 +19,7 @@ from stiff_physics.engine import Engine, Config
 from stiff_physics.robot import Robot
 from pathlib import Path
 
-ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "assets") + "/"
+ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "Assets") + "/"
 
 
 

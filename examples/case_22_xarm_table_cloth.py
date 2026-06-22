@@ -18,7 +18,7 @@ from stiff_physics.robot import Robot
 from stiff_physics.trajectory import Trajectory
 from pathlib import Path
 
-ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "assets") + "/"
+ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "Assets") + "/"
 
 
 

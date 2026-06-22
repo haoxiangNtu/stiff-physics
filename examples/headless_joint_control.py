@@ -17,7 +17,7 @@ from scipy.spatial.transform import Rotation
 from stiff_physics.engine import Engine, Config
 from stiff_physics.robot import Robot
 
-ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "assets") + "/"
+ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "Assets") + "/"
 
 
 def main():

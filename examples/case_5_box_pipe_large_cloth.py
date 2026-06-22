@@ -17,7 +17,7 @@ import polyscope.imgui as psim
 from stiff_physics.engine import Engine, Config
 from pathlib import Path
 
-ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "assets") + "/"
+ASSETS_DIR = str(Path(__file__).resolve().parent.parent / "Assets") + "/"
 
 
 

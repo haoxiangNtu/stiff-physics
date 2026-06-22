@@ -125,7 +125,7 @@ faces = engine.get_surface_faces()
 
 ## Examples
 
-All examples auto-locate the bundled `assets/` directory. Most require `polyscope` and `scipy` for visualization.
+All examples auto-locate the bundled `Assets/` directory. Most require `polyscope` and `scipy` for visualization.
 
 | Script | Description | Extra deps |
 |---|---|---|
@@ -276,7 +276,7 @@ fast-moving rigid scenes, or stiffer cloth may behave differently.
 stiff-physics/
   README.md
   examples/                                 # 22 example scripts
-  assets/
+  Assets/
     sim_data/urdf/xarm/                     # XArm6/7 robot URDFs + meshes
     sim_data/urdf/franka_panda/             # Franka Panda URDF + meshes
     sim_data/urdf/test_robot/               # Minimal test URDF
