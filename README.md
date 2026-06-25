@@ -41,7 +41,7 @@ pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.7.
 > **Two release tracks.** `v0.7.x` is the latest (performance) line shown above.
 > `v0.6.x` is the conservative line **recommended for RL data collection / long
 > replays** (it omits the v0.7.0 perf rewrite — see CHANGELOG). The newest
-> conservative build is **v0.6.5**, which adds the **multi-env backport**
+> conservative build is **v0.6.6**, which adds the **multi-env backport**
 > (per-env group/collision isolation + per-env line-search S1–S4 + dynamic
 > triplet buffer ≈3× smaller per-env memory) and the **UMI finray soft-gripper
 > suite** (beaker / cupshirt / foldshirt × pos / stitch / force × single /
@@ -51,7 +51,7 @@ pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.7.
 > basis axes, matching libuipc):
 >
 > ```bash
-> pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.6.5/stiff_physics-0.6.5-cp311-cp311-linux_x86_64.whl
+> pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.6.6/stiff_physics-0.6.6-cp311-cp311-linux_x86_64.whl
 > ```
 >
 > (Example deps: `numpy scipy h5py trimesh polyscope`.)
