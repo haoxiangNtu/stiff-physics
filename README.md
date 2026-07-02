@@ -41,17 +41,21 @@ pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.7.
 > **Two release tracks.** `v0.7.x` is the latest (performance) line shown above.
 > `v0.6.x` is the conservative line **recommended for RL data collection / long
 > replays** (it omits the v0.7.0 perf rewrite — see CHANGELOG). The newest
-> conservative build is **v0.6.6**, which adds the **multi-env backport**
-> (per-env group/collision isolation + per-env line-search S1–S4 + dynamic
-> triplet buffer ≈3× smaller per-env memory) and the **UMI finray soft-gripper
-> suite** (beaker / cupshirt / foldshirt × pos / stitch / force × single /
-> multi-env / UI), with a soft-K impedance + contact-stop **pinch** force mode
-> (force control through position drive; batched contact-force readback ≈2.1×
-> faster multi-env) and a fixed-joint correctness fix (penalize all 3 affine
-> basis axes, matching libuipc):
+> conservative build is **v0.6.7**, which makes multi-env RL first-class:
+> **env-count-independent Newton convergence** (`absolute_dhat` fixed contact
+> thickness + effective-bbox threshold — N envs converge like 1 env),
+> **per-vertex environment isolation** (`Engine.set_vertex_env_ids`: uniform
+> FEM+ABD cross-env contact exclusion without spatial separation),
+> **engine-native joint limits** (one-sided mass-scaled penalty spring, not a
+> barrier), a **ground d=0 guard fix** (grounded vertices no longer freeze;
+> strict non-penetration preserved), per-env FEM teleport-reset correctness,
+> and the Newton/IsaacLab integration API from v0.6.6. Wheels for **cp311 and
+> cp312**:
 >
 > ```bash
-> pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.6.6/stiff_physics-0.6.6-cp311-cp311-linux_x86_64.whl
+> pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.6.7/stiff_physics-0.6.7-cp311-cp311-linux_x86_64.whl
+> # Python 3.12:
+> # pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.6.7/stiff_physics-0.6.7-cp312-cp312-linux_x86_64.whl
 > ```
 >
 > (Example deps: `numpy scipy h5py trimesh polyscope`.)
