@@ -58,7 +58,9 @@ pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.7.
 > # pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.6.7/stiff_physics-0.6.7-cp312-cp312-linux_x86_64.whl
 > ```
 >
-> (Example deps: `numpy scipy h5py trimesh polyscope`.)
+> (Example deps: `numpy scipy h5py trimesh polyscope`.) Multi-env usage
+> (fixed `absolute_dhat`, per-vertex env isolation, native joint limits,
+> per-env resets): **[docs/MULTI_ENV_GUIDE.md](docs/MULTI_ENV_GUIDE.md)**.
 
 ### 2. Install visualization dependencies
 
