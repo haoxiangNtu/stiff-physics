@@ -1,0 +1,944 @@
+{
+ "timeline_user": [
+  [
+   0.0,
+   {
+    "arm_r1_joint": 0.0,
+    "arm_r2_joint": 0.0,
+    "arm_r3_joint": 0.0,
+    "arm_r4_joint": 0.0,
+    "arm_r5_joint": 0.0,
+    "arm_r6_joint": 0.0,
+    "arm_r7_joint": 0.0,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   2.0,
+   {
+    "arm_r1_joint": 0.0,
+    "arm_r2_joint": 0.0,
+    "arm_r3_joint": 0.0,
+    "arm_r4_joint": 0.0,
+    "arm_r5_joint": 0.0,
+    "arm_r6_joint": 0.0,
+    "arm_r7_joint": 0.0,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   5.34,
+   {
+    "arm_r1_joint": 0.47745344458459893,
+    "arm_r2_joint": 0.2859248456225255,
+    "arm_r3_joint": -0.6702598483999405,
+    "arm_r4_joint": -1.500759816383595,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   8.2,
+   {
+    "arm_r1_joint": -0.8078359685907429,
+    "arm_r2_joint": 0.32992044674682963,
+    "arm_r3_joint": -0.11344919536961653,
+    "arm_r4_joint": -0.8945078358613723,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   9.4,
+   {
+    "arm_r1_joint": -0.7926401931224404,
+    "arm_r2_joint": -0.009228383331474667,
+    "arm_r3_joint": 0.004272463201861907,
+    "arm_r4_joint": -1.2484047716744842,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.0,
+    "throot_r": -1.1690000295639038,
+    "thcurl_r": -1.1690000295639038,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   10.93,
+   {
+    "arm_r1_joint": -0.6845252968571607,
+    "arm_r2_joint": 0.1142679048945243,
+    "arm_r3_joint": 0.3156798748427504,
+    "arm_r4_joint": -0.560763673818552,
+    "arm_r5_joint": 0.44012645764352987,
+    "arm_r6_joint": -0.10659355849523451,
+    "arm_r7_joint": 0.1540440415944661,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.0,
+    "throot_r": -1.1690000295639038,
+    "thcurl_r": -1.1690000295639038,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   11.53,
+   {
+    "arm_r1_joint": -0.6845252968571607,
+    "arm_r2_joint": 0.1142679048945243,
+    "arm_r3_joint": 0.3156798748427504,
+    "arm_r4_joint": -0.560763673818552,
+    "arm_r5_joint": 0.44012645764352987,
+    "arm_r6_joint": -0.10659355849523451,
+    "arm_r7_joint": 0.1540440415944661,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.0,
+    "throot_r": -1.1690000295639038,
+    "thcurl_r": -1.1690000295639038,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   12.93,
+   {
+    "arm_r1_joint": -0.6687992874615951,
+    "arm_r2_joint": 0.08361180707684827,
+    "arm_r3_joint": 0.3733437433428031,
+    "arm_r4_joint": -0.6271313229405233,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.1589999943971634,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   13.73,
+   {
+    "arm_r1_joint": -0.6687992874615951,
+    "arm_r2_joint": 0.08361180707684827,
+    "arm_r3_joint": 0.3733437433428031,
+    "arm_r4_joint": -0.6271313229405233,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.1589999943971634,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   15.33,
+   {
+    "arm_r1_joint": -0.18459531072930466,
+    "arm_r2_joint": -0.07222681170793396,
+    "arm_r3_joint": 0.04577704313712497,
+    "arm_r4_joint": -1.2314005712583331,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.4,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   17.13,
+   {
+    "arm_r1_joint": 0.02605611862755005,
+    "arm_r2_joint": -0.05929748871024688,
+    "arm_r3_joint": 0.054763634296859966,
+    "arm_r4_joint": -1.4519827911767158,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.4,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   18.73,
+   {
+    "arm_r1_joint": 0.02605611862755005,
+    "arm_r2_joint": -0.05929748871024688,
+    "arm_r3_joint": 0.054763634296859966,
+    "arm_r4_joint": -1.4519827911767158,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.4,
+    "throot_r": -0.5,
+    "thcurl_r": 0.3,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   20.93,
+   {
+    "arm_r1_joint": 0.02605611862755005,
+    "arm_r2_joint": -0.05929748871024688,
+    "arm_r3_joint": 0.054763634296859966,
+    "arm_r4_joint": -1.4519827911767158,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.15,
+    "throot_r": -0.5,
+    "thcurl_r": 0.3,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   22.33,
+   {
+    "arm_r1_joint": 0.02605611862755005,
+    "arm_r2_joint": -0.05929748871024688,
+    "arm_r3_joint": 0.054763634296859966,
+    "arm_r4_joint": -1.4519827911767158,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": -0.05,
+    "throot_r": -0.5,
+    "thcurl_r": 0.3,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   23.33,
+   {
+    "arm_r1_joint": 0.2181836991375795,
+    "arm_r2_joint": -0.046704165848950534,
+    "arm_r3_joint": 0.06279642462083897,
+    "arm_r4_joint": -1.57,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": -0.05,
+    "throot_r": -0.5,
+    "thcurl_r": 0.3,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   24.53,
+   {
+    "arm_r1_joint": 0.37435518029642023,
+    "arm_r2_joint": -0.04546274647331042,
+    "arm_r3_joint": 0.06021378571869242,
+    "arm_r4_joint": -1.57,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": -0.05,
+    "throot_r": -0.5,
+    "thcurl_r": 0.3,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   26.61,
+   {
+    "arm_r1_joint": -0.5617707653298749,
+    "arm_r2_joint": 0.4523413303256701,
+    "arm_r3_joint": -0.2044577444206411,
+    "arm_r4_joint": -1.084619225451465,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0,
+    "throot_r": -1.2,
+    "thcurl_r": -0.8,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   28.61,
+   {
+    "arm_r1_joint": -0.8078359685907429,
+    "arm_r2_joint": 0.32992044674682963,
+    "arm_r3_joint": -0.11344919536961653,
+    "arm_r4_joint": -0.8945078358613723,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0,
+    "throot_r": -1.2,
+    "thcurl_r": -0.8,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   31.47,
+   {
+    "arm_r1_joint": 0.47745344458459893,
+    "arm_r2_joint": 0.2859248456225255,
+    "arm_r3_joint": -0.6702598483999405,
+    "arm_r4_joint": -1.500759816383595,
+    "arm_r5_joint": 0.8434987127146585,
+    "arm_r6_joint": 0.03146385429190729,
+    "arm_r7_joint": 0.20550276738607093,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0,
+    "throot_r": -1.2,
+    "thcurl_r": -0.8,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   34.81,
+   {
+    "arm_r1_joint": 0.0,
+    "arm_r2_joint": 0.0,
+    "arm_r3_joint": 0.0,
+    "arm_r4_joint": 0.0,
+    "arm_r5_joint": 0.0,
+    "arm_r6_joint": 0.0,
+    "arm_r7_joint": 0.0,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0,
+    "throot_r": -1.2,
+    "thcurl_r": -0.8,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   37.83,
+   {
+    "arm_r1_joint": 0.08726646259971647,
+    "arm_r2_joint": 0.6964387292927684,
+    "arm_r3_joint": 1.357290169571026,
+    "arm_r4_joint": -0.5947732870482934,
+    "arm_r5_joint": 0.07625343428726296,
+    "arm_r6_joint": -0.2389181235691907,
+    "arm_r7_joint": 0.010175269614028346,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   39.63,
+   {
+    "arm_r1_joint": -0.3151890098839721,
+    "arm_r2_joint": 0.6964387292927684,
+    "arm_r3_joint": 1.357290169571026,
+    "arm_r4_joint": -0.5947732870482934,
+    "arm_r5_joint": 0.07625343428726296,
+    "arm_r6_joint": -0.2389181235691907,
+    "arm_r7_joint": 0.010175269614028346,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   40.83,
+   {
+    "arm_r1_joint": -0.39652135036374675,
+    "arm_r2_joint": 0.6964387292927684,
+    "arm_r3_joint": 1.357290169571026,
+    "arm_r4_joint": -0.5947732870482934,
+    "arm_r5_joint": 0.07625343428726296,
+    "arm_r6_joint": -0.2389181235691907,
+    "arm_r7_joint": 0.010175269614028346,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   42.03,
+   {
+    "arm_r1_joint": -0.4880464072835817,
+    "arm_r2_joint": 0.6964387292927684,
+    "arm_r3_joint": 1.357290169571026,
+    "arm_r4_joint": -0.5947732870482934,
+    "arm_r5_joint": 0.07625343428726296,
+    "arm_r6_joint": -0.2389181235691907,
+    "arm_r7_joint": 0.010175269614028346,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   43.23,
+   {
+    "arm_r1_joint": -0.5795540537877902,
+    "arm_r2_joint": 0.6964387292927684,
+    "arm_r3_joint": 1.357290169571026,
+    "arm_r4_joint": -0.5947732870482934,
+    "arm_r5_joint": 0.07625343428726296,
+    "arm_r6_joint": -0.2389181235691907,
+    "arm_r7_joint": 0.010175269614028346,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   44.63,
+   {
+    "arm_r1_joint": -0.7422187347473396,
+    "arm_r2_joint": 0.6964387292927684,
+    "arm_r3_joint": 1.357290169571026,
+    "arm_r4_joint": -0.5947732870482934,
+    "arm_r5_joint": 0.07625343428726296,
+    "arm_r6_joint": -0.2389181235691907,
+    "arm_r7_joint": 0.010175269614028346,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   45.63,
+   {
+    "arm_r1_joint": -0.7422187347473396,
+    "arm_r2_joint": 0.6964387292927684,
+    "arm_r3_joint": 1.357290169571026,
+    "arm_r4_joint": -0.5947732870482934,
+    "arm_r5_joint": 0.07625343428726296,
+    "arm_r6_joint": -0.2389181235691907,
+    "arm_r7_joint": 0.010175269614028346,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   47.43,
+   {
+    "arm_r1_joint": -0.39652135036374675,
+    "arm_r2_joint": 0.6964387292927684,
+    "arm_r3_joint": 1.357290169571026,
+    "arm_r4_joint": -0.5947732870482934,
+    "arm_r5_joint": 0.07625343428726296,
+    "arm_r6_joint": -0.2389181235691907,
+    "arm_r7_joint": 0.010175269614028346,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   49.23,
+   {
+    "arm_r1_joint": 0.08726646259971647,
+    "arm_r2_joint": 0.6964387292927684,
+    "arm_r3_joint": 1.357290169571026,
+    "arm_r4_joint": -0.5947732870482934,
+    "arm_r5_joint": 0.07625343428726296,
+    "arm_r6_joint": -0.2389181235691907,
+    "arm_r7_joint": 0.010175269614028346,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0.0,
+    "throot_r": -1.2000000476837158,
+    "thcurl_r": -0.800000011920929,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   52.25,
+   {
+    "arm_r1_joint": 0.0,
+    "arm_r2_joint": 0.0,
+    "arm_r3_joint": 0.0,
+    "arm_r4_joint": 0.0,
+    "arm_r5_joint": 0.0,
+    "arm_r6_joint": 0.0,
+    "arm_r7_joint": 0.0,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0,
+    "throot_r": -1.2,
+    "thcurl_r": -0.8,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ],
+  [
+   53.05,
+   {
+    "arm_r1_joint": 0.0,
+    "arm_r2_joint": 0.0,
+    "arm_r3_joint": 0.0,
+    "arm_r4_joint": 0.0,
+    "arm_r5_joint": 0.0,
+    "arm_r6_joint": 0.0,
+    "arm_r7_joint": 0.0,
+    "arm_l1_joint": 0.0,
+    "arm_l2_joint": 0.0,
+    "arm_l3_joint": 0.0,
+    "arm_l4_joint": 0.0,
+    "arm_l5_joint": 0.0,
+    "arm_l6_joint": 0.0,
+    "arm_l7_joint": 0.0
+   },
+   {
+    "grasp_r": 0,
+    "throot_r": -1.2,
+    "thcurl_r": -0.8,
+    "index_l": 0.0,
+    "fist_l": 0.0,
+    "throot_l": -1.2,
+    "thcurl_l": -0.8
+   }
+  ]
+ ],
+ "meta": {
+  "dt": 0.01,
+  "open_center": [
+   2.7249834202858736,
+   -0.24306167226344227,
+   1.05
+  ],
+  "cab_top": 0.95,
+  "drawer_half": 0.12,
+  "checks": [
+   [
+    15.73,
+    "M1_grasp_lift"
+   ],
+   [
+    25.73,
+    "M3_doll_in_drawer"
+   ],
+   [
+    46.230000000000004,
+    "M4_drawer_closed"
+   ],
+   [
+    52.949999999999996,
+    "M5_home"
+   ]
+  ],
+  "check_spec": [
+   [
+    "M1_grasp_lift",
+    8,
+    2.0
+   ],
+   [
+    "M3_doll_in_drawer",
+    15,
+    1.2
+   ],
+   [
+    "M4_drawer_closed",
+    26,
+    0.6
+   ],
+   [
+    "M5_home",
+    -1,
+    -0.1
+   ]
+  ],
+  "servo": {
+   "t": 9.55,
+   "rows": [
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "hover_row": 5,
+   "palm_xy": [
+    2.8361712825116228,
+    -0.1962635427753341
+   ]
+  },
+  "user_push": {
+   "keeper_off_row": 20,
+   "detent_thr": -0.155
+  }
+ }
+}
