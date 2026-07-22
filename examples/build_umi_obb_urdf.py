@@ -27,9 +27,16 @@ import numpy as np
 import trimesh
 
 
-URDF_DIR = Path(
-    "/home/ps/Downloads/assets/sim_data/urdf/ridgeback_dual_panda_UMI"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+ASSETS_DIR = next(
+    (
+        REPO_ROOT / name
+        for name in ("Assets", "assets")
+        if (REPO_ROOT / name).is_dir()
+    ),
+    REPO_ROOT / "Assets",
 )
+URDF_DIR = ASSETS_DIR / "sim_data/urdf/ridgeback_dual_panda_UMI"
 URDF_PATH = URDF_DIR / "ridgeback_dual_panda2.urdf"
 # OBB_OUT lets the caller pick the output filename (so we can emit both the
 # correct variant and a deliberately-broken hand-OBB variant for comparison).
