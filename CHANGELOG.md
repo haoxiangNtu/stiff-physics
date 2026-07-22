@@ -4,6 +4,503 @@ All notable changes to **stiff-physics** are documented here. This project
 follows the spirit of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/).
 
+## [0.8.4.2] — 2026-07-22
+
+Versioning note: this train uses a 4th "hotfix/consolidation" digit on top of
+SemVer's three (0.MINOR.PATCH.HOTFIX); 0.8.4.2 consolidates the M1 quick-win
+plan onto the 0.8.4 line. Scope is larger than a narrow hotfix — it adds
+public API surface and changes two defaults — the highlights below are the
+migration-relevant items.
+
+### ⚠ Behavior changes
+- **URDF primitive collision (box/sphere/cylinder) now COLLIDES.** Previously
+  such links were silently skipped (no collision body at all — e.g. the
+  ridgeback base wheels). The importer now generates conservative,
+  circumscribed proxy meshes (box exact; icosphere subdiv-2, faces pushed to
+  >= r, ~2.4% inflation; 24-seg circumscribed cylinder, ~0.9%), merges all
+  collision elements of a link into one body (per-element origins baked), and
+  loads them through the normal mesh path. A scene that relied on primitive
+  links being non-colliding (e.g. wheels resting through the ground plane)
+  will now throw at finalize(). Escape hatch: `STIFF_URDF_PRIM_PROXY=0`
+  (exact literal `0`) disables proxy generation and restores the old skip for
+  primitive-only links. Mixed [primitive, mesh] links now use the first MESH
+  element in BOTH modes (<=0.8.4 dropped the whole link's collision when the
+  first element was a primitive).
+- **MAS preconditioner numerics moved (within pcg_tol).** The batch-
+  determinism fix below changes floating-point summation paths for every
+  scene using the default `preconditioner_type=1`; solutions move ~1e-9-level
+  relative to 0.8.4.1. Bit-exact comparisons against pre-0.8.4.2 goldens will
+  differ; physics is equivalent.
+
+### Fixed
+- **MAS batch-invariance (strict determinism contract).** The same env
+  produced ~1e-9-different results in an N=2 vs an N=8 batch. Three root
+  causes, all fixed: (1) hierarchy depth was computed from the GLOBAL node
+  count, so the level count itself changed with batch size — now derived from
+  the per-env node count when env segmentation is active; (2) the multilevel-
+  residual fast path issued `__shfl_down_sync` reads from padding lanes
+  OUTSIDE its `__activemask()` — CUDA-undefined register garbage (~1e-21)
+  that varied with launch shape — strict mode now uses the deterministic
+  ascending-lane reduction; non-strict keeps a CORRECTED tree (no early
+  return, all 32 lanes participate, padding contributes exact zeros, static
+  bank-segment geometry replaces the former `mark << 32` shift UB); (3) the coarse-matrix fast path
+  pre-summed segment blocks with plain double adds (layout-dependent
+  rounding) and ran its warp collectives divergently under a full mask (UB
+  on partially filled banks, present since <=v0.7) — replaced by exact
+  order-independent binned deposits on the strict path and a corrected
+  all-lanes tree on the non-strict fast path. examples/test_strict_quadgate.py
+  now asserts run-to-run, cross-env AND batch-size bit-identity under the
+  DEFAULT MAS preconditioner (plus a diagonal-PC cross-check gate).
+- **MAS cluster-space arrays could overflow on small multi-env scenes**: the
+  per-env padding can push a level's cluster count above vertNum; the scratch
+  arrays (nextConnectMask/nextPrefix/goingNext) are now sized for the padded
+  capacity and fully zeroed (found by compute-sanitizer memcheck; 0 errors
+  after the fix, synccheck also clean).
+- **Heterogeneous multi-env guard**: MAS env segmentation now verifies the
+  FEM vertices are env-major contiguous with equal per-env counts before
+  engaging (total divisibility alone was not sufficient); otherwise it falls
+  back to the global hierarchy with a printed notice.
+- **Unbounded intersection backtracking** (line-search type 0/1, boundary
+  move): the three `while(isIntersected())` loops now share the line-search
+  budget (`line_search_max_iter`, default 64) and throw a diagnosed
+  initial-infeasibility error instead of halving alpha forever when the step
+  already started intersecting.
+- **von Mises export now shares the solver's constitutive model** (USE_SNK1:
+  P = mu*F + r*(J-1-mu/r)*cofF): exported stress matches what the solver
+  actually computes; degenerate elements (J~0) export NaN instead of a
+  silent 0 that polluted statistics.
+- **semi-implicit beta timing** (`semi_implicit_enabled=True` only; default
+  stays off): the per-env beta decay now reads the PREVIOUS iteration's
+  ACCEPTED line-search alpha (not the current iteration's unvalidated CCD
+  candidate), and freeze flags take effect the NEXT iteration.
+
+### Added
+- **`get_vertex_contact_forces(components=...)`**: `"normal"` (barrier),
+  `"friction_lagged"` (the frozen lastH friction force the solver actually
+  used this frame; read-only, never rebuilds friction sets), `"total"`.
+  Newtons; additivity normal+friction==total asserted at 0 error.
+- **Joint tuning guide** `docs/JOINT_TUNING_v0.8.4.2_zh.md` (audit items
+  A3/B3): why prismatic needs 20-40x the revolute ratio, symptoms of
+  joint_strength_ratio=100 under load, three verified profiles.
+- **Regression suite**: four-bar closed-loop (coupler-stays-translating
+  assertion), gd_friction_rate direct assertion, strict quad-gate (5 gates),
+  four M0 sentinels (D2 press / D7 ghost-drag / D10 dhat=5mm / A1 Z-up)
+  promoted to exit-code regressions, URDF primitive containment + escape-
+  hatch checks.
+- **A1 (Z-up 10x slowdown) closed permanently**: strictly-equivalent rotated
+  scenes (minimal + real fr3 URDF grasp contact) show a 1.000x iteration
+  ratio (121 vs 121); the historical claim was a non-equivalent A/B
+  measurement artifact. Sentinel guards against future axis bias.
+
+### Fixed (continued)
+- **MAS reorder kernels: intra-warp shared-memory races closed.** The six
+  reorder kernels relied on pre-Volta warp lockstep for their shared-memory
+  handshakes (zero -> vote -> publish -> cross-lane read with no
+  synchronization; <=v0.7 legacy). All are now no-early-return with explicit
+  `__syncwarp()` phase barriers. compute-sanitizer: racecheck 40 hazards ->
+  **0**, memcheck/synccheck 0 errors (strict + non-strict, N=2/N=3 odd-bank,
+  and a 19k-vertex 5-level hierarchy).
+- **MAS env-segmentation hardening**: bank-range homogeneity guard (every
+  METIS bank single-env, contiguous equal ranges — equal vertex counts alone
+  are not sufficient); `STIFF_MAS_SEG` forced values that contradict the
+  verified env count are ignored with a notice; 4096-env scratch cap
+  enforced; env scratch freed in FreeMAS.
+
+## [0.8.4.1] — 2026-07-22
+
+Post-release audit hotfixes (two-agent problem audit, 4 review rounds).
+
+### Fixed
+- **`get_vertex_contact_forces` sign**: the export scaled the incremental-
+  potential gradient by +1/dt^2; physical force is **-gradient/dt^2**, so every
+  vector pointed the wrong way. Regression now asserts the SIGNED net vertical
+  force on a resting cube is +mg (verified +627.2 N == weight). NOTE: behavior
+  change for consumers of the v0.8.4 wheel.
+- **Legacy force-API documentation told the wrong units** at seven sites
+  across Python/pybind/C++ (claimed Newtons / "REAL grip force"): all now
+  state the truth — raw dE/dx = -force*dt^2, body-body barrier only, no
+  ground, no friction — and point at `get_vertex_contact_forces`.
+- **merged DCD grow did not grow the CCD mirror**: the DCD detect kernels
+  mirror every pair into `_ccd_collisonPairs` at the same slot; a dynamically
+  grown DCD cap beyond the CCD cap made mirror writes (and the narrow-self
+  snapshot) run out of bounds. Caps now grow in lockstep (per-env already did).
+- **grow-redo stream races**: both merged re-detection passes (DCD and swept
+  CCD) reset the pair counter on the default stream without an event/wait
+  before the aux-stream detect — a race under `--default-stream=per-thread`.
+  Mirrored the first-pass event/wait in both redo paths.
+- `set_vertex_velocities_gpu` docstring now warns it does not rebuild xTilta
+  (use `teleport_fem_vertices` for kinematic state changes).
+
+### Audit
+- Full problem-status matrix vs the requirement lists (what is fixed / partial
+  / open, with per-item evidence): see the release audit document.
+
+## [0.8.4] — 2026-07-22
+
+Stability, contact-solver consistency, and public API hardening release.
+
+### Added
+- Passive revolute and prismatic joints through `passive=True`, plus active
+  revolute-limit energy, gradient, Hessian, and device-side limit data.
+- Per-soft-body density, per-body friction, and explicit ABD mass/inertia
+  overrides through `set_abd_body_mass` and `set_abd_body_inertia`.
+- Per-vertex contact forces in Newtons, FEM von Mises stress, per-environment
+  Newton iteration/status telemetry, timeout freezing, and NaN/Inf quarantine.
+- `Config` controls for per-environment exit, environment iteration caps,
+  friction descent rate, collision buffer scaling, line-search budget, and
+  optional absolute/relative energy comparison tolerances.
+- Regression examples for passive joints, reversed parent/child body order,
+  density, friction, contact force/stress, d-floor handling, and telemetry.
+
+### Changed
+- CCD step selection now carries direct `alpha` candidates and performs `MIN`
+  reductions in merged, isolated, and strict modes. Reciprocal-alpha recovery
+  and its divide-by-zero guard are removed; non-finite or non-positive active
+  distances now fail loudly instead of becoming an unconstrained candidate.
+- Isolated/strict contact stiffness uses the actual 12-dimensional ABD
+  generalized degrees of freedom rather than counting collision vertices as
+  independent 3D degrees of freedom.
+- Segmented execution separates the fixed 256-slot capacity from the active
+  group count, so a single active environment no longer processes 255 empty
+  slots while retaining the isolated numerical path.
+- Merged and isolated line searches share the same energy rule. The default is
+  the exact comparison (`energy_abs_tol=energy_rel_tol=0`); configured
+  tolerances use `abs_tol + rel_tol*abs(E0)` and are reported by a counter.
+- The merged line-search budget is configurable and defaults to 64 halvings;
+  budget exhaustion is always reported.
+- Semi-implicit decoupled execution maintains and freezes per-environment beta
+  values instead of re-coupling the batch through one global exit state.
+
+### Fixed
+- ABD contact Hessian assembly now writes `A + A^T` when two contact vertices
+  map to the same rigid body, and uses a canonical transpose when body IDs are
+  reversed. This fixes the hidden same-body folded-block asymmetry.
+- Programmatic joint Hessian assembly no longer assumes
+  `parent_id < child_id`; reversed IDs are canonicalized, validated, and
+  surfaced to users instead of silently producing zero cross-body blocks.
+- Partial-block CUDA reductions now keep all participating threads at barriers
+  and use valid shuffle masks, removing undefined behavior in direct alpha,
+  segmented PCG, and related reductions.
+- Merged Newton convergence checks use the direction produced by the current
+  PCG solve instead of a stale previous-iteration direction.
+- Newton convergence is evaluated from the current unscaled solve direction,
+  never from the displacement after CCD or line-search scaling. A contact-
+  limited small `alpha` therefore cannot masquerade as convergence and make
+  cloth motion under-resolved after impact.
+- Per-group contact energy, stiffness, alpha, and frozen-environment handling
+  now consistently use the owning environment's parameters.
+- `teleport_fem_vertices` now applies the input-to-engine METIS permutation to
+  positions and velocities; sorted cloth meshes no longer scramble on a
+  get/teleport round trip.
+- ABD preconditioner accumulation, ground-contact Hessian PSD projection,
+  surface-mesh inertia validation, semi-implicit exit scoping, and persistent
+  ground-distance invariant handling were hardened. Closed surface
+  meshes with globally reversed winding now normalize all signed mass moments
+  together instead of being rejected as negative mass.
+- Ground distance validation now rejects non-finite or non-positive distances
+  immediately while preserving every finite positive distance as feasible.
+- Ground CCD now follows libuipc's relative fraction-to-boundary semantics:
+  direct `0.9*d/c` alpha candidates reduced by `MIN`, with no absolute distance
+  floor. After trial coordinates are written, merged and per-environment line
+  searches verify strict positive distance and backtrack any alpha whose
+  floating-point update lands on the barrier boundary. Accepted-displacement
+  convergence covers CCD-, CFL-, and energy-limited steps.
+- Zero-contact Hessian partitioning now returns without launching radix-sort or
+  zero-length CUDA copies, and contact partitioning now reserves its exact
+  out-of-place `[n,2n)` reorder range before use. Contact-free and large-contact
+  ABD scenes therefore avoid invalid CUDA copies and scratch overflows.
+- URDF import now warns about unsupported primitive collision geometry instead
+  of silently skipping it.
+
+### Fixed (post-candidate, final release)
+- **strict cross-env bit-identity restored: DCD-time CCD snapshot.**
+  `_ccd_collisonPairs` has two producers — the DCD detect kernels write a
+  mirror copy of every DCD pair at the same atomic slot, and the swept-CCD
+  build overwrites the whole buffer every Newton iteration. The S1 narrow-self
+  feasibility sweep was designed to read "the first h_cpNum[0] entries = the
+  DCD mirror" but actually swept a race-ordered, env-unbalanced prefix of the
+  PREVIOUS swept emission. Measured consequences: strict cross-env broken
+  (two bit-identical envs forked ~1e-2 by frame 200 via an asymmetric
+  narrow-self alpha), strict N=8 run-to-run unstable (concurrent-emission
+  race), and a self-sustaining hs -> ta_e feedback loop. The latent defect
+  predates v0.8.3, which passed its gates on emission-timing luck. buildCP now
+  snapshots the mirror into a dedicated immutable buffer consumed in full by
+  both narrow-self paths. Release gates after the fix: run-to-run N=2 and N=8,
+  cross-env, and batch-invariance ALL BIT-IDENTICAL (N=8 run-to-run stable for
+  the first time). Per-env direct-alpha scratch is also neutrally initialized
+  (independent defect: the first swept build read cudaMalloc garbage).
+- **One-sided revolute limits: lagged active-set.** The limit term re-tested
+  theta every Newton iteration, so at an active bound the active set CHATTERED
+  (inactive-side Hessian has no limit curvature -> huge free-fall direction ->
+  line search cuts alpha to ~1e-7 -> next iterate lands active and is pushed
+  back out). Every frame after first bound contact ran to the 1000-iteration
+  cap (~19 s/frame). The activation flag is now frozen once per frame from the
+  previous converged angle and released by the multiplier-sign test (a
+  one-sided limit may push, never pull). Limited hinge: cap-outs -> 1
+  iteration/frame, momentum overshoot then exact settle at the bound. Known
+  trade-offs: bound contact engages one frame late (overshoot ~ v*dt) and an
+  engaged frame is two-sided until release.
+
+### Validation (final build: alpha-exit removal + lagged limits included)
+- ModelScope plate teleop replay (228 frames, the only teleop-format
+  trajectory) completed in every mode with no CCD guard, line-search warning,
+  NaN, or cap-out. Peak Newton iterations: 25 (merged), 36 (isolated),
+  45 (strict); slowest frame 1.34 s (strict). Merged peak is run-to-run
+  variable by design (atomic reductions); strict is reproducible.
+- ModelScope plate collect task (config_plate_new): grasp completed at frame
+  82 in all three modes; peak Newton 3-4, physical frames < 0.1 s.
+- ModelScope beaker task (config_beaker_soft_new): completed 93 frames in
+  1.1 s worst-frame, peak Newton 11 — the historical 13-19 s/frame stall
+  (frames 80-92) is gone. The pre-July-18 config_beaker_soft no longer loads
+  under the current env stack (robot joint renames), unrelated to the engine.
+- Passive-limit (free + limited), reversed joint-order, density, friction,
+  force/stress, kick/ABD-preconditioner, per-environment telemetry, and
+  ground-domain regressions pass on the final build.
+- Historical solver baseline for the same plate replay: 0.8.2 peaked at 621
+  Newton iterations (16.7 s single frame) at the grasp; the final build peaks
+  at 76 or lower depending on mode.
+
+### Known limitations
+- Merged, isolated, and strict modes share physical parameters and acceptance
+  rules, but do not promise identical trajectories: segmented reductions,
+  per-environment line search, and nonlinear contact active-set changes can
+  legitimately select different floating-point paths.
+- Line-search exhaustion remains a loud warning followed by acceptance of the
+  final candidate for compatibility; production callers should treat it as a
+  solver-health failure and adjust time step, drive stiffness, or the budget.
+- Friction anchors remain lagged within a Newton solve. A 0.01 s time step is
+  the supported mitigation until the close-set/kappa pipeline is rebuilt per
+  Newton iteration.
+
+## [0.8.3] — 2026-07-07
+
+Multi-env MAS preconditioner determinism — resolves the v0.8.2.1 known limitation.
+
+### Fixed
+- **strict + MAS preconditioner (`CASE39_PRECOND=1`) cross-env / batch / run-to-run
+  bit-identity** (the v0.8.2.1 "MAS × multi-env is WIP" limitation). Root cause: the MAS
+  builds ONE global hierarchy over all envs; at coarse aggregation levels the (physically
+  independent) envs' clusters land in the same `BANKSIZE` bank, so the block-diagonal
+  Schwarz smoother's per-bank solve couples envs — violating the block-diagonal multi-env
+  PCG assumption that each env is an independent solve. That made the MAS preconditioner
+  env-asymmetric AND, under strict, pathologically slow (block-diagonal solver vs a
+  coupling preconditioner → poor convergence; the full trajectory did not finish in 60 min
+  at N=8). Fix: **per-env-segmented aggregation** — each env's clusters are padded to a
+  `BANKSIZE`-aligned block at EVERY level, so envs never share a bank and the smoother
+  stays intra-env. All-device (3 small integer kernels, no host round-trip; exact → zero
+  determinism impact). Verified (foldshirt, RTX 4090): strict+MAS env0==env1 (cross-env
+  0.0), env0@N=2==env0@N=8 (batch invariance 0.0), run-to-run identical, for N=2/4/8.
+
+### Changed
+- **per-env MAS is now the default for multi-env** (bodies in >1 group) in every mode
+  when the MAS preconditioner is active. The old global MAS aggregates non-interacting
+  envs into shared coarse banks — meaningless (the system is block-diagonal per env) AND
+  slower. Single-env → no segmentation. `STIFF_MAS_SEG` overrides: `0` = force off
+  (measure the old global MAS), `1` = force on (body-group count), `N` = force N envs.
+  The diagonal preconditioner (`CASE39_PRECOND=0`) is unaffected (it has no hierarchy);
+  strict on the diagonal path was already bit-identical since v0.8.2.1.
+
+### Performance (foldshirt full trajectory ~1618 frames, RTX 4090, ms/frame)
+- **strict N=8: MAS (per-env) 608.9 vs diagonal 711.2 → 14 % faster.** per-env MAS is
+  the only usable MAS at strict scale (global MAS is pathological) and beats the diagonal
+  preconditioner (fewer PCG iterations → less of strict's per-iteration binned work).
+- merged/isolated: the diagonal preconditioner remains fastest (merged N=8 = 432.9);
+  with MAS, per-env is the *correct* hierarchy but a few % slower than the old global MAS
+  in these non-bit-identical fast paths (the extra per-env padding nodes are not offset by
+  convergence gains, as MAS does not pay off there). Use `CASE39_PRECOND=0` for speed.
+
+### Hardening
+- The multilevel-R restrict reduction (partial-cluster warp `else` branch) used a
+  non-deterministic float `atomicAdd`; it is now a deterministic per-cluster ordered sum
+  (own-slot deposit + `__syncwarp` + ascending-lane sum). Defensive — no measured effect,
+  but removes a latent non-deterministic reduction on the strict path.
+
+## [0.8.2.1] — 2026-07-07
+
+Determinism correctness patch.
+
+### Fixed
+- **strict cross-env / batch bit-identity regression** introduced by the v0.8.2
+  seg-dot warp pre-reduction. The per-warp `__shfl` tree pre-sum is a plain
+  (non-binned) float add AND its warp grouping is keyed on the global DOF index
+  (env *k* starts at offset Σⱼ Nⱼ, not 32-aligned), so env0 and env1 summed
+  different lane groups → env0 ≠ env1 by ~7 ULP at Newton k=1, amplified by
+  stiff contact to ~8 mm by frame 0. It preserved run-to-run (fixed layout
+  within a run — all v0.8.2 verified) but broke cross-env AND batch invariance.
+  The pre-reduce is now **positively gated OFF for strict** (`STIFF_SPMV_DET`);
+  merged/isolated keep it. Verified: foldshirt strict (non-MAS diagonal precond)
+  env0==env1 and env0@N=2==env0@N=4 bit-identical (0.0) across all frames.
+
+### Corrected
+- The v0.8.2 changelog's **strict −24% / seg-dot −26%** figure is **retracted**
+  — it timed a determinism-broken strict. Correct strict keeps the per-lane
+  binned seg-dot (~111 µs). Recovering a warp pre-sum for strict deterministically
+  needs per-env DOF padding to 32 (future work).
+
+### Known limitation
+- The **MAS preconditioner** (`CASE39_PRECOND=1`) is separately cross-env
+  asymmetric (its warp-bank clustering is keyed on the global vertex layout);
+  multi-env determinism is only guaranteed on the diagonal preconditioner path.
+  MAS × multi-env is WIP.
+
+## [0.8.2] — 2026-07-04
+
+Memory- and speed-focused release. Foldshirt multi-env N=8 (200 frames,
+RTX 4090, ms/frame): merged 1312.7 → **984.4** (-25 %), strict 2514.4 →
+**1921.8** (-24 %). Red-cloth full-episode max envs on 24 GB: **16 → 30**.
+
+### Added
+- **Block-upper-triangular Hessian storage (SymGH)**: only `row ≤ col` blocks
+  are stored/assembled; the SpMV mirrors the transpose. −37.5 % triplets.
+  Combined with the allocator fixes below: red-cloth max N **16 → 30** (+87 %),
+  plus ~6-14 % speed from the smaller assembly/SpMV stream.
+- **Pre-assembly discard-growth for triplet buffers**: capacity grows via
+  `cudaFree`-then-`cudaMalloc` (no copy, no old+new double-residency) at the
+  point where the exact extent is known; growth margin capped at an absolute
+  512 MB (was multiplicative 2×1.3).
+- **seg-dot warp pre-reduction** (`STIFF_SEG_WARP=0` opts out, `=2` prints a
+  d2g warp-layout audit): per-warp fixed-tree `__shfl_down_sync` pre-sum emits
+  ONE shared-bin deposit per warp instead of 32. The per-env dot kernel drops
+  111.5 µs → 14.2 µs (7.9×); a strict frame drops 26 %. Bit-identity and
+  batch-invariance preserved (fixed lane→DOF map, fixed tree order,
+  N-independent env DOF ranges); env-boundary warps fall back to per-lane.
+- **Targeted `__launch_bounds__` variant for the EE broad-phase**
+  (`STIFF_EE_LB=2`, defaulted for **merged**): 168 → 128 reg/thread doubles
+  resident warps on the latency-bound `_selfQuery_ee` (occupancy 11.8 %,
+  DRAM 0.3 %); spills are only 112 B/thread into an idle L1. Merged −5.6 %.
+  `STIFF_EE_LB=3` (80 reg) exists for experiments but measured **+52 %**
+  (L1 thrash against the 8 KB/thread traversal stack) — do not use.
+- **BVH stack-depth probe gated** (`STIFF_STACK_DIAG`): the per-pop
+  `atomicMax` on a single global address in all four traversal kernels was
+  always-on; it is now diagnostics-only.
+
+### Fixed
+- **Strict-mode run-to-run bit-identity regression** (from the det-gating
+  refactor): the central `g_det_reduce` gate defaulted to the fast path, so
+  `binned_deposit` users firing before the first `computeGradientAndHessian`
+  latch (frame-0 init energy reductions) accumulated in non-deterministic
+  order and seeded divergence at the first line search. Default is now
+  conservative (binned); the latch only relaxes merged/isolated. Verified:
+  rz0 probe 17-digit identical across runs and bit-equal to the pre-det-gate
+  baseline.
+- **Determinism machinery positively gated**: strict opts *in* via
+  `STIFF_SPMV_DET`; merged/isolated never pay the binned/ybin/seg-binned tax
+  and may use CUDA-graph PCG. A stray `STIFF_FAST_GRAD=1` can no longer
+  silently break strict's bit-identity contract (the flag is not read at all).
+
+### Changed
+- **`pcg_tol` default back to `1e-4`** (the 0.8.0/0.8.1 shell silently
+  defaulted to `1e-6`, costing ~22 % at N=1 with no accuracy requirement
+  behind it).
+- The shell no longer sets `STIFF_FAST_GRAD` for merged/isolated (dead flag);
+  merged defaults `STIFF_EE_LB=2`.
+
+## [0.8.1] — 2026-07-04
+
+### Fixed
+- **Per-env machinery vs undeclared groups**: `d_point_to_group` is always
+  allocated (all `-1` wildcard when `set_body_groups` was never called), and
+  pointer-nullness gates half-engaged the multi-env machinery: per-group κ
+  kernels read `kappa_grp[-1]` (out-of-bounds barrier stiffness), the per-env
+  line search validated itself with zero env coverage (Newton pegged at the
+  iteration cap), and the per-env BVH excluded every primitive (**silent loss
+  of all self-collision**). All activation sites now require a real
+  `groups_present` flag; per-group kernels guard `-1` (mixed grouped+wildcard
+  scenes are now correct too). isolated/strict without groups run
+  merged-equivalent and print a one-line warning.
+
+### Changed
+- **Convergence threshold sources** (design: env-scale relative):
+  with declared groups, the merged-mode Newton exit uses the AVERAGE per-env
+  rest bbox and per-env freeze checks use each env's OWN bbox — env-count
+  invariant without reading `absolute_dhat`/`relative_dhat` (the
+  `abs²/rel²` reverse-solve is removed from the exit path; `relative_dhat`
+  is now fully inert for convergence). Ungrouped scenes keep the legacy
+  whole-scene-bbox exit bit-for-bit.
+
+### Added
+- **`newton_velocity_tol`** (m/s, default 0 = off): opt-in uipc-style physical
+  Newton exit (`max step displacement ≤ v·dt`), uniform across
+  merged/isolated/strict; scene-size and env-count independent.
+
+## [0.8.0] — 2026-07-03
+
+> The "multi-env engine" release: v0.6.7 unified with the entire per-env
+> solver campaign. One tree now carries both the IsaacLab/Newton integration
+> APIs (v0.6.5–0.6.7) and the three-tier multi-env execution engine.
+> (0.7.x was an experimental perf series, later audited: its beneficial
+> changes are included here; its unstable ones are not.)
+
+### Added
+- **Multi-env execution modes** — `Config(multienv_mode=...)` or
+  `STIFF_MULTIENV_MODE`, three tiers:
+  - `"merged"` (default): all envs in one solve, fastest. κ/dHat now use the
+    absolute-dhat scale (see *Changed*), so contact physics no longer softens
+    as envs are added.
+  - `"isolated"`: per-env decoupled physics — env-id collision isolation,
+    per-env broad-phase BVH (K-stream concurrent build), per-env κ, per-env
+    line-search α, and a segmented block-diagonal PCG with per-env
+    α/β/convergence. Each env is an independent, physically-correct sim.
+  - `"strict"`: isolated + full determinism machinery (canonical contact
+    ordering, order-independent binned reductions, deterministic SpMV).
+    env_0 is BIT-IDENTICAL run-to-run, across mate content, and across env
+    COUNT (N=2/4/8 verified 0.000 at release).
+- **Per-group world offsets** — `Engine.set_env_offsets` (render/broad-phase
+  separation while narrow-phase stays in local frames; the substrate for
+  strict-mode local-frame layouts).
+- **`Engine.get_point_groups`** — per-vertex env id aligned to
+  `get_vertices()` order (extract any single env's vertices).
+- **Full-state checkpoint** — `Engine.save_checkpoint` / `load_checkpoint`
+  (FEM+ABD+κ state; deterministic mid-trajectory restart).
+- **Per-contact force export** — the exact I5/NEWF barrier-gradient kernel
+  now optionally attributes per-pair forces (`GIPC::exportContacts` hook),
+  wired through the batched contact-force readback APIs.
+
+### Changed
+- **Default `pcg_tol` 1e-4 → 1e-6.** The 1e-4 default was inherited from
+  upstream and never tuned; with correct (absolute-dhat) contact stiffness it
+  explodes Newton counts (measured 1407 vs 507 total Newton over 30 frames on
+  a multi-env grasp; net time strictly worse). Stiff-contact scenes may
+  benefit from 1e-8 (`pcg_tol` arg or `STIFF_PCG_TOL`).
+- **κ scale consistency**: when `absolute_dhat > 0`, suggest/upper-bound κ and
+  the Newton convergence threshold all use the effective (absolute) scale in
+  ALL modes — merged multi-env scenes previously diluted κ through the
+  whole-scene bbox (softer, batch-dependent physics).
+
+### Performance
+- Segmented PCG: CUDA-graph replay of the inner iteration block (K=8),
+  spmv-fused and preconditioner-fused per-env dot products, cub-based Morton
+  sort on preallocated scratch (no per-sort device sync), K-stream parallel
+  per-env BVH pool. Isolated-mode cost per env reduced ~46% over the campaign
+  (942.7 → ~505 ms/env on the N=4 grasp reference).
+- Batched host↔device control-scalar traffic (v0.7-audit ports): contact
+  Hessian partition ids 4→1 D2H, energy reductions 9→1, line-search feasible
+  steps 2→1, cpNum+gpNum 2→1. Friction/close-constraint buffers are now
+  persistent grow-only allocations (no per-frame cudaMalloc/cudaFree device
+  drains); reduction workspaces sized by pair capacity (removes a latent OOB
+  class).
+- Release-gate perf reference (N=4 grasp, 30f): merged 397 ms/env,
+  isolated 475 ms/env, both faster than either parent tree.
+
+### Fixed
+- **Batch-size invariance**: per-env line-search S3 backtrack decisions moved
+  fully on-device — a stale host mirror previously destroyed per-env α state
+  when a backtrack fired, making env_0 depend on the env COUNT.
+- **meanMass batch invariance** (strict): κ's scale is seeded from env_0's
+  intensive per-vertex mean instead of a serial FP sum over all envs.
+- Ground d=0 NaN guard, `set_vertex_boundary` metis-order remap,
+  `teleport_fem_vertices` FEM-block offset, OBJ `f v//vn` parsing (inherited
+  from the 0.6.x line and preserved through the unification).
+- Python module loader: ABI-tagged build dirs resolve before generic
+  `build/` (mixed py3.11/3.12 worktrees no longer load a stale module).
+
+### Known limitations
+- `isolated` mode decouples physics but does not promise bit-identity; use
+  `strict` for reproducibility experiments (~2× the isolated PCG cost).
+- MAS preconditioner (`preconditioner_type=1`) is unvalidated with the
+  multi-env machinery (known Newton-cap regression on one hybrid scene);
+  multi-env modes currently assume `preconditioner_type=0`.
+
 ## [0.6.7] — 2026-07-02
 
 > The "unification" release: v0.6.6 + exactly the changes proven necessary by
