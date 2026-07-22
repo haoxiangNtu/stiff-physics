@@ -61,6 +61,10 @@ pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.8.
 > (Example deps: `numpy scipy h5py trimesh polyscope`.) Multi-env usage
 > (fixed `absolute_dhat`, per-vertex env isolation, native joint limits,
 > per-env resets): **[docs/MULTI_ENV_GUIDE.md](docs/MULTI_ENV_GUIDE.md)**.
+> v0.8.4 feature walkthrough (per-body friction/density, contact-force &
+> von-Mises export, per-env termination/telemetry, passive joints, cloth
+> initial-state recipes, soft-gripper modeling):
+> **[docs/FEATURE_GUIDE_v0.8.4_zh.md](docs/FEATURE_GUIDE_v0.8.4_zh.md)** (中文).
 
 ### 2. Install visualization dependencies
 
