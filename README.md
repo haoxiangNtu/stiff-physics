@@ -17,7 +17,7 @@ Run it yourself:
 ```bash
 git clone https://github.com/haoxiangNtu/stiff-physics.git
 cd stiff-physics
-pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.8.4.2/stiff_physics-0.8.4.2-cp311-cp311-linux_x86_64.whl polyscope scipy h5py
+pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.8.5/stiff_physics-0.8.5-cp311-cp311-linux_x86_64.whl polyscope scipy h5py
 PYTHONPATH=. python examples/case_replay_user_gui.py
 ```
 
@@ -35,7 +35,7 @@ PYTHONPATH=. python examples/case_replay_user_gui.py
 ### 1. Install the engine (from GitHub Release)
 
 ```bash
-pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.8.4.2/stiff_physics-0.8.4.2-cp311-cp311-linux_x86_64.whl
+pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.8.5/stiff_physics-0.8.5-cp311-cp311-linux_x86_64.whl
 ```
 
 > **Two release tracks.** `v0.7.x` is the latest (performance) line shown above.
