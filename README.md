@@ -17,7 +17,7 @@ Run it yourself:
 ```bash
 git clone https://github.com/haoxiangNtu/stiff-physics.git
 cd stiff-physics
-pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.8.5/stiff_physics-0.8.5-cp311-cp311-linux_x86_64.whl polyscope scipy h5py
+pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.8.5.3/stiff_physics-0.8.5.3-cp311-cp311-linux_x86_64.whl polyscope scipy h5py
 PYTHONPATH=. python examples/case_replay_user_gui.py
 ```
 
@@ -26,7 +26,7 @@ PYTHONPATH=. python examples/case_replay_user_gui.py
 | Requirement | Details |
 |---|---|
 | OS | Linux x86_64 (Ubuntu 20.04+) |
-| GPU | NVIDIA RTX 4090 (sm_89) or RTX 5090 (sm_120) |
+| GPU | NVIDIA A100/A800 (sm_80), RTX 4090 (sm_89) or RTX 5090 (sm_120) |
 | Driver | NVIDIA driver with CUDA 12.x support |
 | Python | 3.11 or 3.12 |
 
@@ -35,7 +35,7 @@ PYTHONPATH=. python examples/case_replay_user_gui.py
 ### 1. Install the engine (from GitHub Release)
 
 ```bash
-pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.8.5/stiff_physics-0.8.5-cp311-cp311-linux_x86_64.whl
+pip install https://github.com/haoxiangNtu/stiff-physics/releases/download/v0.8.5.3/stiff_physics-0.8.5.3-cp311-cp311-linux_x86_64.whl
 ```
 
 > **Two release tracks.** `v0.7.x` is the latest (performance) line shown above.
@@ -304,7 +304,7 @@ stiff-physics/
 The wheel bundles the core library. If you see this, make sure you installed the wheel (not just cloned the repo).
 
 **`CUDA error: no kernel image is available for execution on the device`**
-Your GPU architecture is not included in this build. The pre-built wheel supports sm_89 (RTX 4090) and sm_120 (RTX 5090) only.
+Your GPU architecture is not included in this build. The pre-built wheel supports sm_80 (A100/A800), sm_89 (RTX 4090) and sm_120 (RTX 5090).
 
 **`ImportError: liburdfdom_model.so: cannot open shared object file`**
 Install the urdfdom system library: `sudo apt install liburdfdom-dev`
