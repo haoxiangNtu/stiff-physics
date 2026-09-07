@@ -88,6 +88,26 @@ python examples/case_26_arm_cloth_semi_implicit.py
 
 This launches an interactive scene with an XArm7 robot arm and a free-falling shirt. Click **Run** to start the simulation, and drag the joint sliders to interact with the cloth in real-time.
 
+## Full Manual
+
+A complete engine manual lives in [`docs/manual/`](docs/manual/) — API reference,
+physics principles, release history and known issues, roughly 7000 lines with a
+source citation behind every claim. Start at
+[`docs/manual/README.md`](docs/manual/README.md), or read
+[`ABOUT_THIS_MANUAL.md`](docs/manual/ABOUT_THIS_MANUAL.md) first if you installed
+from a wheel (it explains which parts apply to you).
+
+| Volume | What it covers |
+|---|---|
+| [API_CORE](docs/manual/API_CORE.md) | `Config` parameter tables, scene construction, joints and coupling, per-body materials, state readout, contact-force unit contracts |
+| [API_EXECUTION](docs/manual/API_EXECUTION.md) | multi-environment modes, reproducibility, GPU-resident RL, the full `STIFF_*` knob registry, performance guide, worked recipes |
+| [PRINCIPLES_DYNAMICS](docs/manual/PRINCIPLES_DYNAMICS.md) | the variational formulation, Newton and line search, all 15 energy terms, affine body dynamics, rigid–soft coupling |
+| [PRINCIPLES_CONTACT](docs/manual/PRINCIPLES_CONTACT.md) | barrier contact, `dHat`/`kappa` derivation, CCD guarantees, the friction model including v0.8.5.4 true static friction |
+| [PRINCIPLES_EXECUTION](docs/manual/PRINCIPLES_EXECUTION.md) | PCG and the MAS preconditioner, determinism, frame transactions and CUDA graphs, execution-channel choice |
+| [CHANGELOG_TIMELINE](docs/manual/CHANGELOG_TIMELINE.md) | release history since v0.8.5, campaign by campaign |
+| [KNOWN_ISSUES](docs/manual/KNOWN_ISSUES.md) | correctness issues, semantic traps, performance limits, operational notes |
+| [OPEN_POINTS](docs/manual/OPEN_POINTS.md) | numbered open questions, each with a suggested way to verify it |
+
 ## API Overview
 
 ```python
