@@ -4,217 +4,340 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>StiffGIPC 触觉仿真 — Tactile Sensing on StiffGIPC</title>
-<meta name="description" content="StiffGIPC 引擎上的视触觉（VBTS）与压阻双模态触觉仿真：夹爪 Xense 方案、LinkerHand 双模态、麻将刻字成像与模块清单。">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="description" content="StiffGIPC 引擎上的视触觉（VBTS）与压阻双模态触觉仿真：夹爪数字孪生、XenseSDK 对齐、LinkerHand 双模态、定量验证与模块清单。">
 <style>
+/* Design language of docs.xenserobotics.com: Docusaurus/Infima + its custom
+   landing (navy gradient hero, kicker eyebrows, accent-topped cards). */
 :root {
-  --bg: #F4F5FA;
-  --surface: #FFFFFF;
-  --ink: #1B2030;
-  --muted: #575E75;
-  --accent: #2A3F8F;      /* the pad's own colour: PAD_C = (0.16, 0.25, 0.56) */
-  --accent2: #C2571B;     /* inferno / right-pad orange */
-  --line: #E1E4F0;
-  --chip-bg: #E9ECF8;
-  --code-bg: #1B2030;
-  --code-ink: #D8DDEF;
-  --ok: #1F7A4D;
-  --na: #8A8FA3;
+  --primary: #2878d0;
+  --primary-darker: #1f66b5;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --ink: #1c1e21;
+  --sub: #606770;
+  --e200: #ebedf0;
+  --e300: #dadde1;
+  --code-bg: #f6f7f8;
+  --navbar-shadow: 0 1px 2px 0 rgba(0,0,0,.1);
+  --card-shadow: 0 12px 30px rgba(28,48,74,.08);
+  --card-shadow-hover: 0 18px 38px rgba(28,48,74,.14);
+  --fig-shadow: 0 2px 10px rgba(0,0,0,.06);
+  --acc-sdk: #2878d0;
+  --acc-gui: #9b51e0;
+  --acc-hw: #da8a1b;
+  --acc-data: #239b72;
+  --ok: #00a400;
+  --na: #8d949e;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #12151F;
-    --surface: #1A1E2C;
-    --ink: #E8EAF2;
-    --muted: #99A0B5;
-    --accent: #8FA2E8;
-    --accent2: #E8894A;
-    --line: #2A3044;
-    --chip-bg: #232A40;
-    --code-bg: #0D0F17;
-    --code-ink: #C6CCE0;
-    --ok: #5BBD8B;
-    --na: #6D7388;
+    --primary: #5ba3e8;
+    --primary-darker: #75b3ed;
+    --bg: #1b1b1d;
+    --surface: #242526;
+    --ink: #e3e3e3;
+    --sub: #a8b0bb;
+    --e200: #3a3f46;
+    --e300: #444950;
+    --code-bg: #2a2c2e;
+    --navbar-shadow: 0 1px 2px 0 rgba(0,0,0,.4);
+    --card-shadow: 0 12px 30px rgba(0,0,0,.30);
+    --card-shadow-hover: 0 18px 38px rgba(0,0,0,.42);
+    --fig-shadow: 0 2px 10px rgba(0,0,0,.30);
+    --acc-sdk: #5ba3e8;
+    --acc-gui: #b47ae8;
+    --acc-hw: #e8a94a;
+    --acc-data: #3dbb8f;
+    --ok: #4ec24e;
+    --na: #7c828a;
   }
 }
 * { box-sizing: border-box; }
-html { color-scheme: light dark; }
+html { color-scheme: light dark; scroll-behavior: smooth; }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: 15.5px;
-  line-height: 1.75;
-  padding-inline: 16px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell,
+    "Noto Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
 }
+.mono { font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: .875em; }
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
 img, video { max-width: 100%; }
-.mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
-.wrap { max-width: 1080px; margin: 0 auto; }
-nav.top {
-  position: sticky; top: 0; z-index: 20;
-  background: var(--bg);
-  border-bottom: 1px solid var(--line);
-  margin-inline: -16px; padding-inline: 16px;
+.container { max-width: 1140px; margin: 0 auto; padding-inline: 16px; }
+
+/* ---------- navbar (Docusaurus) ---------- */
+.navbar {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--surface);
+  box-shadow: var(--navbar-shadow);
 }
-nav.top .wrap { display: flex; gap: 4px 18px; flex-wrap: wrap; align-items: baseline; padding-block: 10px; }
-nav.top .brand { font-weight: 900; margin-right: auto; letter-spacing: .02em; }
-nav.top a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
-nav.top a:hover, nav.top a:focus-visible { color: var(--accent); }
-nav.top a.gh { color: var(--accent); font-weight: 500; }
-header.hero { padding-block: 44px 8px; }
-.eyebrow {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--accent2); font-weight: 600;
+.navbar .container { display: flex; align-items: center; gap: 20px; height: 60px; }
+.navbar__title { font-weight: 700; font-size: 1.05rem; color: var(--ink); margin-right: auto; white-space: nowrap; }
+.navbar__title .dot { color: var(--primary); }
+.navbar a.item { color: var(--ink); font-size: .93rem; opacity: .85; }
+.navbar a.item:hover { color: var(--primary); opacity: 1; text-decoration: none; }
+@media (max-width: 700px) { .navbar a.item.opt { display: none; } }
+
+/* ---------- hero (their exact banner treatment) ---------- */
+.hero {
+  text-align: left;
+  color: #fff;
+  background:
+    radial-gradient(circle at 82% 10%, rgba(76,201,240,.28), transparent 30%),
+    linear-gradient(125deg, #132238 0%, #1e3a5f 52%, #2b5876 100%);
+  padding: 5.5rem 0 4.5rem;
 }
-h1 { font-size: clamp(28px, 4.5vw, 42px); line-height: 1.2; margin: 6px 0 10px; font-weight: 900; text-wrap: balance; }
-.lede { max-width: 46em; color: var(--muted); margin: 0 0 26px; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-block: 8px 34px; }
-.stat {
-  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
-  padding: 14px 16px 12px;
+.kicker {
+  letter-spacing: .16em; text-transform: uppercase;
+  font-size: .75rem; font-weight: 700; opacity: .78; margin-bottom: .75rem;
 }
-.stat b { display: block; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 21px; font-variant-numeric: tabular-nums; color: var(--accent); }
-.stat span { font-size: 13px; color: var(--muted); }
-section { padding-block: 34px 8px; }
-h2 { font-size: 24px; font-weight: 700; margin: 4px 0 4px; scroll-margin-top: 72px; }
-h2 + .sub { color: var(--muted); margin: 0 0 20px; max-width: 52em; }
-figure { margin: 0 0 26px; }
-figure .frame {
-  background: #FFFFFF; border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+.hero__title {
+  letter-spacing: -.04em; max-width: 780px;
+  font-size: clamp(2.2rem, 6vw, 4.2rem);
+  line-height: 1.08; margin: 0 0 1rem; font-weight: 800;
 }
-figure video, figure img { display: block; width: 100%; height: auto; }
-figcaption { font-size: 13.5px; color: var(--muted); padding: 10px 4px 0; max-width: 62em; }
-figcaption b { color: var(--ink); font-weight: 500; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
-table { border-collapse: collapse; width: 100%; font-size: 14px; }
-.tblwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 24px; }
-th, td { text-align: left; padding: 9px 14px; border-top: 1px solid var(--line); vertical-align: top; }
-thead th { border-top: none; font-size: 12.5px; color: var(--muted); font-weight: 500; letter-spacing: .04em; }
-td.mono, th.mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; white-space: nowrap; }
-.tag { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: 12px; background: var(--chip-bg); color: var(--accent); font-weight: 500; white-space: nowrap; }
+.hero__subtitle {
+  opacity: .86; max-width: 660px; font-size: clamp(1.02rem, 2vw, 1.3rem);
+  margin: 0 0 2rem; font-weight: 400;
+}
+.buttons { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.button {
+  display: inline-block; border-radius: .4rem; font-weight: 700;
+  padding: .8rem 1.6rem; font-size: 1rem; border: 1px solid transparent;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.button--secondary { background: #ebedf0; color: #1c1e21; }
+.button--secondary:hover { background: #fff; text-decoration: none; }
+.button--outline { border-color: rgba(255,255,255,.65); color: #fff; }
+.button--outline:hover { background: rgba(255,255,255,.1); text-decoration: none; }
+
+/* ---------- landing cards (their 4-up accent-topped grid) ---------- */
+.cards-section { padding: 4rem 0 2rem; }
+.section-intro { max-width: 820px; margin-bottom: 2rem; }
+.section-intro h2 { text-wrap: balance; }
+.section-intro .kicker { color: var(--primary); opacity: 1; }
+.section-intro h2 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); letter-spacing: -.02em; }
+.cards { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 1.25rem; }
+.card {
+  --card-accent: var(--primary);
+  display: block; color: inherit; min-height: 200px;
+  border: 1px solid var(--e200); border-top: 4px solid var(--card-accent);
+  background: var(--surface); border-radius: 1rem; padding: 1.5rem 1.5rem 1.4rem;
+  box-shadow: var(--card-shadow);
+  transition: transform .16s, box-shadow .16s;
+}
+.card:hover { text-decoration: none; transform: translateY(-4px); box-shadow: var(--card-shadow-hover); color: inherit; }
+.card h3 { margin: 0 0 .6rem; font-size: 1.3rem; }
+.card p { margin: 0 0 .9rem; color: var(--sub); line-height: 1.7; font-size: .93rem; }
+.card .link { color: var(--card-accent); font-weight: 700; font-size: .93rem; }
+.card--sdk  { --card-accent: var(--acc-sdk); }
+.card--gui  { --card-accent: var(--acc-gui); }
+.card--hw   { --card-accent: var(--acc-hw); }
+.card--data { --card-accent: var(--acc-data); }
+@media (max-width: 996px) { .cards { grid-template-columns: 1fr; } .card { min-height: 0; } }
+
+/* ---------- content sections ---------- */
+section.block { padding: 3.5rem 0 1.5rem; }
+section.block > .container > .section-intro h2 { scroll-margin-top: 80px; }
+.section-intro p.lead { color: var(--sub); margin: .8rem 0 0; }
+.kicker--sdk { color: var(--acc-sdk) !important; }
+.kicker--gui { color: var(--acc-gui) !important; }
+.kicker--hw { color: var(--acc-hw) !important; }
+.kicker--data { color: var(--acc-data) !important; }
+
+/* their .ota-figure treatment */
+.fig {
+  border: 1px solid var(--e300); background: var(--surface);
+  border-radius: .75rem; max-width: 58rem; margin: 1.25rem auto 1.5rem;
+  padding: .65rem; box-shadow: var(--fig-shadow);
+}
+.fig img, .fig video { border-radius: .4rem; width: 100%; height: auto; display: block; background: #fff; }
+.fig figcaption { color: var(--sub); text-align: center; padding: .65rem .5rem .15rem; font-size: .86rem; }
+.fig figcaption b { color: var(--ink); font-weight: 600; }
+figure { margin: 0; }
+.fig-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; max-width: 62rem; margin: 1.25rem auto 1.5rem; }
+.fig-grid .fig { margin: 0; max-width: none; }
+@media (max-width: 768px) { .fig-grid { grid-template-columns: 1fr; } }
+
+/* ---------- table ---------- */
+.tblwrap { overflow-x: auto; border: 1px solid var(--e300); border-radius: .75rem; background: var(--surface); box-shadow: var(--fig-shadow); margin: 1.25rem 0 1.5rem; }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { text-align: left; padding: .6rem .9rem; border-top: 1px solid var(--e200); vertical-align: top; }
+thead th { border-top: none; background: color-mix(in srgb, var(--primary) 6%, var(--surface)); font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--sub); }
+td.mono, th.mono { white-space: nowrap; }
+.tag { display: inline-block; border-radius: 999px; padding: 0 .6rem; font-size: .78rem; font-weight: 600; background: var(--e200); color: var(--primary); white-space: nowrap; }
 .tag.ok { color: var(--ok); }
 .tag.na { color: var(--na); }
-ul.tight { padding-left: 1.2em; margin: 8px 0 0; }
-ul.tight li { margin-bottom: 6px; }
-ul.tight li::marker { color: var(--accent2); }
-.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px 18px; }
-.panel h3 { margin: 0 0 4px; font-size: 16px; }
+
+/* ---------- admonition-style panels ---------- */
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; margin: 1.25rem 0 1.5rem; }
+.panel { border: 1px solid var(--e200); border-left: 5px solid var(--acc-data); border-radius: .6rem; background: var(--surface); box-shadow: var(--fig-shadow); padding: 1rem 1.3rem 1.1rem; }
+.panel.warn { border-left-color: var(--acc-hw); }
+.panel h3 { margin: 0 0 .4rem; font-size: 1.05rem; }
+.panel ul { padding-left: 1.2em; margin: .4rem 0 0; }
+.panel li { margin-bottom: .45rem; color: var(--sub); font-size: .93rem; }
+.panel li b { color: var(--ink); }
+
+/* ---------- code block ---------- */
 pre.code {
-  background: var(--code-bg); color: var(--code-ink); border-radius: 8px;
-  padding: 16px 18px; overflow-x: auto; font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 12.5px; line-height: 1.7; margin: 14px 0 8px;
+  background: var(--code-bg); border: 1px solid var(--e200); border-radius: .6rem;
+  padding: 1rem 1.2rem; overflow-x: auto;
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: .84rem; line-height: 1.7; margin: 1rem 0;
 }
-pre.code .c { opacity: .55; }
-footer { border-top: 1px solid var(--line); margin-top: 44px; padding-block: 18px 30px; color: var(--muted); font-size: 13px; }
-a { color: var(--accent); }
+pre.code .c { color: var(--sub); }
+
+/* ---------- footer (Docusaurus footer--dark) ---------- */
+footer { background: #303846; color: #ebedf0; margin-top: 3.5rem; padding: 2.4rem 0 2rem; }
+footer .container { display: flex; flex-wrap: wrap; gap: 1rem 3rem; align-items: baseline; }
+footer .col b { display: block; margin-bottom: .3rem; font-size: .9rem; }
+footer a { color: #b9daf7; font-size: .88rem; }
+footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
 </style>
 </head>
 <body>
 
-<nav class="top"><div class="wrap">
-  <span class="brand">StiffGIPC 触觉仿真</span>
-  <a href="#gripper">夹爪方案</a>
-  <a href="#linkerhand">LinkerHand</a>
-  <a href="#mahjong">麻将 Fig.1</a>
-  <a href="#modules">模块清单</a>
-  <a href="#coverage">覆盖度</a>
-  <a class="gh" href="https://github.com/haoxiangNtu/stiff-physics">GitHub ↗</a>
+<nav class="navbar"><div class="container">
+  <span class="navbar__title">StiffGIPC<span class="dot"> ·</span> 触觉仿真</span>
+  <a class="item" href="#gui">仪表盘</a>
+  <a class="item" href="#sdk">SDK 对齐</a>
+  <a class="item opt" href="#hands">灵巧手</a>
+  <a class="item opt" href="#data">数据与验证</a>
+  <a class="item opt" href="#modules">模块</a>
+  <a class="item" href="https://github.com/haoxiangNtu/stiff-physics">GitHub</a>
 </div></nav>
 
-<div class="wrap">
-
-<header class="hero">
-  <div class="eyebrow">Tactile sensing on the StiffGIPC IPC engine · v0.8.5.4</div>
-  <h1>视触觉 + 压阻双模态触觉仿真成果</h1>
-  <p class="lede">在 <a href="https://github.com/haoxiangNtu/stiff-physics">StiffGIPC</a>（GPU IPC/ABD/FEM 引擎）上实现的完整触觉传感层：
-  VBTS 视触觉（深度 / marker / RGB）、压阻 taxel 阵列，以及与商用 XenseSDK 输出词表 1:1 对齐的接口层。
-  以下每一段结论都对应一个可运行的验证脚本，页面中的视频与图片均为仿真直接产出。</p>
-  <div class="stats">
-    <div class="stat"><b>13 / 13</b><span>XenseSDK OutputType 全词表对齐，单快照同帧取回</span></div>
-    <div class="stat"><b>2.5 mm</b><span>M20 螺纹压印峰间距 = 真实螺距，几何自洽</span></div>
-    <div class="stat"><b>mg/2 = 1.37 N</b><span>提升段单侧切向摩擦力收敛值，力学自洽</span></div>
-    <div class="stat"><b>9 commits</b><span>引擎分支 feat/tactile-0854，含 MAS 设备序修复</span></div>
+<header class="hero"><div class="container">
+  <div class="kicker">Tactile Simulation · StiffGIPC v0.8.5.4 · GPU IPC / ABD / FEM</div>
+  <h1 class="hero__title">视触觉与压阻，<br>在同一个 IPC 引擎里</h1>
+  <p class="hero__subtitle">StiffGIPC 引擎上的完整触觉传感层：VBTS 视触觉（深度 / marker / RGB）、
+  压阻 taxel 阵列，以及与商用 XenseSDK 输出词表 1:1 对齐的接口。每一段结论都对应一个可运行的验证脚本。</p>
+  <div class="buttons">
+    <a class="button button--secondary" href="#gui">观看夹爪演示</a>
+    <a class="button button--outline" href="https://github.com/haoxiangNtu/stiff-physics">GitHub 仓库</a>
   </div>
-</header>
+</div></header>
 
-<section id="gripper">
-  <h2>① 平行夹爪 Xense 方案：抓取并提起 M20 螺栓</h2>
-  <p class="sub">对标 Xense Robotics 数字孪生方案：平行夹爪两指面各贴一块 40×20×3 mm 的 FEM 凝胶 pad
-  （tetgen 现场制造，4967 顶点），抓取直立的 M20 螺栓并提起。悬挂阶段螺栓的全部重量由两侧 pad 的摩擦力承担。</p>
+<section class="cards-section"><div class="container">
+  <div class="section-intro">
+    <div class="kicker">Overview</div>
+    <h2>四个板块，全部可运行</h2>
+  </div>
+  <div class="cards">
+    <a class="card card--sdk" href="#sdk">
+      <h3>SDK 对齐</h3>
+      <p>XenseSDK OutputType 全词表 13/13 项在仿真上 1:1 可调用，selectSensorInfo 同帧语义、calibrateSensor 参考刷新。</p>
+      <span class="link">查看验证面板 →</span>
+    </a>
+    <a class="card card--gui" href="#gui">
+      <h3>可视化仪表盘</h3>
+      <p>仿数字孪生 UI：双 pad 触觉图 + 3D 视口 + 三轴力曲线。抓取并提起 M20 螺栓，全程离屏渲染成片。</p>
+      <span class="link">观看视频 →</span>
+    </a>
+    <a class="card card--hw" href="#hands">
+      <h3>夹爪与灵巧手</h3>
+      <p>平行夹爪双指面 VBTS pad（tetgen 任意规格制造），LinkerHand L20 原生接触面压阻，Allegro 通用 FK/IK 贴装。</p>
+      <span class="link">查看方案 →</span>
+    </a>
+    <a class="card card--data" href="#data">
+      <h3>数据与验证</h3>
+      <p>螺纹压印峰距 = 2.5 mm 螺距；提升摩擦力收敛 mg/2 = 1.37 N；刻字成像 IoU 定量评分；4000 张数据集先例。</p>
+      <span class="link">查看证据 →</span>
+    </a>
+  </div>
+</div></section>
 
-  <figure>
-    <div class="frame"><video src="media/gripper_dashboard.mp4" autoplay muted loop playsinline controls></video></div>
-    <figcaption><b>实时仪表盘（仿 Xense 数字孪生 UI 布局）</b>：左右 pad 的 VBTS 形变图与压阻压强图 |
-    pyrender 离屏渲染 3D 视口 | 双 pad 三轴力曲线（Fx 切向-竖直 / Fy 切向-水平 / Fz 法向）与温度、夹爪/提升速度状态条。
+<section class="block" id="gui"><div class="container">
+  <div class="section-intro">
+    <div class="kicker kicker--gui">Dashboard</div>
+    <h2>夹爪数字孪生：抓取并提起 M20 螺栓</h2>
+    <p class="lead">平行夹爪两指面各贴一块 40×20×3 mm FEM 凝胶 pad（4967 顶点），抓取直立的 M20 螺栓并提起 30 mm。
+    悬挂阶段螺栓全部重量由两侧 pad 的摩擦力承担。</p>
+  </div>
+  <figure class="fig">
+    <video src="media/gripper_dashboard.mp4" autoplay muted loop playsinline controls></video>
+    <figcaption><b>实时仪表盘</b> — 左右 pad 的 VBTS 形变图与压阻压强图 | pyrender 3D 视口 | 双 pad 三轴力曲线与温度/速度状态条。
     提升开始后 Fx 精确爬升到 mg/2 虚线。</figcaption>
   </figure>
-
-  <figure>
-    <div class="frame"><img src="media/gripper_summary.png" alt="夹爪演示四联验证图：VBTS 形变图、压印中线剖面、压阻压强图、提升段力曲线" loading="lazy"></div>
-    <figcaption><b>四联验证图</b>：① 右 pad 形变图上 M20 螺纹环压印清晰可数；② 压印中线剖面峰间距 ≈ 2.5 mm，正是 M20 的螺距；
-    ③ 同一次接触的 10×5 压阻阵列压强读数（峰值 ≈ 160 kPa）；④ 提升段法向力恒定、切向力收敛到 mg/2 = 1.37 N —— 悬挂完全靠摩擦，能量与力学闭环。</figcaption>
+  <figure class="fig">
+    <img src="media/gripper_summary.png" alt="夹爪演示四联验证图" loading="lazy">
+    <figcaption><b>四联验证</b> — ① M20 螺纹环压印可数 ② 中线剖面峰距 ≈ 2.5 mm 螺距 ③ 10×5 压阻阵列（峰值 ≈ 160 kPa）
+    ④ 提升段切向力收敛 mg/2 = 1.37 N，悬挂完全靠摩擦。</figcaption>
   </figure>
+</div></section>
 
-  <figure>
-    <div class="frame"><img src="media/xense_alignment.png" alt="XenseSDK OutputType 全词表对齐面板：M20 螺母压入 pad 的 13 种输出" loading="lazy"></div>
-    <figcaption><b>XenseSDK 输出词表对齐验证</b>：M20 螺母压入 pad，一次 <span class="mono">selectSensorInfo</span> 调用同帧取回全部 13 种输出
-    （Rectify / Difference / Depth / Marker2D / Marker3D / Marker3DFlow / Force / ForceNorm / ForceResultant / Mesh3D / Mesh3DInit / Mesh3DFlow / TimeStamp）。
-    六角面 + 中孔在各通道均可辨认；一致性断言 Fz = ΣForceNorm 通过，六维合力 F = (+0.10, −0.15, +129.03) N。</figcaption>
+<section class="block" id="sdk"><div class="container">
+  <div class="section-intro">
+    <div class="kicker kicker--sdk">SDK Alignment</div>
+    <h2>XenseSDK 输出词表 13/13 对齐</h2>
+    <p class="lead">对照 docs.xenserobotics.com 的 OutputType 枚举逐项实现：一次 <span class="mono">selectSensorInfo</span>
+    调用从单个引擎快照同帧取回全部 13 种输出（与其 SDK 的同帧保证一致），<span class="mono">calibrateSensor</span> 刷新无接触参考帧。</p>
+  </div>
+  <figure class="fig">
+    <img src="media/xense_alignment.png" alt="XenseSDK OutputType 全词表对齐面板" loading="lazy">
+    <figcaption><b>对齐验证面板</b> — M20 螺母压入 pad：Rectify / Difference / Depth / Marker2D·3D·3DFlow / Force / ForceNorm /
+    ForceResultant(6维) / Mesh3D·Init·Flow / TimeStamp。断言 Fz = ΣForceNorm 通过，合力 F = (+0.10, −0.15, +129.03) N。</figcaption>
   </figure>
-</section>
+</div></section>
 
-<section id="linkerhand">
-  <h2>② LinkerHand L20 与双模态传感</h2>
-  <p class="sub">两条独立路线：VBTS 凝胶 pad 贴装在指端（含对指求解与共设计安装倾角 24.7°→6.3°），
-  以及不加任何软体、直接用 L20 原生接触面做压阻感知的"原生"方案。</p>
-
-  <div class="grid2">
-    <figure>
-      <div class="frame"><video src="media/vbts_allegro.mp4" muted loop playsinline controls preload="metadata"></video></div>
-      <figcaption><b>VBTS 抓取演示</b>（Allegro 手，pyrender 渲染）：指端凝胶 pad 抓取过程与同步的触觉深度图。</figcaption>
+<section class="block" id="hands"><div class="container">
+  <div class="section-intro">
+    <div class="kicker kicker--hw">Hands &amp; Hardware</div>
+    <h2>灵巧手：VBTS 贴装与原生压阻</h2>
+    <p class="lead">两条独立路线：VBTS 凝胶 pad 贴装指端（对指求解 + 共设计安装倾角 24.7°→6.3°）；
+    以及不加软体、直接用 LinkerHand L20 原生接触面做压阻感知。</p>
+  </div>
+  <div class="fig-grid">
+    <figure class="fig">
+      <video src="media/vbts_allegro.mp4" muted loop playsinline controls preload="metadata"></video>
+      <figcaption><b>VBTS 抓取</b>（Allegro）— 指端凝胶 pad 与同步触觉深度图。</figcaption>
     </figure>
-    <figure>
-      <div class="frame"><video src="media/l20_piezo.mp4" muted loop playsinline controls preload="metadata"></video></div>
-      <figcaption><b>L20 原生压阻演示</b>：手指原有接触面片直接输出 taxel 压强，四指按压平面，每指一块阵列读数随接触点亮。</figcaption>
+    <figure class="fig">
+      <video src="media/l20_piezo.mp4" muted loop playsinline controls preload="metadata"></video>
+      <figcaption><b>L20 原生压阻</b> — 手指原有接触面直接输出 taxel 压强。</figcaption>
     </figure>
-    <figure>
-      <div class="frame"><video src="media/l20_grasp.mp4" muted loop playsinline controls preload="metadata"></video></div>
-      <figcaption><b>L20 抓取渲染</b>：pyrender/EGL 离屏渲染的完整抓取序列（此渲染质量即全站统一标准）。</figcaption>
+    <figure class="fig">
+      <video src="media/l20_grasp.mp4" muted loop playsinline controls preload="metadata"></video>
+      <figcaption><b>L20 抓取渲染</b> — pyrender/EGL 离屏渲染序列。</figcaption>
     </figure>
-    <figure>
-      <div class="frame"><img src="media/dual_modality.png" alt="同一次抓取的 VBTS 与压阻双模态并排对比" loading="lazy"></div>
-      <figcaption><b>双模态对比</b>：同一次抓取，左为 VBTS 深度成像（连续高分辨率），右为压阻阵列（离散 taxel、直接出力/压强）。二者由同一 IPC 接触力场驱动。</figcaption>
+    <figure class="fig">
+      <img src="media/dual_modality.png" alt="双模态并排对比" loading="lazy">
+      <figcaption><b>双模态对比</b> — 同一 IPC 接触力场：VBTS 连续成像 vs 压阻离散 taxel。</figcaption>
     </figure>
   </div>
-
-  <figure>
-    <div class="frame"><img src="media/piezo_explained.png" alt="压阻传感原理说明图：顶点力到 taxel 分箱到 FSR 换能到 ADC" loading="lazy"></div>
-    <figcaption><b>压阻通路原理</b>：IPC 求解器的逐顶点接触力 → taxel 网格分箱（精确守恒）→ FSR 电导换能 G = G₀ + k·F → 分压电路 → ADC 量化。
-    每个 taxel 约 10+ 顶点保证读数稳定。</figcaption>
+  <figure class="fig">
+    <img src="media/piezo_explained.png" alt="压阻传感原理" loading="lazy">
+    <figcaption><b>压阻通路</b> — 逐顶点接触力 → taxel 分箱（守恒）→ FSR 换能 G = G₀ + k·F → 分压 → ADC。每 taxel 约 10+ 顶点。</figcaption>
   </figure>
-</section>
+</div></section>
 
-<section id="mahjong">
-  <h2>③ 麻将 Fig.1 复现：刻字成像</h2>
-  <p class="sub">Taccel 论文 Figure 1 的复现——两指捏起刻有"中"字的麻将牌，凹刻 0.9 mm 的笔画在 pad 形变图中形成低形变剪影。</p>
-  <figure>
-    <div class="frame"><img src="media/mahjong_fig1.png" alt="麻将 Fig.1 复现：刻字中在形变图中可读，含 ground truth 与 IoU 评分" loading="lazy"></div>
-    <figcaption><b>刻字可读性定量验证</b>："中"字在形变图中清晰可读；与按同一采样重建的 ground-truth 字形做 Otsu 阈值分割后计算 IoU / 查准 / 查全，
-    并配对空白背面对照组（同压力、无字形）。</figcaption>
+<section class="block" id="data"><div class="container">
+  <div class="section-intro">
+    <div class="kicker kicker--data">Data Capture</div>
+    <h2>定量验证与数据生成</h2>
+    <p class="lead">触觉成像的可读性不靠肉眼下结论：刻字压印与 ground-truth 字形做 IoU / 查准 / 查全评分，配空白对照组；
+    仿真中多模态天然同帧同步，已有 4000 张数据集 + ResNet-18 分类 99.67% 的生成先例。</p>
+  </div>
+  <figure class="fig">
+    <img src="media/mahjong_fig1.png" alt="麻将 Fig.1 复现与 IoU 评分" loading="lazy">
+    <figcaption><b>麻将 Fig.1 复现</b> — 两指捏起刻"中"字的麻将牌，凹刻 0.9 mm 笔画在形变图中形成低形变剪影，Otsu 分割后对 ground truth 打分。</figcaption>
   </figure>
-</section>
+</div></section>
 
-<section id="modules">
-  <h2>④ 模块清单</h2>
-  <p class="sub">分两层交付：改动进引擎仓库的部分（可复现构建），与随引擎发布的 <span class="mono">stiff_physics.sensors</span> 传感器包。</p>
-
+<section class="block" id="modules"><div class="container">
+  <div class="section-intro">
+    <div class="kicker">Modules</div>
+    <h2>模块清单</h2>
+    <p class="lead">两层交付：引擎仓库内的改动（可复现构建），与随引擎发布的 <span class="mono">stiff_physics.sensors</span> 传感器包。</p>
+  </div>
   <div class="tblwrap"><table>
     <thead><tr><th>层</th><th class="mono">模块</th><th>功能</th><th>状态</th></tr></thead>
     <tbody>
-      <tr><td rowspan="3">引擎<br>(feat/tactile-0854)</td><td class="mono">engine getters</td><td>逐顶点接触力 / von Mises 读出 + 内容缓存移植</td><td><span class="tag ok">已推送</span></td></tr>
+      <tr><td rowspan="3">引擎<br><span class="mono">feat/tactile-0854</span></td><td class="mono">engine getters</td><td>逐顶点接触力 / von Mises 读出 + 内容缓存移植</td><td><span class="tag ok">已推送</span></td></tr>
       <tr><td class="mono">MAS 序修复</td><td>MAS 预条件器下 METIS 设备序 → 输入序还原（不修则逐顶点数据错乱）</td><td><span class="tag ok">已推送</span></td></tr>
       <tr><td class="mono">缓冲扩容</td><td>triplet 缓冲精确扩容 + 4096 槽位容量（大场景必需）</td><td><span class="tag ok">已推送</span></td></tr>
       <tr><td rowspan="8">传感器包<br><span class="mono">stiff_physics.sensors</span></td><td class="mono">SensorAsset / fabricate</td><td>任意尺寸 pad 四面体化制造（tetgen），Taccel 资产直读</td><td><span class="tag ok">完成</span></td></tr>
@@ -222,43 +345,48 @@ a { color: var(--accent); }
       <tr><td class="mono">GpuTactileRenderer</td><td>深度图 / marker 阵列 / 法向观测（GPU）</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">TactileRenderer</td><td>n2rgb MLP 触觉 RGB 成像，任意分辨率</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">PiezoTaxelArray</td><td>压阻阵列：分箱守恒 + FSR 换能 + ADC，含守恒自检</td><td><span class="tag ok">完成</span></td></tr>
-      <tr><td class="mono">xense_api</td><td>XenseSDK OutputType 13 项输出对齐层（selectSensorInfo / calibrateSensor 同语义）</td><td><span class="tag ok">完成</span></td></tr>
+      <tr><td class="mono">xense_api</td><td>XenseSDK OutputType 13 项对齐层（selectSensorInfo / calibrateSensor 同语义）</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">offscreen</td><td>pyrender/EGL 离屏渲染（焊接顶点 → 平滑法向）</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">allegro / linkerhand</td><td>通用 URDF FK/IK/对指求解；L20 专用链与贴装共设计</td><td><span class="tag ok">完成</span></td></tr>
     </tbody>
   </table></div>
-</section>
+</div></section>
 
-<section id="coverage">
-  <h2>⑤ 对 XenseSDK 方案的覆盖度（诚实边界）</h2>
+<section class="block" id="coverage"><div class="container">
+  <div class="section-intro">
+    <div class="kicker">Coverage</div>
+    <h2>覆盖度与诚实边界</h2>
+  </div>
   <div class="cols">
     <div class="panel">
       <h3>已覆盖并可运行验证</h3>
-      <ul class="tight">
-        <li>OutputType 全部 13 项输出，单引擎快照同帧供给（同帧保证与其 SDK 一致）</li>
-        <li><span class="mono">selectSensorInfo</span> 多输出、<span class="mono">calibrateSensor</span> 参考帧刷新</li>
-        <li>ForceResultant 六维合力/力矩——仅对感测涂层面积分（真实 pad 语义）</li>
-        <li>数据采集：仿真中多模态天然同帧同步；已有 4000 张数据集 + ResNet-18 分类 99.67% 先例</li>
-        <li>任意规格 pad 制造，可按目标传感器 CAD 换壳</li>
+      <ul>
+        <li><b>OutputType 13/13</b>，单引擎快照同帧供给</li>
+        <li><b>selectSensorInfo / calibrateSensor</b> 同语义</li>
+        <li><b>ForceResultant</b> 六维合力/力矩，仅对感测涂层面积分（真实 pad 语义）</li>
+        <li><b>数据采集</b>：多模态天然同帧；4000 张数据集 + 分类 99.67% 先例</li>
+        <li><b>任意规格 pad 制造</b>，可按目标传感器 CAD 换壳</li>
       </ul>
     </div>
-    <div class="panel">
+    <div class="panel warn">
       <h3>未覆盖 / 不适用</h3>
-      <ul class="tight">
+      <ul>
         <li>Rectify 色彩为 Taccel GelSight 标定，非 Xense 光学（几何忠实，色板是别家的）</li>
-        <li>Xense Studio 式实时交互 GUI——目前为离线仪表盘视频</li>
+        <li>Xense Studio 式实时交互 GUI —— 目前为离线仪表盘视频</li>
         <li>XenseGripper 控制 SDK 未做 1:1 包装（夹爪控制走引擎原生 API）</li>
         <li><span class="tag na">N/A</span> exportRuntimeConfig / scanSerialNumber：硬件授权与序列号，仿真无对应物</li>
       </ul>
     </div>
   </div>
-</section>
+</div></section>
 
-<section id="repro">
-  <h2>⑥ 复现指引</h2>
-  <p class="sub">引擎与传感器包见 <a href="https://github.com/haoxiangNtu/stiff-physics">stiff-physics</a>
-  （分支 <span class="mono">feat/tactile-0854</span> 系列改动已合入 v0.8.5.4 传感器构建）。
-  另有可在 Houdini/usdview 逐帧检查的 <span class="mono">gripper_bolt.usdc</span>（刚体走 transform 动画、凝胶走 points 动画）。</p>
+<section class="block" id="repro"><div class="container">
+  <div class="section-intro">
+    <div class="kicker">Reproduce</div>
+    <h2>复现指引</h2>
+    <p class="lead">引擎与传感器包见 <a href="https://github.com/haoxiangNtu/stiff-physics">stiff-physics</a>（v0.8.5.4 传感器构建）。
+    另有可在 Houdini/usdview 逐帧检查的 <span class="mono">gripper_bolt.usdc</span>（刚体 transform 动画、凝胶 points 动画）。</p>
+  </div>
 <pre class="code"><span class="c"># 夹爪抓取-提起演示（求解 → 仪表盘视频 + 四联验证图）</span>
 $PY scripts/scene_gripper.py &amp;&amp; $PY scripts/render_gripper.py
 
@@ -266,13 +394,14 @@ $PY scripts/scene_gripper.py &amp;&amp; $PY scripts/render_gripper.py
 $PY scripts/verify_xense_api.py
 
 <span class="c"># $PY = STIFFGIPC_NATIVE_DIR=&lt;engine&gt;/build_311 PYTHONPATH=&lt;engine&gt; python3.11 (求解环境)</span></pre>
-</section>
+</div></section>
 
-<footer>
-  <a href="https://github.com/haoxiangNtu/stiff-physics">StiffGIPC / stiff-physics</a> · v0.8.5.4 · IPC/ABD/FEM · 触觉传感层 · 2026-09 ·
-  仪表盘视频为 7 fps 仿真帧序列，物理步长 5 ms
-</footer>
+<footer><div class="container">
+  <div class="col"><b>项目</b><a href="https://github.com/haoxiangNtu/stiff-physics">stiff-physics（引擎 + 传感器包）</a></div>
+  <div class="col"><b>版本</b><span style="font-size:.88rem">StiffGIPC v0.8.5.4 · IPC/ABD/FEM</span></div>
+  <div class="col"><b>说明</b><span style="font-size:.88rem">仪表盘视频为 7 fps 仿真帧序列，物理步长 5 ms</span></div>
+  <div class="fine">触觉传感层成果页 · 2026-09 · 页面中全部视频与图片均为仿真直接产出</div>
+</div></footer>
 
-</div>
 </body>
 </html>
