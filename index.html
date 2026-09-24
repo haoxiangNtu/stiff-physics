@@ -203,6 +203,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
 
 <nav class="navbar"><div class="container">
   <span class="navbar__title">StiffGIPC<span class="dot"> ·</span> 触觉仿真</span>
+  <a class="item" href="#safe">SAFE 闭环</a>
   <a class="item" href="#gui">仪表盘</a>
   <a class="item" href="#sdk">SDK 对齐</a>
   <a class="item opt" href="#hands">灵巧手</a>
@@ -215,9 +216,9 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <div class="kicker">Tactile Simulation · StiffGIPC v0.8.5.4 · GPU IPC / ABD / FEM</div>
   <h1 class="hero__title">视触觉与压阻，<br>在同一个 IPC 引擎里</h1>
   <p class="hero__subtitle">StiffGIPC 引擎上的完整触觉传感层：VBTS 视触觉（深度 / marker / RGB）、
-  压阻 taxel 阵列，以及与商用 视触 SDK 输出词表 1:1 对齐的接口。每一段结论都对应一个可运行的验证脚本。</p>
+  压阻 taxel 阵列，以及与商用视触 SDK 输出词表 1:1 对齐的接口。每一段结论都对应一个可运行的验证脚本。</p>
   <div class="buttons">
-    <a class="button button--secondary" href="#gui">观看夹爪演示</a>
+    <a class="button button--secondary" href="#safe">观看 SAFE 闭环演示</a>
     <a class="button button--outline" href="https://github.com/haoxiangNtu/stiff-physics">GitHub 仓库</a>
   </div>
 </div></header>
@@ -240,15 +241,39 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     </a>
     <a class="card card--hw" href="#hands">
       <h3>夹爪与灵巧手</h3>
-      <p>平行夹爪双指面 VBTS pad（tetgen 任意规格制造），LinkerHand L20 原生接触面压阻，Allegro 通用 FK/IK 贴装。</p>
+      <p>关节链夹爪 POSITION/SPEED/SAFE 三模式（fmax 力钳位），L20 原生压阻与 63×39 压力手套，真实外壳同形凝胶。</p>
       <span class="link">查看方案 →</span>
     </a>
     <a class="card card--data" href="#data">
       <h3>数据与验证</h3>
-      <p>螺纹压印峰距 = 2.5 mm 螺距；提升摩擦力收敛 mg/2 = 1.37 N；刻字成像 IoU 定量评分；4000 张数据集先例。</p>
+      <p>SAFE 保持段 ΣFx = −mg 分毫不差；螺纹压印峰距 = 2.5 mm 螺距；刻字 IoU 评分；LeRobotDataset v3.0 导出。</p>
       <span class="link">查看证据 →</span>
     </a>
   </div>
+</div></section>
+
+<section class="block" id="safe"><div class="container">
+  <div class="section-intro">
+    <div class="kicker kicker--hw">Closed-loop Grasping</div>
+    <h2>SAFE 模式：触觉闭环抓取</h2>
+    <p class="lead">不再是脚本轨迹——夹爪由引擎棱柱关节链驱动（anchor→吊架→双 jaw），控制 API 与商用夹爪 SDK 同构
+    （POSITION 带 vmax/fmax 力钳位、SPEED、SAFE）。演示故意用 1.5 N 弱抓（摩擦容量 1.8 N &lt; 螺栓重 2.75 N，物理上保证滑），
+    提升中 pad 触觉检测滑移并自动阶梯增力 1.5→2.4→3.8→6.1→9.8 N，滑移归零后稳稳提起。</p>
+  </div>
+  <figure class="fig">
+    <video src="media/gripper_safe_dashboard.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>SAFE 闭环仪表盘</b> — 左右 pad 形变图 + Rectify 触觉图像 | 3D 视口 | 控制列：夹持力阶梯、累计滑移与再夹持事件、pad-螺栓高度轨迹。</figcaption>
+  </figure>
+  <figure class="fig">
+    <img src="media/gripper_safe_summary.png" alt="SAFE 闭环四联验证：力阶梯、滑移走平、高度平行、切向合力=-mg" loading="lazy">
+    <figcaption><b>四联验证</b> — ① 4 次滑移事件触发力设定阶梯，实测精确跟踪；② 最后一次再夹持后累计滑移走平；
+    ③ pad 与螺栓高度轨迹在稳住后严格平行；④ 保持段双 pad 切向合力 = −mg = −2.75 N，力学闭环。</figcaption>
+  </figure>
+  <figure class="fig">
+    <video src="media/tactile_studio.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>实时工作台（录制）</b> — 引擎在 UI 循环内实时求解：设备列表 / 实时深度图 / 力伺服曲线 / 状态读出；
+    同一程序另有交互模式（模式切换、开口/夹持力/提升滑杆、空载校准按钮）。</figcaption>
+  </figure>
 </div></section>
 
 <section class="block" id="gui"><div class="container">
@@ -275,12 +300,12 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <div class="kicker kicker--sdk">SDK Alignment</div>
     <h2>商用视触 SDK 词表 13/13 对齐</h2>
     <p class="lead">对照商用视触 SDK 公开文档的 OutputType 枚举逐项实现：一次 <span class="mono">selectSensorInfo</span>
-    调用从单个引擎快照同帧取回全部 13 种输出（与其 SDK 的同帧保证一致），<span class="mono">calibrateSensor</span> 刷新无接触参考帧。</p>
+    调用从单个引擎快照同帧取回全部 13 种输出（与其 SDK 的同帧保证一致），<span class="mono">calibrateSensor</span> 刷新无接触参考帧；生命周期（scanSerialNumber / create / release）与后处理模式（exportRuntimeConfig → createSolver 离线重放）同语义实现。</p>
   </div>
   <figure class="fig">
-    <img src="media/xense_alignment.png" alt="视触 SDK OutputType 全词表对齐面板" loading="lazy">
+    <img src="media/sensor_api_alignment.png" alt="视触 SDK OutputType 全词表对齐面板" loading="lazy">
     <figcaption><b>对齐验证面板</b> — M20 螺母压入 pad：Rectify / Difference / Depth / Marker2D·3D·3DFlow / Force / ForceNorm /
-    ForceResultant(6维) / Mesh3D·Init·Flow / TimeStamp。断言 Fz = ΣForceNorm 通过，合力 F = (+0.10, −0.15, +129.03) N。</figcaption>
+    ForceResultant(6维) / Mesh3D·Init·Flow / TimeStamp。断言 Fz = ΣForceNorm 通过，合力 F = (+0.10, −0.15, +129.03) N；离线求解器（后处理模式）从原始状态重算，与实时输出 p99 偏差 0.000 mm；数值在 RTX 4090 与 A800 上完全一致。</figcaption>
   </figure>
 </div></section>
 
@@ -310,6 +335,16 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     </figure>
   </div>
   <figure class="fig">
+    <video src="media/glove_demo.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>全手压力手套 API</b> — L20 原生指尖膜作为手套分区：63×39 画布 / thumb…palm 六分区 / ADC 0–254 含去皮 /
+    接触点统计 / 捷联 IMU（比力+角速度）。四指依次力伺服按压，实测 10.1/8.5/6.5/3.8 N 跟踪 10/7/5/3.5 N 目标。</figcaption>
+  </figure>
+  <figure class="fig">
+    <img src="media/shell_pads.png" alt="商用外壳同形凝胶压印验证" loading="lazy">
+    <figcaption><b>真实外壳同形凝胶</b> — 从厂商公开 STEP 提取感测窗（厂商 CAD 不入库），fabricate 制造同形凝胶并匹配相机分辨率：
+    WS 24.6×12.8 / OS 20.3×12.6 / GS 17.8×41.9 mm；M20 螺母压印验证通过。</figcaption>
+  </figure>
+  <figure class="fig">
     <img src="media/piezo_explained.png" alt="压阻传感原理" loading="lazy">
     <figcaption><b>压阻通路</b> — 逐顶点接触力 → taxel 分箱（守恒）→ FSR 换能 G = G₀ + k·F → 分压 → ADC。每 taxel 约 10+ 顶点。</figcaption>
   </figure>
@@ -320,7 +355,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <div class="kicker kicker--data">Data Capture</div>
     <h2>定量验证与数据生成</h2>
     <p class="lead">触觉成像的可读性不靠肉眼下结论：刻字压印与 ground-truth 字形做 IoU / 查准 / 查全评分，配空白对照组；
-    仿真中多模态天然同帧同步，已有 4000 张数据集 + ResNet-18 分类 99.67% 的生成先例。</p>
+    仿真中多模态天然同帧同步，已有 4000 张数据集 + ResNet-18 分类 99.67% 的生成先例；SAFE 抓取整段已导出为标准 LeRobotDataset（v3.0）——双 pad 触觉视频 + 状态 + 动作 88 帧同步，官方 loader 回读验证通过。</p>
   </div>
   <figure class="fig">
     <img src="media/mahjong_fig1.png" alt="麻将 Fig.1 复现与 IoU 评分" loading="lazy">
@@ -340,7 +375,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
       <tr><td rowspan="3">引擎<br><span class="mono">feat/tactile-0854</span></td><td class="mono">engine getters</td><td>逐顶点接触力 / von Mises 读出 + 内容缓存移植</td><td><span class="tag ok">已推送</span></td></tr>
       <tr><td class="mono">MAS 序修复</td><td>MAS 预条件器下 METIS 设备序 → 输入序还原（不修则逐顶点数据错乱）</td><td><span class="tag ok">已推送</span></td></tr>
       <tr><td class="mono">缓冲扩容</td><td>triplet 缓冲精确扩容 + 4096 槽位容量（大场景必需）</td><td><span class="tag ok">已推送</span></td></tr>
-      <tr><td rowspan="8">传感器包<br><span class="mono">stiff_physics.sensors</span></td><td class="mono">SensorAsset / fabricate</td><td>任意尺寸 pad 四面体化制造（tetgen），Taccel 资产直读</td><td><span class="tag ok">完成</span></td></tr>
+      <tr><td rowspan="11">传感器包<br><span class="mono">stiff_physics.sensors</span></td><td class="mono">SensorAsset / fabricate</td><td>任意尺寸 pad 四面体化制造（tetgen），Taccel 资产直读</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">GelBody</td><td>凝胶接入引擎：stitch / anchor 两种已验证驱动模式</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">GpuTactileRenderer</td><td>深度图 / marker 阵列 / 法向观测（GPU）</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">TactileRenderer</td><td>n2rgb MLP 触觉 RGB 成像，任意分辨率</td><td><span class="tag ok">完成</span></td></tr>
@@ -348,6 +383,9 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
       <tr><td class="mono">tactile_api</td><td>商用 SDK OutputType 13 项对齐层（selectSensorInfo / calibrateSensor 同语义）</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">offscreen</td><td>pyrender/EGL 离屏渲染（焊接顶点 → 平滑法向）</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">allegro / linkerhand</td><td>通用 URDF FK/IK/对指求解；L20 专用链与贴装共设计</td><td><span class="tag ok">完成</span></td></tr>
+      <tr><td class="mono">tactile_gripper</td><td>关节链平行夹爪：POSITION（vmax+fmax 力钳位）/ SPEED / SAFE 触觉闭环，status 读出</td><td><span class="tag ok">完成</span></td></tr>
+      <tr><td class="mono">tactile_glove</td><td>63×39 全手压力画布：分区访问 / ADC 0–254 去皮 / 接触统计 / 捷联 IMU</td><td><span class="tag ok">完成</span></td></tr>
+      <tr><td class="mono">lerobot_export</td><td>LeRobotDataset v3.0 写出器（官方 API 封装，loader 回读验证）</td><td><span class="tag ok">完成</span></td></tr>
     </tbody>
   </table></div>
 </div></section>
@@ -361,10 +399,16 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <div class="panel">
       <h3>已覆盖并可运行验证</h3>
       <ul>
-        <li><b>OutputType 13/13</b>，单引擎快照同帧供给</li>
+        <li><b>OutputType 13/13</b>，单引擎快照同帧供给；跨 GPU（4090/A800）数值一致</li>
+        <li><b>生命周期 + 后处理模式</b>：scan/create/release；runtime 导出 → 离线重放回归 p99 0.000 mm</li>
+        <li><b>夹爪控制 SDK</b>：POSITION/SPEED/SAFE + fmax 力钳位（零蠕变实测）</li>
+        <li><b>SAFE 触觉闭环</b>：滑移检测自动增力，保持段 ΣFx = −mg</li>
+        <li><b>压力手套</b>：63×39 画布 / 分区 / ADC / IMU</li>
+        <li><b>实时工作台</b>：交互程序 + 无头录制</li>
+        <li><b>真实外壳同形凝胶</b>：WS/OS/GS 三款压印验证</li>
         <li><b>selectSensorInfo / calibrateSensor</b> 同语义</li>
         <li><b>ForceResultant</b> 六维合力/力矩，仅对感测涂层面积分（真实 pad 语义）</li>
-        <li><b>数据采集</b>：多模态天然同帧；4000 张数据集 + 分类 99.67% 先例</li>
+        <li><b>数据采集</b>：多模态天然同帧；4000 张数据集先例；LeRobotDataset v3.0 导出（官方 loader 验证）</li>
         <li><b>任意规格 pad 制造</b>，可按目标传感器 CAD 换壳</li>
       </ul>
     </div>
@@ -372,9 +416,8 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
       <h3>未覆盖 / 不适用</h3>
       <ul>
         <li>Rectify 色彩为 Taccel GelSight 标定，非目标产品光学（几何忠实，色板是别家的）</li>
-        <li>商用工作台式实时交互 GUI —— 目前为离线仪表盘视频</li>
-        <li>商用夹爪控制 SDK 未做 1:1 包装（夹爪控制走引擎原生 API）</li>
-        <li><span class="tag na">N/A</span> exportRuntimeConfig / scanSerialNumber：硬件授权与序列号，仿真无对应物</li>
+        <li>远程模式（EzROS/DDS 网络层）——仿真进程内无真实需求，未实现</li>
+        <li><span class="tag na">N/A</span> 硬件专属：序列号授权 / OTA / 柔性件拆装 / 转接法兰</li>
       </ul>
     </div>
   </div>
@@ -387,11 +430,15 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <p class="lead">引擎与传感器包见 <a href="https://github.com/haoxiangNtu/stiff-physics">stiff-physics</a>（v0.8.5.4 传感器构建）。
     另有可在 Houdini/usdview 逐帧检查的 <span class="mono">gripper_bolt.usdc</span>（刚体 transform 动画、凝胶 points 动画）。</p>
   </div>
-<pre class="code"><span class="c"># 夹爪抓取-提起演示（求解 → 仪表盘视频 + 四联验证图）</span>
-$PY scripts/scene_gripper.py &amp;&amp; $PY scripts/render_gripper.py
+<pre class="code"><span class="c"># SAFE 触觉闭环抓取（求解 → 仪表盘视频 + 四联验证图）</span>
+$PY scripts/scene_gripper_safe.py &amp;&amp; $PY scripts/render_gripper_safe.py
 
-<span class="c"># 商用 SDK 13 项输出词表对齐验证（断言 + 面板图）</span>
+<span class="c"># SDK 词表 + 生命周期 + 离线重放回归（断言 + 面板图）</span>
 $PY scripts/verify_sensor_api.py
+
+<span class="c"># 手套 / 工作台 / 外壳同形 / LeRobot 数据集</span>
+$PY scripts/scene_glove.py ; $PY scripts/tactile_studio.py --record 60
+$PY scripts/shell_pads.py --press ; $PY scripts/export_lerobot.py
 
 <span class="c"># $PY = STIFFGIPC_NATIVE_DIR=&lt;engine&gt;/build_311 PYTHONPATH=&lt;engine&gt; python3.11 (求解环境)</span></pre>
 </div></section>
