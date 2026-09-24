@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>StiffGIPC 触觉仿真 — Tactile Sensing on StiffGIPC</title>
-<meta name="description" content="StiffGIPC 引擎上的视触觉（VBTS）与压阻双模态触觉仿真：夹爪数字孪生、XenseSDK 对齐、LinkerHand 双模态、定量验证与模块清单。">
+<meta name="description" content="StiffGIPC 引擎上的视触觉（VBTS）与压阻双模态触觉仿真：夹爪数字孪生、商用 SDK 对齐、LinkerHand 双模态、定量验证与模块清单。">
 <style>
-/* Design language of docs.xenserobotics.com: Docusaurus/Infima + its custom
+/* Design language of a commercial docs site: Docusaurus/Infima + a custom
    landing (navy gradient hero, kicker eyebrows, accent-topped cards). */
 :root {
   --primary: #2878d0;
@@ -215,7 +215,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <div class="kicker">Tactile Simulation · StiffGIPC v0.8.5.4 · GPU IPC / ABD / FEM</div>
   <h1 class="hero__title">视触觉与压阻，<br>在同一个 IPC 引擎里</h1>
   <p class="hero__subtitle">StiffGIPC 引擎上的完整触觉传感层：VBTS 视触觉（深度 / marker / RGB）、
-  压阻 taxel 阵列，以及与商用 XenseSDK 输出词表 1:1 对齐的接口。每一段结论都对应一个可运行的验证脚本。</p>
+  压阻 taxel 阵列，以及与商用 视触 SDK 输出词表 1:1 对齐的接口。每一段结论都对应一个可运行的验证脚本。</p>
   <div class="buttons">
     <a class="button button--secondary" href="#gui">观看夹爪演示</a>
     <a class="button button--outline" href="https://github.com/haoxiangNtu/stiff-physics">GitHub 仓库</a>
@@ -230,7 +230,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <div class="cards">
     <a class="card card--sdk" href="#sdk">
       <h3>SDK 对齐</h3>
-      <p>XenseSDK OutputType 全词表 13/13 项在仿真上 1:1 可调用，selectSensorInfo 同帧语义、calibrateSensor 参考刷新。</p>
+      <p>商用 SDK OutputType 全词表 13/13 项在仿真上 1:1 可调用，selectSensorInfo 同帧语义、calibrateSensor 参考刷新。</p>
       <span class="link">查看验证面板 →</span>
     </a>
     <a class="card card--gui" href="#gui">
@@ -273,12 +273,12 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
 <section class="block" id="sdk"><div class="container">
   <div class="section-intro">
     <div class="kicker kicker--sdk">SDK Alignment</div>
-    <h2>XenseSDK 输出词表 13/13 对齐</h2>
-    <p class="lead">对照 docs.xenserobotics.com 的 OutputType 枚举逐项实现：一次 <span class="mono">selectSensorInfo</span>
+    <h2>商用视触 SDK 词表 13/13 对齐</h2>
+    <p class="lead">对照商用视触 SDK 公开文档的 OutputType 枚举逐项实现：一次 <span class="mono">selectSensorInfo</span>
     调用从单个引擎快照同帧取回全部 13 种输出（与其 SDK 的同帧保证一致），<span class="mono">calibrateSensor</span> 刷新无接触参考帧。</p>
   </div>
   <figure class="fig">
-    <img src="media/xense_alignment.png" alt="XenseSDK OutputType 全词表对齐面板" loading="lazy">
+    <img src="media/xense_alignment.png" alt="视触 SDK OutputType 全词表对齐面板" loading="lazy">
     <figcaption><b>对齐验证面板</b> — M20 螺母压入 pad：Rectify / Difference / Depth / Marker2D·3D·3DFlow / Force / ForceNorm /
     ForceResultant(6维) / Mesh3D·Init·Flow / TimeStamp。断言 Fz = ΣForceNorm 通过，合力 F = (+0.10, −0.15, +129.03) N。</figcaption>
   </figure>
@@ -345,7 +345,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
       <tr><td class="mono">GpuTactileRenderer</td><td>深度图 / marker 阵列 / 法向观测（GPU）</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">TactileRenderer</td><td>n2rgb MLP 触觉 RGB 成像，任意分辨率</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">PiezoTaxelArray</td><td>压阻阵列：分箱守恒 + FSR 换能 + ADC，含守恒自检</td><td><span class="tag ok">完成</span></td></tr>
-      <tr><td class="mono">xense_api</td><td>XenseSDK OutputType 13 项对齐层（selectSensorInfo / calibrateSensor 同语义）</td><td><span class="tag ok">完成</span></td></tr>
+      <tr><td class="mono">tactile_api</td><td>商用 SDK OutputType 13 项对齐层（selectSensorInfo / calibrateSensor 同语义）</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">offscreen</td><td>pyrender/EGL 离屏渲染（焊接顶点 → 平滑法向）</td><td><span class="tag ok">完成</span></td></tr>
       <tr><td class="mono">allegro / linkerhand</td><td>通用 URDF FK/IK/对指求解；L20 专用链与贴装共设计</td><td><span class="tag ok">完成</span></td></tr>
     </tbody>
@@ -371,9 +371,9 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <div class="panel warn">
       <h3>未覆盖 / 不适用</h3>
       <ul>
-        <li>Rectify 色彩为 Taccel GelSight 标定，非 Xense 光学（几何忠实，色板是别家的）</li>
-        <li>Xense Studio 式实时交互 GUI —— 目前为离线仪表盘视频</li>
-        <li>XenseGripper 控制 SDK 未做 1:1 包装（夹爪控制走引擎原生 API）</li>
+        <li>Rectify 色彩为 Taccel GelSight 标定，非目标产品光学（几何忠实，色板是别家的）</li>
+        <li>商用工作台式实时交互 GUI —— 目前为离线仪表盘视频</li>
+        <li>商用夹爪控制 SDK 未做 1:1 包装（夹爪控制走引擎原生 API）</li>
         <li><span class="tag na">N/A</span> exportRuntimeConfig / scanSerialNumber：硬件授权与序列号，仿真无对应物</li>
       </ul>
     </div>
@@ -390,8 +390,8 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
 <pre class="code"><span class="c"># 夹爪抓取-提起演示（求解 → 仪表盘视频 + 四联验证图）</span>
 $PY scripts/scene_gripper.py &amp;&amp; $PY scripts/render_gripper.py
 
-<span class="c"># XenseSDK 13 项输出词表对齐验证（断言 + 面板图）</span>
-$PY scripts/verify_xense_api.py
+<span class="c"># 商用 SDK 13 项输出词表对齐验证（断言 + 面板图）</span>
+$PY scripts/verify_sensor_api.py
 
 <span class="c"># $PY = STIFFGIPC_NATIVE_DIR=&lt;engine&gt;/build_311 PYTHONPATH=&lt;engine&gt; python3.11 (求解环境)</span></pre>
 </div></section>
