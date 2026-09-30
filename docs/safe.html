@@ -74,10 +74,11 @@ if F_meas &lt; 0.3 N: step = max(step, 0.10 mm)      <span class="c"># 未接触
 slip  += Δ(pad 高度) − Δ(物体高度)                 <span class="c"># 只在双侧接触时累计</span>
 if slip &gt; 0.25 mm:                                <span class="c"># 滑移事件</span>
     F_set = min(F_set × 1.6, fmax); slip = 0      <span class="c"># 设定值阶梯上调，封顶</span></pre>
-<div class="note warn"><b>为什么力读数用 pad 而不用关节？</b>
-引擎的 <code>get_prismatic_drive_force</code> 把原始 strength 当刚度用，少读约 1/dt² 倍
-（实测 pad 承力 186 N 时它只读 0.005 N，真实伺服刚度 ≈ strength/dt² ≈ 1.3×10⁶ N/m）。
-我们改用 pad 的触觉法向力做 fmax 钳位与状态读出——这也正是"夹爪内建触觉传感器"这个产品形态的本意。</div>
+<div class="note good"><b>力读数的两个来源（以及一个已修复的引擎 bug）</b>
+主力读数来自 pad 的触觉法向力——"夹爪内建触觉传感器"这个产品形态的本意。开发中我们发现引擎的
+<code>get_prismatic_drive_force</code> 把内部弹簧系数当物理刚度用、少读约 1/dt² 倍（pad 承力 186 N 时只读 0.005 N）。
+该 bug 已在引擎中修复并配了两条静力学恒等式回归：闭合平衡时关节驱动力 = pad 法向力（300 N 级实测吻合 0.2–1.9%）；
+新增的 <code>get_revolute_drive_torque</code> 在单摆驻定下垂处读数 = m·g·r·cosθ（误差 0.0%）。</div>
 
 <h2 id="proof">五、演示为什么有证明力</h2>
 <p>关键在初始条件是<b>照着"必然失败"设计的</b>：初始设定 1.5 N/pad，摩擦对系数 μ = 0.6，
