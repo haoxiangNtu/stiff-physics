@@ -6,6 +6,11 @@
 <title>两种触觉模态的实现</title>
 <meta name="description" content="VBTS 贴装与原生压阻在 StiffGIPC 里的完整实现细节：凝胶制造、三种接入方式、观测管线；无软体的 taxel 分箱、FSR 换能链、手套画布与 IMU。">
 <link rel="stylesheet" href="docs.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters: [{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]});"></script>
+<style>.katex-display{overflow-x:auto;overflow-y:hidden;padding:.2rem 0}</style>
 </head>
 <body>
 
@@ -58,13 +63,62 @@
   当前传感器位姿必须用刚体运动复合：<code>W = (C_now · C_load⁻¹) · T_load · M_mount</code>——直接当位姿用会差约 8 mm，taxel 窗读全零（踩过）。</li>
 </ul>
 
-<h3>4. 观测管线（几何 → 图像）</h3>
-<pre class="code">FEM 顶点（世界系） → 旋入传感器局部系
-  → 正交 z-buffer 光栅化涂层三角网 → 原始深度图
-  → 高斯平滑（σ≈1–2 px，压掉网格三角化棱面）
-  → 逐像素法向（对像素间距的度量梯度——原库的索引梯度会渲染出与接触无关的图像，已修）
-  → normal→RGB 残差 MLP（预训练检查点）＋参考底图 → Rectify 触觉图像
-标记点：重心插值出 3D 位置 → 正交投影 → Marker2D/3D/Flow</pre>
+<h3 id="pipeline">4. 观测管线：从顶点到图像，逐步公式</h3>
+<p>符号约定：传感器相机为正交投影，分辨率 \(H\times W\)（夹爪 pad 为 504×252），像素间距
+\(p = 0.079375\ \mathrm{mm}\)；静息涂层面位于局部 \(z=0\)，凝胶厚 \(t_g = 3\ \mathrm{mm}\)；
+物体从 \(-z\) 方向压来（压入使涂层向 \(+z\) 记正深度）。</p>
+
+<p><b>第 0 步 · 帧变换（世界 → 传感器局部系）。</b>
+传感器当前位姿 \(W=[R\,|\,\boldsymbol{t}]\)（pad 随 jaw 运动：\(W = M_{\mathrm{rig}}\,W_0\)，
+\(M_{\mathrm{rig}}\) 为载体刚体运动）。每个 FEM 顶点：</p>
+$$ \boldsymbol{v}^{\mathrm{loc}} = R^{\top}\left(\boldsymbol{v}^{\mathrm{world}} - \boldsymbol{t}\right) $$
+<p>之后的深度、marker、网格、力全部在这个局部系里表达（力向量同样只旋转：\(\boldsymbol{F}^{\mathrm{loc}} = R^{\top}\boldsymbol{F}^{\mathrm{world}}\)）。</p>
+
+<p><b>第 1 步 · 正交 z-buffer 光栅化 → 原始深度图。</b>
+像素中心坐标（网格中心对准凝胶原点）：</p>
+$$ x_i = \Bigl(i - \tfrac{H-1}{2}\Bigr)p,\qquad y_j = \Bigl(j - \tfrac{W-1}{2}\Bigr)p $$
+<p>对每个涂层三角形 \((\boldsymbol{a},\boldsymbol{b},\boldsymbol{c})\)，像素 \((i,j)\) 的重心坐标
+\((w_0,w_1,w_2)\) 由二维线性方程组解出（\(w_0+w_1+w_2=1\)），像素落在三角形内当且仅当三者皆
+\(\ge 0\)。三角形在该像素处的表面高度用重心插值：</p>
+$$ z(i,j) = w_0\,a_z + w_1\,b_z + w_2\,c_z $$
+<p>相机从 \(+z\) 向 \(-z\) 看，首个命中即最高交点，故 z-buffer 取<b>逐三角形最大值</b>；
+再减静息面并截断，得深度图：</p>
+$$ D(i,j) = \operatorname{clip}\Bigl(\max_{\triangle\ni(i,j)} z(i,j) - z_{\mathrm{rest}},\; 0,\; t_g\Bigr),\qquad z_{\mathrm{rest}}=0 $$
+<p>未被任何三角形覆盖的像素记 0（未接触）。GPU 版是逐三角形并行的 CUDA 光栅核，CPU 离线版逐三角形包围盒
+串行光栅——同一数学，两者 p99 偏差 0.000 mm（离线重放回归的依据）。SDK 输出的 Depth 是相对参考帧的
+\(\operatorname{clip}(D - D^{\mathrm{ref}},0,\cdot)\)。</p>
+
+<p><b>第 2 步 · 高斯平滑（压掉三角化棱面）。</b>
+网格边长 ≈0.55 mm ≫ 像素 0.079 mm，原始 z-buffer 会把三角面片渲染成 ~7 px 宽的棱面，直接求梯度会把棱面刻进法向。
+用可分离高斯核做二维卷积：</p>
+$$ \tilde{D} = g_\sigma * D,\qquad g_\sigma(k) = \frac{1}{Z}\exp\!\Bigl(-\frac{k^2}{2\sigma^2}\Bigr),\; |k|\le \lceil 3\sigma\rceil $$
+<p>\(\sigma = 1\text{–}2\) px：足以抹平 7 px 棱面的高频，又小于真实接触棱边的尺度（边缘保持锐利）。
+边界采用夹持（edge-clamp）填充。</p>
+
+<p><b>第 3 步 · 深度 → 法向（度量梯度，一个已修的关键 bug）。</b>
+表面 \(z=\tilde{D}(x,y)\) 的外法向：</p>
+$$ \boldsymbol{n} = \frac{\bigl(-\partial \tilde{D}/\partial x,\; -\partial \tilde{D}/\partial y,\; 1\bigr)}{\bigl\lVert\,\cdot\,\bigr\rVert},\qquad \frac{\partial \tilde{D}}{\partial x}\Big|_{ij} \approx \frac{\tilde{D}_{i+1,j}-\tilde{D}_{i-1,j}}{2p} $$
+<p>关键在分母的 \(p\)（米制像素间距）：原库发布代码按<b>像素索引</b>求梯度（相当于 \(p=1\)），
+而深度量级 ~10⁻⁴ m/像素，得到的切向分量 ~10⁻⁵——法向处处 ≈(0,0,1)。下游 MLP 首层对
+\(n_x,n_y\) 的权重是 O(1–9)，需要 \(|n_{xy}|\gtrsim 10^{-2}\) 才有响应，于是渲染出与接触<b>无关</b>的图像。
+除以真实的 \(p\) 后斜率才是物理斜率，这就是"度量梯度"修复。</p>
+
+<p><b>第 4 步 · 法向 → RGB（逐像素残差 MLP + 平场校准）。</b>
+预训练检查点 \(f_\theta\)（3×256 全连接 + 跳连 4×256，逐像素独立）输入 9 维：法向 3 维 + 位置编码 6 维：</p>
+$$ \gamma(u) = \Bigl[u,\ \sin\tfrac{2^0\pi u}{512},\ \sin\tfrac{2^1\pi u}{512}\Bigr],\qquad \gamma(v) = \Bigl[v,\ \cos\tfrac{2^0\pi v}{512},\ \cos\tfrac{2^1\pi v}{512}\Bigr] $$
+<p>（512 是训练时烘进检查点的基准分辨率，行用 sin、列用 cos。）输出为对参考底图的残差，并减去平场偏置：</p>
+$$ I(u,v) = \operatorname{clip}\Bigl( I_{\mathrm{ref}}(u,v) + f_\theta\bigl(\boldsymbol{n},\gamma(u),\gamma(v)\bigr) - \underbrace{f_\theta\bigl(\boldsymbol{n}_0,\gamma(u),\gamma(v)\bigr)}_{\text{平场偏置},\ \boldsymbol{n}_0=(0,0,1)},\; 0,\; 1\Bigr) $$
+<p>平场项让无接触时精确渲染回 \(I_{\mathrm{ref}}\)（否则检查点残留均值 0.019、峰值 0.129 的静态偏色）。
+逐像素前向按 \(2^{20}\) 像素分块控制显存；非 400×400 相机时 \(I_{\mathrm{ref}}\) 双线性重采样到相机分辨率。
+这一步即 Rectify；Difference = 当前帧 \(I\) 减参考帧 \(I^{\mathrm{ref\text{-}frame}}\)。</p>
+
+<p><b>第 5 步 · 标记点（无跟踪的 marker 场）。</b>
+制造期把第 \(k\) 个 marker 记为其所在涂层三角形三个顶点的固定重心权重 \((\lambda_{k1},\lambda_{k2},\lambda_{k3})\)。任意时刻：</p>
+$$ \boldsymbol{m}_k = \sum_{i=1}^{3} \lambda_{ki}\, \boldsymbol{v}^{\mathrm{loc}}_{\tau(k,i)} \qquad(\text{FEM 状态的线性函数，无需任何视觉跟踪}) $$
+<p>像素投影（正交，含标定像素偏移 \(\boldsymbol{s}=(-5,0)\) px）：</p>
+$$ (u,v)_k = \frac{(m_{k,x},\, m_{k,y})}{p} + \Bigl(\tfrac{H}{2},\tfrac{W}{2}\Bigr) + \boldsymbol{s} $$
+<p>Marker3DFlow \(= \boldsymbol{m}_k - \boldsymbol{m}_k^{\mathrm{ref}}\)：其切向分量就是膜面剪切场（滑移前兆），
+法向分量与深度图一致。</p>
 
 <h2 id="piezo">二、原生压阻：不加软体，表面即传感器</h2>
 
@@ -76,10 +130,14 @@
 </ul>
 
 <h3>2. 力 → taxel：分箱是精确的</h3>
-<pre class="code">IPC 逐顶点接触力 F_i（牛顿，精确）
-  → 旋入传感器局部系，取压缩法向分量 F_z⁺ 与切向 (F_x, F_y)
-  → 按<b>静止</b>局部坐标 (x, y) 落进 rows×cols 网格（如 8×6 @ 2 mm）
-  → 每 taxel 力 = 落入顶点力之和</pre>
+<p>顶点按<b>静止</b>局部坐标落格（间距 \(\Delta\)，如 2 mm）：</p>
+$$ (r_i, c_i) = \Bigl( \Bigl\lfloor \tfrac{x_i - x_0}{\Delta} \Bigr\rfloor,\ \Bigl\lfloor \tfrac{y_i - y_0}{\Delta} \Bigr\rfloor \Bigr) $$
+<p>每个 taxel 的法向力与切向力为落入顶点力之和（\(\boldsymbol{F}_i\) 为 IPC 逐顶点接触力，已旋入传感器系）：</p>
+$$ F_{rc} = \sum_{i:\,(r_i,c_i)=(r,c)} \max\bigl(F_{i,z},\,0\bigr),\qquad \boldsymbol{S}_{rc} = \sum_{i} \bigl(F_{i,x},\,F_{i,y}\bigr),\qquad P_{rc} = \frac{F_{rc}}{\Delta^2} $$
+<p>物理依据：taxel 读数本来就是其覆盖面上牵引力的积分
+\(\int_{A_{rc}} \boldsymbol{t}\cdot\hat{\boldsymbol{z}}\, dA\)，而 IPC 的逐顶点力正是牵引力按顶点
+Voronoi 域的离散积分——分箱<b>就是</b>这个积分（横向顶点漂移 ~0.05 mm ≪ \(\Delta\)）。守恒自检每帧输出：
+\(\sum_{rc} F_{rc} \big/ \sum_i \max(F_{i,z},0) \approx 1\)。</p>
 <ul>
   <li>物理依据：taxel 读数本来就是"其覆盖面上牵引力的积分"，逐顶点力分箱<b>就是</b>这个积分（横向顶点漂移 ~0.05 mm ≪ 2 mm 间距）；</li>
   <li>守恒自检每帧输出：taxel 总和 / 凝胶总法向力 ≈ 1.0；</li>
@@ -88,10 +146,11 @@
 </ul>
 
 <h3>3. 力 → 电信号（显式换能模型，参数可换）</h3>
-<pre class="code">电导  G = G₀ + k·F        <span class="c"># FSR 数据手册的"电导近似线性于力"，G₀=1/1MΩ，k=2×10⁻⁴ S/N</span>
-噪声  G += N(0, σ_G)       <span class="c"># 电导域高斯噪声</span>
-分压  v = V_ref · R_pull / (R_pull + 1/G)
-量化  adc = round(v / V_ref · 4095)   <span class="c"># 12-bit；手套层再映射到 0–254</span></pre>
+$$ G_{rc} = G_0 + \kappa\, F_{rc} + \varepsilon,\qquad \varepsilon \sim \mathcal{N}(0, \sigma_G^2) $$
+<p>FSR 数据手册的"电导近似线性于力"：\(G_0 = 1/(1\,\mathrm{M\Omega})\)（零载电导），
+\(\kappa = 2\times10^{-4}\ \mathrm{S/N}\)（灵敏度），噪声加在电导域。读出电路为上拉分压 + ADC 量化：</p>
+$$ v_{rc} = V_{\mathrm{ref}}\, \frac{R_{\mathrm{pull}}}{R_{\mathrm{pull}} + 1/G_{rc}},\qquad \mathrm{adc}_{rc} = \operatorname{round}\!\Bigl( \frac{v_{rc}}{V_{\mathrm{ref}}}\,(2^{b}-1) \Bigr) $$
+<p>\(V_{\mathrm{ref}}=3.3\ \mathrm{V},\ R_{\mathrm{pull}}=10\ \mathrm{k\Omega},\ b=12\)；手套层再线性映射到 0–254 并减去皮偏置。</p>
 <p>1–5 是清晰分层的：第 1–2 步（力的获取与分箱）是<b>物理</b>；第 3–5 步（换能与读出电路)是<b>显式模型</b>，
 对着任何一款真实压阻片的数据手册换参数即可仿真那款产品——我们不假装电学部分是从第一性原理来的。</p>
 
