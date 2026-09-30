@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>两种触觉模态的实现</title>
+<meta name="description" content="VBTS 贴装与原生压阻在 StiffGIPC 里的完整实现细节：凝胶制造、三种接入方式、观测管线；无软体的 taxel 分箱、FSR 换能链、手套画布与 IMU。">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="safe.html">SAFE 闭环</a>
+  <a class="item" href="outputs.html">13 项输出详解</a>
+  <a class="item" href="../#hands">返回演示 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / 两种触觉模态</div>
+<div class="kicker">Tactile Modalities · Implementation</div>
+<h1>VBTS 贴装与原生压阻，到底怎么实现的</h1>
+<p class="lead">同一个 IPC 引擎上的两条独立触觉路线：<b>VBTS 贴装</b>是"给手指粘一块软凝胶膜 + 虚拟相机"，
+输出连续高分辨率的触觉图像；<b>原生压阻</b>是"手指自己的表面就是传感器"，不加任何软体，
+输出离散 taxel 阵列的电信号。两条路线共享同一个力学真值来源——IPC 求解器的逐顶点接触力。</p>
+
+<h2 id="vbts">一、VBTS 贴装：从一块 STL 到一台虚拟传感器</h2>
+
+<h3>1. 凝胶制造（fabricate 管线）</h3>
+<pre class="code"><span class="c"># 以夹爪指面 pad（40×20×3 mm）为例</span>
+盒体 STL（表面预细分 1.5 mm）
+  → tetgen 四面体化（max_volume = 2×10⁻¹⁰ m³ → 顶点间距 ≈0.55 mm，4967 顶点 / 22639 四面体）
+  → 顶点掩码：coat_mask（z≈0 的感测面）｜ stick_mask（z≈3 mm 的安装面）
+  → 标记点阵：每个 marker 记为（所在涂层三角形的 3 个顶点索引 + 重心坐标）
+  → 相机配置：正交投影，0.079375 mm/px，分辨率按膜面尺寸取整（504×252）</pre>
+<ul>
+  <li>标记用重心坐标绑定的意义：marker 位置成为 FEM 状态的<b>线性函数</b>，膜怎么变形它就怎么走，无须任何跟踪算法；</li>
+  <li>真实外壳同形版本：从厂商 STEP 用 gmsh 提取最大平面感测窗，按窗口尺寸走同一条管线（厂商 CAD 本体不入库）。</li>
+</ul>
+
+<h3>2. 接入引擎（GelBody，三种安装方式）</h3>
+<p>凝胶作为 FEM 软体加载（E = 1 MPa，ν = 0.4，ρ = 1000 kg/m³——软硅胶量级），
+安装面顶点与载体（手指/jaw 刚体）之间三选一：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>方式</th><th>机制</th><th>力学性质</th><th>结论</th></tr></thead>
+<tbody>
+<tr><td class="mono">add_fixed</td><td>安装面顶点世界固定</td><td>传感器不动，物体来压</td><td>压入台架用（SDK 验证场景）</td></tr>
+<tr><td class="mono">add_pinned</td><td>硬钉接到刚体（每步覆写位置）</td><td><b>单向</b>：载体感受不到凝胶反力，边界力无界</td><td>抓取会把求解器磨死（实测 175 次线搜索失败），弃用</td></tr>
+<tr><td class="mono">add_stitched</td><td>安装面每顶点一根 stitch 弹簧拉向载体锚点（刚度 = soft_motion_rate = 10⁴）</td><td><b>双向、有界</b>：接触抵抗时凝胶滞后于载体而非被硬注入位移</td><td><b>抓取一律用它</b>（平移驱动精确）</td></tr>
+</tbody>
+</table></div>
+<p>摩擦按引擎约定成对相乘：μ_pair = μ_gel × μ_object（凝胶 1.0 × 螺栓 0.6 = 0.6，剪切实验实测滑移比 0.600±0.008）。</p>
+
+<h3>3. 传感器跟着手走（位姿账本）</h3>
+<ul>
+  <li>手上的安装帧来自对指求解与共设计（L20 的安装倾角从 24.7° 优化到 6.3°）；夹爪上是"平板 pad 约定"（涂层 z=0 面朝物体）；</li>
+  <li><b>引擎陷阱</b>：<code>get_abd_body_transforms</code> 返回的是"顶点均值质心 + 单位旋转"的<b>规范帧</b>，不是加载位姿。
+  当前传感器位姿必须用刚体运动复合：<code>W = (C_now · C_load⁻¹) · T_load · M_mount</code>——直接当位姿用会差约 8 mm，taxel 窗读全零（踩过）。</li>
+</ul>
+
+<h3>4. 观测管线（几何 → 图像）</h3>
+<pre class="code">FEM 顶点（世界系） → 旋入传感器局部系
+  → 正交 z-buffer 光栅化涂层三角网 → 原始深度图
+  → 高斯平滑（σ≈1–2 px，压掉网格三角化棱面）
+  → 逐像素法向（对像素间距的度量梯度——原库的索引梯度会渲染出与接触无关的图像，已修）
+  → normal→RGB 残差 MLP（预训练检查点）＋参考底图 → Rectify 触觉图像
+标记点：重心插值出 3D 位置 → 正交投影 → Marker2D/3D/Flow</pre>
+
+<h2 id="piezo">二、原生压阻：不加软体，表面即传感器</h2>
+
+<h3>1. 接触体就是手指本身</h3>
+<ul>
+  <li>L20 指尖的 distal 网格（去重后的 CAD 表面，~10⁴ 顶点）直接作为刚体（ABD）接触体加载——<b>场景里没有任何附加凝胶</b>；</li>
+  <li>每根手指挂在沿按压方向的棱柱关节上做<b>力伺服</b>（taxel 法向和反馈给目标推进；刚-刚接触约 30 N/mm，开环位控会瞬间怼到 100 N 以上）；</li>
+  <li>相邻指尖互碰会把彼此顶起 3–4 mm（真实手指靠各自伺服避开），故排除指-指碰撞、保留指-物接触。</li>
+</ul>
+
+<h3>2. 力 → taxel：分箱是精确的</h3>
+<pre class="code">IPC 逐顶点接触力 F_i（牛顿，精确）
+  → 旋入传感器局部系，取压缩法向分量 F_z⁺ 与切向 (F_x, F_y)
+  → 按<b>静止</b>局部坐标 (x, y) 落进 rows×cols 网格（如 8×6 @ 2 mm）
+  → 每 taxel 力 = 落入顶点力之和</pre>
+<ul>
+  <li>物理依据：taxel 读数本来就是"其覆盖面上牵引力的积分"，逐顶点力分箱<b>就是</b>这个积分（横向顶点漂移 ~0.05 mm ≪ 2 mm 间距）；</li>
+  <li>守恒自检每帧输出：taxel 总和 / 凝胶总法向力 ≈ 1.0；</li>
+  <li>工程规则一：每 taxel 需 ≥10 个顶点平均（IPC 力集中在接触顶点上，太细的间距读数会抖）；</li>
+  <li>工程规则二：taxel 网格中心对准指尖<b>切点顶点</b>——第一版对准"指腹窗口中点"，结果阵列带着 120 N 却读 0.0 N（窗口偏了 8 mm）。</li>
+</ul>
+
+<h3>3. 力 → 电信号（显式换能模型，参数可换）</h3>
+<pre class="code">电导  G = G₀ + k·F        <span class="c"># FSR 数据手册的"电导近似线性于力"，G₀=1/1MΩ，k=2×10⁻⁴ S/N</span>
+噪声  G += N(0, σ_G)       <span class="c"># 电导域高斯噪声</span>
+分压  v = V_ref · R_pull / (R_pull + 1/G)
+量化  adc = round(v / V_ref · 4095)   <span class="c"># 12-bit；手套层再映射到 0–254</span></pre>
+<p>1–5 是清晰分层的：第 1–2 步（力的获取与分箱）是<b>物理</b>；第 3–5 步（换能与读出电路)是<b>显式模型</b>，
+对着任何一款真实压阻片的数据手册换参数即可仿真那款产品——我们不假装电学部分是从第一性原理来的。</p>
+
+<h3>4. 手套层（把分区拼成整手）</h3>
+<ul>
+  <li>各指尖的 taxel 阵列作为"分区"放进 63×39 画布的文档化槽位（thumb/index/middle/ring/pinky/palm），画布其余格恒零——传感器只在真实存在的位置，画布对此诚实；</li>
+  <li>ADC 0–254 + 去皮（tare 捕获当前画布为零点偏置）+ 接触点统计（阈值、计数、和、最大、均值）；</li>
+  <li>IMU 从掌部刚体位姿序列有限差分：比力 <code>f_b = Rᵀ(a − g)</code> 与体角速度——捷联 IMU 的理想版。</li>
+</ul>
+
+<h2 id="compare">三、两条路线对比</h2>
+<div class="tblwrap"><table>
+<thead><tr><th></th><th>VBTS 贴装</th><th>原生压阻</th></tr></thead>
+<tbody>
+<tr><td>需要改造手吗</td><td>要：指面粘 3 mm 凝胶</td><td>不要：原表面即传感面</td></tr>
+<tr><td>输出形态</td><td>连续图像/网格（10⁵ 像素级）</td><td>离散 taxel 电信号（10¹–10² 点）</td></tr>
+<tr><td>空间分辨率</td><td>~0.08 mm/px</td><td>~2 mm/taxel</td></tr>
+<tr><td>力语义</td><td>力场重建（仿真中为真值）</td><td>直接出力/压强，天然定标</td></tr>
+<tr><td>擅长</td><td>纹理/刻字/形状识别、滑移场</td><td>抓握力控、全手覆盖、低成本</td></tr>
+<tr><td>共同点</td><td colspan="2">同一 IPC 逐顶点接触力做源头；可同帧共存于同一块 pad（双模态演示）</td></tr>
+</tbody>
+</table></div>
+
+<div class="note good"><b>在哪能看到</b>
+主页 <a href="../#hands">灵巧手板块</a>：VBTS 抓取视频、L20 原生压阻视频（四指依次力伺服点按，taxel 阵列逐指点亮）、
+双模态并排对比图（同一次抓取同一帧）、63×39 手套画布视频、压阻通路原理图。
+复现：<code>scene_l20_native.py</code> / <code>scene_glove.py</code>。</div>
+</article>
+
+<footer><div class="container">
+  <span><a href="outputs.html">← 上一篇：13 项输出详解</a></span>
+  <span><a href="../">返回首页</a></span>
+</div></footer>
+</body>
+</html>

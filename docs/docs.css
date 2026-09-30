@@ -1,0 +1,139 @@
+/* Shared style for the technical explainer pages — same design language as
+   the landing page (Docusaurus/Infima look). */
+:root {
+  --primary: #2878d0;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --ink: #1c1e21;
+  --sub: #606770;
+  --e200: #ebedf0;
+  --e300: #dadde1;
+  --code-bg: #f6f7f8;
+  --navbar-shadow: 0 1px 2px 0 rgba(0,0,0,.1);
+  --fig-shadow: 0 2px 10px rgba(0,0,0,.06);
+  --acc-sdk: #2878d0;
+  --acc-gui: #9b51e0;
+  --acc-hw: #da8a1b;
+  --acc-data: #239b72;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary: #5ba3e8;
+    --bg: #1b1b1d;
+    --surface: #242526;
+    --ink: #e3e3e3;
+    --sub: #a8b0bb;
+    --e200: #3a3f46;
+    --e300: #444950;
+    --code-bg: #2a2c2e;
+    --navbar-shadow: 0 1px 2px 0 rgba(0,0,0,.4);
+    --fig-shadow: 0 2px 10px rgba(0,0,0,.30);
+    --acc-sdk: #5ba3e8;
+    --acc-gui: #b47ae8;
+    --acc-hw: #e8a94a;
+    --acc-data: #3dbb8f;
+  }
+}
+* { box-sizing: border-box; }
+html { color-scheme: light dark; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell,
+    "Noto Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+.mono { font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: .875em; }
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img, video { max-width: 100%; }
+.container { max-width: 1140px; margin: 0 auto; padding-inline: 16px; }
+
+.navbar { position: sticky; top: 0; z-index: 50; background: var(--surface); box-shadow: var(--navbar-shadow); }
+.navbar .container { display: flex; align-items: center; gap: 20px; height: 60px; }
+.navbar__title { font-weight: 700; font-size: 1.05rem; color: var(--ink); margin-right: auto; white-space: nowrap; }
+.navbar__title .dot { color: var(--primary); }
+.navbar a.item { color: var(--ink); font-size: .93rem; opacity: .85; }
+.navbar a.item:hover { color: var(--primary); opacity: 1; text-decoration: none; }
+
+article { max-width: 880px; margin: 0 auto; padding: 2.2rem 16px 4rem; }
+.crumb { font-size: .85rem; color: var(--sub); margin-bottom: 1.2rem; }
+.kicker {
+  letter-spacing: .16em; text-transform: uppercase;
+  font-size: .75rem; font-weight: 700; color: var(--primary); margin-bottom: .5rem;
+}
+article h1 { font-size: clamp(1.9rem, 4.5vw, 2.8rem); letter-spacing: -.03em; line-height: 1.15; margin: 0 0 .6rem; }
+article .lead { color: var(--sub); font-size: 1.06rem; margin: 0 0 2rem; }
+article h2 { font-size: 1.55rem; margin: 2.6rem 0 .6rem; letter-spacing: -.01em; scroll-margin-top: 76px;
+  border-bottom: 1px solid var(--e200); padding-bottom: .35rem; }
+article h3 { font-size: 1.15rem; margin: 1.8rem 0 .4rem; scroll-margin-top: 76px; }
+article p { margin: .6rem 0 1rem; }
+article ul, article ol { padding-left: 1.4em; }
+article li { margin-bottom: .4rem; }
+
+.tblwrap { overflow-x: auto; border: 1px solid var(--e300); border-radius: .75rem;
+  background: var(--surface); box-shadow: var(--fig-shadow); margin: 1.2rem 0 1.5rem; }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { text-align: left; padding: .55rem .85rem; border-top: 1px solid var(--e200); vertical-align: top; }
+thead th { border-top: none; background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+  font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--sub); }
+td.mono, th.mono { white-space: nowrap; }
+
+pre.code, code.block {
+  display: block; background: var(--code-bg); border: 1px solid var(--e200); border-radius: .6rem;
+  padding: .9rem 1.1rem; overflow-x: auto;
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: .84rem; line-height: 1.7; margin: .9rem 0 1.2rem; white-space: pre;
+}
+pre.code .c { color: var(--sub); }
+p code, li code, td code {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: .85em; background: var(--code-bg); border: 1px solid var(--e200);
+  border-radius: .3rem; padding: .05em .35em;
+}
+
+.note {
+  border: 1px solid var(--e200); border-left: 5px solid var(--primary);
+  border-radius: .6rem; background: var(--surface); box-shadow: var(--fig-shadow);
+  padding: .8rem 1.1rem; margin: 1.2rem 0; font-size: .95rem;
+}
+.note.warn { border-left-color: var(--acc-hw); }
+.note.good { border-left-color: var(--acc-data); }
+.note b:first-child { display: block; margin-bottom: .15rem; }
+
+.loop {
+  display: grid; gap: .5rem; margin: 1.2rem 0 1.4rem;
+}
+.loop .step {
+  border: 1px solid var(--e300); border-radius: .6rem; background: var(--surface);
+  padding: .55rem 1rem; box-shadow: var(--fig-shadow); font-size: .95rem;
+}
+.loop .step b { color: var(--primary); }
+.loop .arrow { text-align: center; color: var(--sub); line-height: 1; font-size: 1.05rem; }
+
+.out-card {
+  border: 1px solid var(--e300); border-left: 5px solid var(--cat, var(--primary));
+  border-radius: .7rem; background: var(--surface); box-shadow: var(--fig-shadow);
+  padding: 1rem 1.25rem .8rem; margin: 1rem 0;
+}
+.out-card h3 { margin: 0 0 .35rem; }
+.out-card .meta { font-size: .82rem; color: var(--sub); margin-bottom: .5rem;
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.out-card p { margin: .35rem 0; font-size: .95rem; }
+.out-card p b { color: var(--cat, var(--primary)); font-weight: 600; }
+.cat-img { --cat: var(--acc-gui); }
+.cat-geo { --cat: var(--acc-sdk); }
+.cat-force { --cat: var(--acc-hw); }
+.cat-marker { --cat: var(--acc-data); }
+.cat-misc { --cat: var(--sub); }
+
+.toc { border: 1px solid var(--e200); border-radius: .7rem; background: var(--surface);
+  box-shadow: var(--fig-shadow); padding: .9rem 1.3rem; margin: 1.2rem 0 1.8rem; font-size: .92rem; }
+.toc b { display: block; margin-bottom: .3rem; }
+.toc a { display: inline-block; margin: .1rem .8rem .1rem 0; }
+
+footer { border-top: 1px solid var(--e200); color: var(--sub); font-size: .85rem;
+  padding: 1.4rem 16px 2.4rem; }
+footer .container { display: flex; gap: 1.5rem; flex-wrap: wrap; }

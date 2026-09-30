@@ -144,6 +144,7 @@ img, video { max-width: 100%; }
 section.block { padding: 3.5rem 0 1.5rem; }
 section.block > .container > .section-intro h2 { scroll-margin-top: 80px; }
 .section-intro p.lead { color: var(--sub); margin: .8rem 0 0; }
+.section-intro a.more { font-weight: 700; font-size: .95rem; display: inline-block; margin-top: .55rem; }
 .kicker--sdk { color: var(--acc-sdk) !important; }
 .kicker--gui { color: var(--acc-gui) !important; }
 .kicker--hw { color: var(--acc-hw) !important; }
@@ -209,6 +210,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <a class="item opt" href="#hands">灵巧手</a>
   <a class="item opt" href="#data">数据与验证</a>
   <a class="item opt" href="#modules">模块</a>
+  <a class="item opt" href="docs/outputs.html">技术详解</a>
   <a class="item" href="https://github.com/haoxiangNtu/stiff-physics">GitHub</a>
 </div></nav>
 
@@ -258,7 +260,9 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <h2>SAFE 模式：触觉闭环抓取</h2>
     <p class="lead">不再是脚本轨迹——夹爪由引擎棱柱关节链驱动（anchor→吊架→双 jaw），控制 API 与商用夹爪 SDK 同构
     （POSITION 带 vmax/fmax 力钳位、SPEED、SAFE）。演示故意用 1.5 N 弱抓（摩擦容量 1.8 N &lt; 螺栓重 2.75 N，物理上保证滑），
-    提升中 pad 触觉检测滑移并自动阶梯增力 1.5→2.4→3.8→6.1→9.8 N，滑移归零后稳稳提起。</p>
+    提升中 pad 触觉检测滑移并自动阶梯增力 1.5→2.4→3.8→6.1→9.8 N，滑移归零后稳稳提起。
+    一句话：<b>先用刚好的小力捏住，感到微滑就自动加一档</b>——人手抓鸡蛋的反射，搬进了夹爪。
+    <a class="more" href="docs/safe.html">阅读原理与实现详解 →</a></p>
   </div>
   <figure class="fig">
     <video src="media/gripper_safe_dashboard.mp4" muted loop playsinline controls preload="metadata"></video>
@@ -300,7 +304,10 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <div class="kicker kicker--sdk">SDK Alignment</div>
     <h2>商用视触 SDK 词表 13/13 对齐</h2>
     <p class="lead">对照商用视触 SDK 公开文档的 OutputType 枚举逐项实现：一次 <span class="mono">selectSensorInfo</span>
-    调用从单个引擎快照同帧取回全部 13 种输出（与其 SDK 的同帧保证一致），<span class="mono">calibrateSensor</span> 刷新无接触参考帧；生命周期（scanSerialNumber / create / release）与后处理模式（exportRuntimeConfig → createSolver 离线重放）同语义实现。</p>
+    调用从单个引擎快照同帧取回全部 13 种输出（与其 SDK 的同帧保证一致），<span class="mono">calibrateSensor</span> 刷新无接触参考帧；生命周期（scanSerialNumber / create / release）与后处理模式（exportRuntimeConfig → createSolver 离线重放）同语义实现。
+    13 项输出按用途分四类：<b>触觉图像</b>（Rectify/Difference）、<b>接触几何</b>（Depth/Mesh3D 系）、
+    <b>接触力</b>（Force/ForceNorm/六维合力）、<b>标记点与滑移</b>（Marker 系）——分别回答"长什么样 / 什么形状 / 多大力 / 滑没滑"。
+    <a class="more" href="docs/outputs.html">13 项输出逐项详解 →</a></p>
   </div>
   <figure class="fig">
     <img src="media/sensor_api_alignment.png" alt="视触 SDK OutputType 全词表对齐面板" loading="lazy">
@@ -314,7 +321,8 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <div class="kicker kicker--hw">Hands &amp; Hardware</div>
     <h2>灵巧手：VBTS 贴装与原生压阻</h2>
     <p class="lead">两条独立路线：VBTS 凝胶 pad 贴装指端（对指求解 + 共设计安装倾角 24.7°→6.3°）；
-    以及不加软体、直接用 LinkerHand L20 原生接触面做压阻感知。</p>
+    以及不加软体、直接用 LinkerHand L20 原生接触面做压阻感知。
+    <a class="more" href="docs/modalities.html">两种模态的实现细节（凝胶制造 / 三种安装 / taxel 分箱 / 换能链）→</a></p>
   </div>
   <div class="fig-grid">
     <figure class="fig">

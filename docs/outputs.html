@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>触觉 SDK 13 项输出详解</title>
+<meta name="description" content="商用视触 SDK OutputType 的 13 项输出逐一说明：物理含义、真实传感器如何得到、我们的仿真如何计算、在哪条实验里验证。">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="safe.html">SAFE 闭环</a>
+  <a class="item" href="modalities.html">两种触觉模态</a>
+  <a class="item" href="../#sdk">返回演示 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / 13 项输出</div>
+<div class="kicker">SDK Alignment · Reference</div>
+<h1>触觉 SDK 的 13 项输出，每一项是什么</h1>
+<p class="lead">商用视触觉传感器（VBTS）是"凝胶膜 + 背后一个微型相机"：按压使膜变形，相机拍下变形，算法从图像反解出触觉信息。
+其 SDK 把全部输出定义为一个 OutputType 枚举，一次 <code>selectSensorInfo(...)</code> 调用可同帧取回任意多项。
+我们在仿真里 1:1 实现了同一词表（<code>stiff_physics.sensors.tactile_api</code>）。下面按四类逐项说明：
+<b style="color:var(--acc-gui)">触觉图像</b> ·
+<b style="color:var(--acc-sdk)">接触几何</b> ·
+<b style="color:var(--acc-hw)">接触力</b> ·
+<b style="color:var(--acc-data)">标记点/滑移</b>。</p>
+
+<div class="toc"><b>目录</b>
+<a href="#rectify">Rectify</a><a href="#difference">Difference</a><a href="#depth">Depth</a>
+<a href="#mesh3d">Mesh3D</a><a href="#mesh3dinit">Mesh3DInit</a><a href="#mesh3dflow">Mesh3DFlow</a>
+<a href="#force">Force</a><a href="#forcenorm">ForceNorm</a><a href="#forceresultant">ForceResultant</a>
+<a href="#marker2d">Marker2D</a><a href="#marker3d">Marker3D</a><a href="#marker3dflow">Marker3DFlow</a>
+<a href="#timestamp">TimeStamp</a><a href="#semantics">调用语义</a><a href="#lifecycle">生命周期与后处理</a>
+</div>
+
+<h2 id="cat-img" style="border-color:var(--acc-gui)">触觉图像类</h2>
+
+<div class="out-card cat-img" id="rectify">
+<h3>1 · Rectify — 校正触觉图像</h3>
+<div class="meta">(H, W, 3) RGB，[0,1]；夹爪 pad 为 504×252 @ 0.079 mm/px</div>
+<p><b>是什么</b>：相机看到的接触画面（去畸变校正后）——纹理、刻字、边缘直接肉眼可见，是"触觉当图像用"的输出。</p>
+<p><b>真实传感器</b>：物理相机拍摄凝胶背面，光度由内置 LED 照明决定。</p>
+<p><b>我们的计算</b>：深度图 → 逐像素表面法向（度量梯度）→ 预训练的 normal→RGB 残差 MLP（逐像素 6×256 层 + 位置编码）叠加到参考底图上；静息态做平场校准使无接触时精确回到参考图。</p>
+<p><b>诚实注记</b>：几何是忠实的，但色彩标定来自另一家传感器（GelSight 系）的公开检查点——这是全站唯一"风格非目标产品"的输出。</p>
+</div>
+
+<div class="out-card cat-img" id="difference">
+<h3>2 · Difference — 差分图像</h3>
+<div class="meta">(H, W, 3)，有符号浮点</div>
+<p><b>是什么</b>：Rectify 减去无接触参考帧（<code>calibrateSensor()</code> 时捕获）。静态外观被扣掉，只剩接触引起的变化——弱压痕的信噪比远高于原图。</p>
+<p><b>我们的计算</b>：当前帧 MLP 渲染结果 − 参考帧渲染结果，逐像素相减。</p>
+</div>
+
+<h2 id="cat-geo" style="border-color:var(--acc-sdk)">接触几何类</h2>
+
+<div class="out-card cat-geo" id="depth">
+<h3>3 · Depth — 压入深度图</h3>
+<div class="meta">(H, W)，毫米，0 = 未接触</div>
+<p><b>是什么</b>：每个像素下凝胶表面被压入的深度——"压进来的东西是什么形状"的直接答案。M20 螺母压入时六角面与中孔在这里最清晰。</p>
+<p><b>真实传感器</b>：从图像反解（光度立体或学习法），是厂商核心算法。</p>
+<p><b>我们的计算</b>：对变形后的涂层三角网做<b>正交 z-buffer 光栅化</b>（每像素一根 −z 方向射线，重心插值取最高交点），减去参考深度、截断为非负。GPU 版是 CUDA 光栅核；离线求解器的 CPU 版逐三角形包围盒光栅——两者 p99 偏差 0.000 mm。</p>
+<p><b>验证</b>：129 N 压入 0.883 mm，应力/应变与凝胶模量自洽；螺纹压印剖面峰间距 = 2.5 mm = M20 国标螺距。</p>
+</div>
+
+<div class="out-card cat-geo" id="mesh3d">
+<h3>4 · Mesh3D — 表面网格（当前）</h3>
+<div class="meta">(N_coat, 3)，毫米，传感器局部系</div>
+<p><b>是什么</b>：感测涂层全部顶点的当前三维位置——比深度图更完整（深度图是它沿相机轴的投影）。</p>
+<p><b>我们的计算</b>：FEM 顶点位置从引擎读出，变换到传感器局部系，取涂层掩码内的顶点。这是仿真的原生量，零重建误差。</p>
+</div>
+
+<div class="out-card cat-geo" id="mesh3dinit">
+<h3>5 · Mesh3DInit — 表面网格（参考）</h3>
+<div class="meta">(N_coat, 3)，毫米</div>
+<p><b>是什么</b>：<code>calibrateSensor()</code> 时刻的静息网格，形变的比较基准。</p>
+</div>
+
+<div class="out-card cat-geo" id="mesh3dflow">
+<h3>6 · Mesh3DFlow — 表面形变场</h3>
+<div class="meta">(N_coat, 3)，毫米</div>
+<p><b>是什么</b>：Mesh3D − Mesh3DInit，逐顶点位移向量——法向分量是压入，切向分量是剪切。整张膜的形变一次给全。</p>
+</div>
+
+<h2 id="cat-force" style="border-color:var(--acc-hw)">接触力类</h2>
+
+<div class="out-card cat-force" id="force">
+<h3>7 · Force — 分布式三维力场</h3>
+<div class="meta">(顶点位置 mm, 顶点力 (N_coat, 3) N)，传感器局部系</div>
+<p><b>是什么</b>：接触力在整个感测面上的分布——不是一个数，是一张力的"地图"，每个涂层顶点一支三维力向量。</p>
+<p><b>真实传感器</b>：从图像反解力场，是厂商最核心的专有算法。</p>
+<p><b>我们的计算</b>：直接读 IPC 求解器的逐顶点接触力（障碍函数法向力 + 求解器滞后摩擦力），旋到传感器系。<b>这里是仿真反超真实的点</b>：真实传感器给的是重建估计，我们给的是求解器精确真值。</p>
+<p><b>验证</b>：剪切实验实测滑移比 |Ft|/|Fn| = 0.600 ± 0.008（设定 μ = 0.6）。</p>
+</div>
+
+<div class="out-card cat-force" id="forcenorm">
+<h3>8 · ForceNorm — 法向力分布</h3>
+<div class="meta">(N_coat,)，N</div>
+<p><b>是什么</b>：力场的法向（z）分量——"压强图"的力版本，SAFE 闭环的伺服反馈就取它的和。</p>
+</div>
+
+<div class="out-card cat-force" id="forceresultant">
+<h3>9 · ForceResultant — 六维合力/力矩</h3>
+<div class="meta">(6,)：[Fx, Fy, Fz, Tx, Ty, Tz]，N 与 N·m，对传感器原点</div>
+<p><b>是什么</b>：把整张力图积分成一支六维旋量——传感器同时充当一个内嵌的六维力/力矩传感器。</p>
+<p><b>我们的计算</b>：<code>F = Σ F_i，T = Σ r_i × F_i</code>，<b>只对感测涂层顶点积分</b>——超出 pad 的物体会压到侧壁顶点，真实的膜看不到那些力；全顶点版曾被 <code>Fz = ΣForceNorm</code> 一致性断言当场抓获。</p>
+<p><b>验证</b>：提升保持段双 pad 切向合力 = −mg = −2.75 N（牛顿静力学恒等式）。</p>
+</div>
+
+<h2 id="cat-marker" style="border-color:var(--acc-data)">标记点 / 滑移类</h2>
+
+<div class="out-card cat-marker" id="marker2d">
+<h3>10 · Marker2D — 标记点像素位置</h3>
+<div class="meta">(K, 2)，像素</div>
+<p><b>是什么</b>：凝胶里印刷的标记点阵在相机画面中的位置。真实传感器靠视觉跟踪这些点。</p>
+<p><b>我们的计算</b>：每个标记以（3 个网格顶点索引 + 重心坐标）绑定在涂层三角形上——位置是 FEM 状态的<b>线性函数</b>，随网格变形自动移动，再正交投影到像素平面。</p>
+</div>
+
+<div class="out-card cat-marker" id="marker3d">
+<h3>11 · Marker3D — 标记点三维位置</h3>
+<div class="meta">(K, 3)，毫米，传感器局部系</div>
+<p><b>是什么</b>：同一组标记点的三维坐标（真实传感器由算法从图像抬升到 3D）。</p>
+</div>
+
+<div class="out-card cat-marker" id="marker3dflow">
+<h3>12 · Marker3DFlow — 标记点位移场</h3>
+<div class="meta">(K, 3)，毫米，相对参考帧</div>
+<p><b>是什么</b>：标记点相对静息位置的位移。<b>切向分量就是膜面剪切场</b>——物体将滑未滑时它先饱和，是滑移的前兆信号，也是 SAFE 模式的理论依据。</p>
+</div>
+
+<h2 id="cat-misc" style="border-color:var(--sub)">时间与调用语义</h2>
+
+<div class="out-card cat-misc" id="timestamp">
+<h3>13 · TimeStamp — 时间戳</h3>
+<div class="meta">标量，秒</div>
+<p><b>是什么</b>：本帧数据的采集时刻。我们 = 帧计数 × dt（5 ms 物理步长）。</p>
+</div>
+
+<div class="out-card cat-misc" id="semantics">
+<h3>selectSensorInfo 的同帧保证</h3>
+<p>一次调用请求多个输出时，全部输出<b>来自同一帧</b>——图像、力、marker 之间没有时间错位。
+我们的实现从单个引擎快照（一次顶点读出 + 一次力读出）服务所有请求项，同帧性由构造保证。多输出按参数顺序返回元组，单输出直接返回。</p>
+</div>
+
+<h2 id="lifecycle">生命周期与后处理模式</h2>
+<ul>
+  <li><code>scanSerialNumber()</code> → 序列号到编号的映射；<code>create(序列号或编号)</code> 取实例；<code>release()</code> 释放——与真实 SDK 的本地模式同构（仿真作用域内）。</li>
+  <li><code>calibrateSensor()</code>：无接触状态下重新捕获参考帧（深度 / 网格 / 标记 / 图像四套基准同时刷新）。</li>
+  <li><b>后处理模式</b>：<code>exportRuntimeConfig(dir)</code> 导出传感器配置 + 参考帧 + 网格资产；
+  <code>createSolver(runtime)</code> 得到<b>纯 CPU 离线求解器</b>，喂入录制的逐帧原始状态（顶点 + 力 + 时刻）即可重算全部 13 项输出——
+  回归断言：离线重算 vs 实时 GPU 输出 p99 |Δdepth| = 0.000 mm。用途：回归测试、调参、无 GPU 环境回放。</li>
+</ul>
+
+<div class="note good"><b>在哪能看到这 13 项一起工作</b>
+主页 <a href="../#sdk">SDK 对齐板块</a> 的 2×4 面板图：M20 螺母压入夹爪 pad，一次调用取回全部 13 项各占一格，
+右下角是一致性断言与六维合力数值（RTX 4090 与 A800 上数值完全一致）。复现：<code>scripts/verify_sensor_api.py</code>。</div>
+</article>
+
+<footer><div class="container">
+  <span><a href="safe.html">← 上一篇：SAFE 闭环</a></span>
+  <span><a href="modalities.html">下一篇：两种触觉模态的实现 →</a></span>
+</div></footer>
+</body>
+</html>
