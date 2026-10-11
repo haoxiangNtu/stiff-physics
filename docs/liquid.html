@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>液体引擎改动日志</title>
+<meta name="description" content="StiffGIPC 引擎改动日志：怎样一步步把 MPM Lite 液体放进 IPC 的 Newton 求解器，做到与玻璃器皿、夹爪双向隐式耦合；全量审计与精确提速；以及“静止的水为什么在动”的根因与根本修正。">
+<link rel="stylesheet" href="docs.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters: [{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]});"></script>
+<style>
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:.2rem 0}
+.fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
+  margin: 1.2rem 0 1.5rem; padding: .6rem; box-shadow: var(--fig-shadow); }
+.fig img, .fig video { border-radius: .4rem; width: 100%; height: auto; display: block; background: #fff; }
+.fig figcaption { color: var(--sub); text-align: center; padding: .6rem .5rem .1rem; font-size: .86rem; line-height: 1.6; }
+.fig figcaption b { color: var(--ink); font-weight: 600; }
+figure { margin: 0; }
+.step-no { display: inline-block; min-width: 2.1em; padding: 0 .45em; margin-right: .45em; border-radius: .4rem;
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface)); color: var(--primary);
+  font-size: .8em; text-align: center; vertical-align: .12em; }
+.date { color: var(--sub); font-size: .82rem; font-weight: 400; margin-left: .4rem; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+tr.hl td { background: color-mix(in srgb, var(--acc-data) 10%, var(--surface)); font-weight: 600; }
+.tag { display: inline-block; border-radius: 999px; padding: 0 .55rem; font-size: .76rem; font-weight: 600;
+  background: var(--e200); white-space: nowrap; }
+.tag.ok { color: var(--acc-data); } .tag.na { color: var(--sub); } .tag.no { color: #d0453a; } .tag.part { color: var(--acc-hw); } .tag.run { color: var(--primary); }
+svg.diagram { width: 100%; height: auto; display: block; }
+svg.diagram text { font-family: inherit; font-size: 12.5px; }
+svg.diagram .t-title { font-size: 14px; font-weight: 700; fill: var(--ink); }
+svg.diagram .t-note { fill: var(--sub); }
+svg.diagram .t-red { fill: #d0453a; font-weight: 600; }
+svg.diagram .t-green { fill: var(--acc-data); font-weight: 600; }
+svg.diagram .halo { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+svg.diagram .s-fluid { fill: color-mix(in srgb, var(--primary) 13%, transparent); }
+svg.diagram .s-glass { fill: color-mix(in srgb, var(--sub) 24%, transparent); stroke: var(--sub); stroke-width: 1.2; }
+svg.diagram .s-grid { stroke: var(--e300); stroke-width: 1; }
+svg.diagram .s-cut { fill: none; stroke: #d0453a; stroke-width: 2; stroke-dasharray: 5 3; }
+svg.diagram .s-nbr { fill: none; stroke: var(--acc-hw); stroke-width: 2; stroke-dasharray: 5 3; }
+svg.diagram .s-part { fill: var(--primary); opacity: .72; }
+svg.diagram .s-node { fill: var(--ink); }
+svg.diagram .s-ghost { fill: var(--surface); stroke: #d0453a; stroke-width: 2.2; }
+svg.diagram .s-ghost-ok { fill: var(--surface); stroke: var(--acc-data); stroke-width: 2.2; }
+svg.diagram .s-leak { stroke: #d0453a; stroke-width: 2; }
+svg.diagram .s-bar { stroke: var(--primary); stroke-width: 2; }
+svg.diagram .s-wp { fill: var(--acc-data); }
+svg.diagram .s-n { stroke: var(--acc-data); stroke-width: 2; }
+svg.diagram .s-gp { fill: none; stroke: var(--acc-hw); stroke-width: 2.2; }
+svg.diagram .m-red { fill: #d0453a; } svg.diagram .m-blue { fill: var(--primary); }
+svg.diagram .m-green { fill: var(--acc-data); } svg.diagram .m-amber { fill: var(--acc-hw); }
+</style>
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="safe.html">SAFE 闭环</a>
+  <a class="item" href="modalities.html">两种触觉模态</a>
+  <a class="item" href="../#liquid">返回演示 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / 液体与引擎改动日志</div>
+<div class="kicker">Engine Dev Log · MPM Lite × IPC</div>
+<h1>引擎改动日志：一步步把水放进 IPC 求解器</h1>
+<p class="lead">化学实验台演示里，FR3 机械臂靠指尖触觉完成滴管取液、试管倾倒、搅拌、摇匀、倒废液五段操作。
+这要求液体能和薄玻璃器皿、凝胶指垫<b>双向</b>耦合：水推玻璃，玻璃兜住水，夹爪还能从触觉里读出被夹物体的软硬。
+这一页按时间顺序记录我们对 StiffGIPC 引擎做的每一步改动：看到了什么，改了什么，怎么验证的。
+每条结论都对应一次实验；被实验推翻的猜想也照实写出来。</p>
+
+<div class="note warn"><b>代码状态</b>
+液体模块和本页的全部改动都在引擎的开发分支上，<b>还没有进入公开发布的 wheel</b>（v0.8.5.4 不含液体）。
+第十步的根本修正已通过静置验证，倾倒与摇匀的动态验证正在 A800 上运行，结果出来后更新本页。</div>
+
+<div class="toc"><b>目录</b>
+<a href="#overview">全程一览</a><a href="#why">1 起点</a><a href="#grid">2 网格进 Newton</a><a href="#contact">3 粒子成为接触点</a>
+<a href="#demo">4 演示跑通</a><a href="#audit">5 审计与提速</a><a href="#symptom">6 静止的水在动</a>
+<a href="#hypotheses">7 排除假设</a><a href="#root">8 根因</a><a href="#stopgap">9 应急版固壁</a>
+<a href="#fix">10 根本修正</a><a href="#status">现状</a><a href="#refs">参考文献</a>
+</div>
+
+<h2 id="overview">全程一览</h2>
+<div class="tblwrap"><table>
+<thead><tr><th>步</th><th>日期</th><th>改动</th><th>关键验证</th></tr></thead>
+<tbody>
+<tr><td>1</td><td class="mono">10-04 → 10-06</td><td>外挂原型在薄玻璃上失败，改为引擎内的单体隐式耦合</td><td>玻璃壁 2.5–3.5 mm，比网格 5 mm 还薄</td></tr>
+<tr><td>2</td><td class="mono">10-06</td><td>MPM Lite 网格节点成为 IPC Newton 的未知量</td><td>溃坝体积守恒；静置水深 56.0 mm（理论 55.6）</td></tr>
+<tr><td>3</td><td class="mono">10-06</td><td>粒子成为 IPC 接触点，障碍项链式回传到网格</td><td>密度 0.5 的方块浮起约一半，水位按排开体积上升</td></tr>
+<tr><td>4</td><td class="mono">10-07 → 10-08</td><td>倾倒对准、洒落处理、会吸液滴液的空心滴管</td><td>96% 倒进废液杯；试管 95–96% 倒进烧杯</td></tr>
+<tr><td>5</td><td class="mono">10-08 → 10-09</td><td>全量审计：精确提速 + 6 处修复</td><td>完整五段 1054.8 → 403.7 分钟（2.61 倍），物理不变</td></tr>
+<tr><td>6</td><td class="mono">10-10</td><td>路径追踪视频里“静止”的水面在动</td><td>判定为仿真问题：约 2 cm/s 的稳定环流</td></tr>
+<tr><td>7</td><td class="mono">10-10</td><td>逐个排除 9 个假设</td><td>环流是确定性的，与噪声、播种、求解精度无关</td></tr>
+<tr><td>8</td><td class="mono">10-10</td><td>根因：固壁只作用于粒子，不作用于网格</td><td>因果检验：0.05–0.07 cm/s，原文的跟踪 J 体积精确</td></tr>
+<tr><td>9</td><td class="mono">10-11</td><td>应急版网格固壁 + 一个转置错误 + 规划避让</td><td>烧瓶 2.0 → 0.16 cm/s，倒液正常，完整五段重跑</td></tr>
+<tr class="hl"><td>10</td><td class="mono">10-11</td><td>根本修正：壁面场约束 + 全梯度幽灵罚项</td><td>静置 0.01 cm/s，体积误差 −0.7%；动态验证进行中</td></tr>
+</tbody></table></div>
+
+<h2 id="why"><span class="step-no">1</span>起点：为什么要把水放进引擎<span class="date">10-04 → 10-06</span></h2>
+<p>液体用 MPM 表示，按 2026 年的 MPM Lite 实现：三线性（Q1）网格、每个体素只在中心做一次积分、粒子不参与积分。
+第一版是引擎外的 Python/Warp 原型，液体单向地读引擎的三角网，把器壁当作<b>网格节点上的边界条件</b>，这也是 MPM Lite 原文处理固壁的方式。</p>
+<p>原型在实验台上失败了。玻璃壁只有 2.5–3.5 mm 厚，比 5 mm 的网格间距还薄，一个节点分不清自己在薄壁的哪一侧。
+加厚网格、加约束带、加内部规则，每个补丁要么改变了器皿几何，要么让倾倒失效；FLIP 传输加节点边界还会漏水结块。</p>
+<p>于是我们换了架构：把隐式 MPM Lite 直接放进 IPC 的 Newton 求解里，与固体一起单体（monolithic）求解，思路与 BFEMP（隐式 MPM + 障碍接触）一致。
+粒子与三角形之间的 IPC 接触与网格间距无关，薄壁不再是问题；接触力天然双向。一个 5 ms 时间步只解一次，液体不做子步。</p>
+
+<h2 id="grid"><span class="step-no">2</span>网格节点成为 Newton 的未知量<span class="date">10-06</span></h2>
+<p>每一步把活动体素的网格节点写成一个只有点的 FEM 体（“节点池”）的顶点：格点位置、P2G 得到的质量与速度、预测位置
+\(\tilde{\mathbf x}\) 每步重写。IPC 的增量势能里多出一项水的能量（\(\mathbf x\) 现在也包含网格节点）：</p>
+$$ E(\mathbf x) = \tfrac12\|\mathbf x-\tilde{\mathbf x}\|_M^2 + \Delta t^2\,\Psi_{\text{固体}}(\mathbf x) + B(\mathbf x) + \Delta t^2\sum_{c} V_c\,\psi(J_c) $$
+<p>每个活动体素 \(c\) 是一个 8 节点的水单元。体积比由节点位移 \(\mathbf u_i\) 在体素中心的梯度给出：</p>
+$$ J_c = \det\Bigl(I + \sum_{i\in c}\mathbf u_i\otimes\nabla w_{ic}\Bigr)\,J_c^{\text{base}},\qquad \nabla w_{ic} = \tfrac{1}{4\Delta x}(\pm1,\pm1,\pm1) $$
+$$ \psi(J) = \tfrac{\kappa}{2}(J-1)^2\quad (J<1),\qquad \psi(J) = 0\quad (J\ge 1) $$
+<p>水只抗压、不抗拉（无张力状态方程）。能量对 3×3 的变形矩阵求 9×9 Hessian，投影成半正定，再映射到 8 个节点，得到 36 个 3×3 块，装进 FEM 的弹性装配。</p>
+<p><b>验证。</b>溃坝：10 cm 水柱坍塌的前沿速度合理，体积守恒。静置水箱：6400 个粒子装在静止的盒子里，0 个出界、0 穿透，静置水深 p95 为 56.0 mm（理论 55.6 mm），每步 10–14 次 Newton。</p>
+
+<h2 id="contact"><span class="step-no">3</span>粒子成为 IPC 接触点（双向耦合）<span class="date">10-06</span></h2>
+<p>MPM Lite 的传输分两跳：粒子到单元中心用三线性权重，单元中心到 8 个角节点用常数权重 1/8。合起来每个粒子挂在 27 个节点上：
+\(\mathbf x_p = \sum_i W_{ip}\,\mathbf x_i\)。粒子被注册成第二个只有点的体：不贡献自由度，但参与碰撞检测、CCD 和点–三角形障碍。
+障碍项的梯度与 Hessian 用链式法则回传到网格节点：</p>
+$$ \frac{\partial B}{\partial \mathbf x_i} = \sum_p W_{ip}\,\frac{\partial B}{\partial \mathbf x_p},\qquad
+   \frac{\partial^2 B}{\partial \mathbf x_i\,\partial \mathbf x_j} = \sum_{p,q} W_{ip}\,W_{jq}\,\frac{\partial^2 B}{\partial \mathbf x_p\,\partial \mathbf x_q} $$
+<p>“三角形顶点–粒子”块展开成 27 个“顶点–节点”块，“粒子–粒子”块展开成 378 个“节点–节点”块。
+刚体三角形顶点再由引擎原有的 ABD 装配归约到刚体自由度，所以固体通过同一组接触块感受到水：<b>双向、隐式</b>，没有额外的耦合迭代。</p>
+<p><b>验证。</b>一个 4 cm、密度 500 kg/m³ 的自由方块丢进水里：浸没 41–58%（理论一半），水位按排开体积上升，方块向对角线平衡姿态倾斜，和真实的半密度方块一致。</p>
+<div class="note"><b>这一步踩过的坑</b>
+<ul>
+<li>粒子行的动能项必须为零（每步令 \(\tilde{\mathbf x}_p=\mathbf x_p\)），否则水的惯性在能量里被算两次而梯度里没有，线搜索卡死。</li>
+<li>每步开头移动粒子和节点后要重建接触对；用上一步的接触对算初始能量，每次线搜索都会减半 64 次直到放弃。</li>
+<li>摩擦能量除以全局速率，速率为 0 时得到 NaN，已加保护。</li>
+<li>抖动播种会产生几乎没有质量的节点，Jacobi 预条件 PCG 因此停滞：节点质量设下限 0.05 ρΔx³。</li>
+<li>用对角集中或 8 节点近似代替精确的 378 块展开，Newton 次数会涨到 600–1000 次，必须保留精确展开。</li>
+<li>粒子推开（push-apart）放在求解之后会穿过薄壁，因为 CCD 只保护 Newton 步：改到求解之前，并限制推开距离。</li>
+</ul></div>
+
+<h2 id="demo"><span class="step-no">4</span>让演示跑通<span class="date">10-07 → 10-08</span></h2>
+<ul>
+<li><b>倒不进废液杯，原因不在液体。</b>早期每次运行进废液杯的水都不超过 2.4%。倾倒轨迹只按一个预测的杯沿点规划，
+而真实的最低杯沿点在倾斜过程中移动 2–3 cm，抓取又偏离中心，杯沿离废液杯轴线 34–60 mm。
+改成按引擎实时位姿做杯沿反馈：先用的“向误差滤波”只能消掉一半偏差，改成积分作用后误差归零，96% 的水倒进废液杯。</li>
+<li><b>洒在桌上的水会一直滑。</b>节点质量下限让孤立的水滴在摩擦面前重了约 10 倍，洒出的水铺成 44×48 cm 的薄层。
+加了粒子–地面摩擦 0.3，并让离桌面 1.5 mm 以内的粒子停住（烧杯底在 3 mm 高处，不受影响）。</li>
+<li><b>节点池容量在初始化时固定。</b>第一次完整运行在倾倒时以 4913 个活动节点超出 4876 的容量而中止，默认容量改为种子节点数的 12 倍且不少于 8192。</li>
+<li><b>会吸液、会滴液的空心滴管。</b>新资产：6 mm 内孔、1.5 mm 玻璃壁、橡胶球。引擎加了沿管轴的“泵”：吸、悬停抵消重力、脉冲挤出。
+迭代了四版：滴液脉冲期间也要保持抵消重力；先跟踪管速再加抵消项；位置搬运要在求解前执行。
+后来审计发现吸入搬运会把粒子推进管壁，改成只搬运正对管口的粒子：嵌壁粒子从 15–22 个降到 0，送达量从 21 升到 29。</li>
+<li><b>试管倒偏。</b>试管内径 13.6 mm 不到 3 个网格，水在接近 98° 时一股涌出、带水平速度落在烧杯远侧杯沿。先加了与烧杯同样的实时管口反馈（46% → 61%），再把瞄准点改到烧杯轴线前 20 mm，升到 95–96%。</li>
+</ul>
+
+<h2 id="audit"><span class="step-no">5</span>全量审计，只落地精度不变的提速<span class="date">10-08 → 10-09</span></h2>
+<p>两份审计（液体 37 条、固体 26 条）去重后共 63 条结论。规则是每条都要“原理 + 实验”：23 条证实，14 条只证实了一半，
+11 条被实验推翻，15 条只有原理（写明了不做实验的原因）。落地的改动都先证明不改变结果：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>改动</th><th>怎么证明精确</th><th>实测收益</th></tr></thead>
+<tbody>
+<tr><td>PCG 只解“活跃前缀”：闲置的节点槽和粒子行本来就是惰性的</td><td>严格模式下，同一进程内 4900+ 次求解，前缀解与全长解逐位相同</td><td>每次 PCG 迭代 57 → 44 µs</td></tr>
+<tr><td>液体三元组预留移出 ×32 余量；每次 Newton 只清零接触段</td><td>未清零区域填 NaN 做毒化测试：无液体严格模式下 67 个记录数组逐位相同</td><td>装配 8.8 → 4.9 ms/Newton</td></tr>
+<tr><td>可证明步长不变时跳过扫掠 CCD（可选开关）</td><td>开、关各跑 60 帧逐位相同；液体下同进程影子校验 0 不一致</td><td>靠近段 −17.7%（无液体）/ −8%（有液体）</td></tr>
+<tr><td>机械臂碰撞网格的长边细分到 50 mm 以内（几何不变）</td><td>Newton 次数、滑移、刚度估计、指力与原网格一致</td><td>第 4 段 −35%（无液体）/ −30%（有液体）</td></tr>
+</tbody></table></div>
+<p>最后一项是验证中的新发现：夹住物体时，接触检测的时间由最慢的一个 GPU 线程决定。手部网格上一条 186 mm 的长边，让一个线程每次查询串行做 2102 次边–边检测。
+总工作量并没有变，消掉长边才是真正的解法。</p>
+<p>审计还证实并修复了几个 bug：</p>
+<ul>
+<li><b>MAS 预条件下凝胶销钉全部钉错。</b>FEM 销钉编号没有随 METIS 重排映射，每块凝胶 250 个销钉都钉在了错误的顶点上（中位偏差 9.2 mm）。</li>
+<li><b>ABD 预条件子把刚体质量算了两次。</b>20 个刚体全部满足 P − A = M。改成精确块后物理不变，但 PCG 迭代反而多 13–15%，整段慢 2%：如实记录，保留了恢复旧行为的开关。</li>
+<li><b>接触刚度 κ 的质量尺度被稀释。</b>它取“总质量 / 全部顶点数”，把没有质量的刚体表面顶点也算进分母。只加密机械臂表面（几何不变），这个尺度就缩到 0.806 倍，κ 跟着变软，烧杯的刚度估计从 61.3 变成 54.7 MPa。新增配置项把这个尺度钉住。</li>
+<li>滴管尖端位置偏轴 4.5 mm；试管播种有 1 个粒子起始就在玻璃里；一个计时器把约 15 帧之和标成了“每步”。</li>
+</ul>
+<p>被推翻的例子：“水动起来每次 PCG 迭代要 100–300 µs”，实测 32–47 µs；“MAS 让 Newton 多 3.7 倍”，测量时销钉全错，修好后重测 Newton 最多 2 倍、整段慢 2.1 倍；
+PCG 容差收紧到 1e-8 在无液体时整段快 23%，有液体时反而慢 5.5%，所以液体场景不改。</p>
+<div class="note good"><b>结果</b>
+同一配方的完整五段连续运行（144.7 s 仿真，28 940 帧）从 1054.8 分钟降到 403.7 分钟，快 2.61 倍。胶头和烧杯的刚度估计与修复前相同，试管和玻璃棒（刚性玻璃，估计本身病态）落在历次运行的波动范围内；
+试管 354/354 个粒子倒进烧杯，废液杯收到 2947/2952，滴管送液从 16 个粒子升到 34 个。</div>
+
+<h2 id="symptom"><span class="step-no">6</span>“静止”的水为什么在动<span class="date">10-10</span></h2>
+<p>用 Mitsuba 路径追踪渲染演示视频时发现，第 1 段之后再没人碰过的烧瓶，水面一直在“蠕动”。先要回答：这是渲染的问题还是仿真的问题？</p>
+<div class="tblwrap"><table>
+<thead><tr><th>测量</th><th>结果</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>粒子速度中位数</td><td>4.8 s 时 2.01 cm/s，144 s 时 1.99 cm/s</td><td>全程平坦，不衰减；每 40 ms 走 0.74 mm，是粒子半径的 60%</td></tr>
+<tr><td>速度自相关</td><td>40 ms 0.97，400 ms 0.54，1 s −0.29</td><td>相干的慢环流，不是逐步随机抖动</td></tr>
+<tr><td>自由面高度</td><td>标准差 0.059 mm</td><td>水位不动，动的是水面纹理</td></tr>
+<tr><td>渲染：相邻两帧同一随机种子</td><td>静止桌面区平均差 0.33/255，水区 1.77/255</td><td>固定种子下静止几何不闪，变化来自几何本身</td></tr>
+<tr><td>渲染：表面重建</td><td>重建出的水面每帧爬动 0.17 mm，粗糙度 2.3 mm</td><td>重建分辨出了单个粒子，粒子一动水面纹理就动</td></tr>
+</tbody></table></div>
+<p>结论是<b>仿真问题，渲染只是把它放大</b>。加大重建平滑长度能遮住，但水流和水滴也会被抹粗；对位置做时间平均也无效，因为运动是相干的。</p>
+
+<h2 id="hypotheses"><span class="step-no">7</span>逐个排除假设<span class="date">10-10</span></h2>
+<p>实验对象是单独静置的烧瓶（7606 个粒子，机械臂 3 s 到位后再静置 8 s），每个假设各跑一次对照。
+平均流场显示，静止的水其实是<b>一个稳定的轴对称涡环</b>：沿壁下沉约 2 cm/s，沿底向内，从中间上升 2–3 cm/s，沿液面向外。
+锥形烧瓶和直壁烧杯里都一样，换随机种子后逐格相同。</p>
+<figure class="fig">
+<img src="../media/liquid_rest_flow.png" alt="静置烧瓶的平均流场：默认情况下是一个涡环，两种固壁修正后几乎不动" loading="lazy">
+<figcaption><b>静置末 4 s 的轴对称平均流场</b>（子午面，左右镜像）：左为默认设置，中为第 9 步的应急版固壁，右为第 10 步的根本修正。三幅图的箭头用同一比例，中间的空白是插在瓶里的滴管。</figcaption>
+</figure>
+<div class="tblwrap"><table>
+<thead><tr><th>假设</th><th>实验</th><th>结果</th><th>结论</th></tr></thead>
+<tbody>
+<tr><td>粒子推开在注入能量</td><td>关掉推开</td><td>2.0 → 0.9 cm/s，但水慢慢被压实</td><td><span class="tag part">只占一半</span></td></tr>
+<tr><td>APIC 仿射项</td><td>PIC；仿射项 ×0.5、×0.25</td><td>0.28 / 0.55 / 0.39 cm/s，涡环图案相同</td><td><span class="tag part">只是缩放</span></td></tr>
+<tr><td>体积状态量的取法</td><td>换 4 种 J 的算法</td><td>位置法更差（3.2 cm/s）；跟踪 J 安静但体积压实 23–26%</td><td><span class="tag part">症状换了形式</span></td></tr>
+<tr><td>节点质量下限带了重量</td><td>下限只加惯性、不加重量</td><td>2.05 vs 2.01 cm/s，涡环逐格相同</td><td><span class="tag no">推翻</span></td></tr>
+<tr><td>播种的随机抖动</td><td>完美格点播种</td><td>1.92 cm/s，11 s 内格点被打乱到同样程度</td><td><span class="tag no">推翻</span></td></tr>
+<tr><td>求解残差</td><td>PCG 1e-8，Newton 上限 200（在 PIC、无推开的变体上）</td><td>不变</td><td><span class="tag no">推翻</span></td></tr>
+<tr><td>贴壁层的 J 只增不减</td><td>跟踪 J 上限 1.0</td><td>贴壁层支撑 0.73 → 0.76，涡环不变</td><td><span class="tag no">推翻</span></td></tr>
+<tr><td>边界节点惯性漏压</td><td>边界节点加重</td><td>涡环弱 4 倍，但贴壁层支撑仍只有 0.68</td><td><span class="tag part">只是刹车</span></td></tr>
+<tr><td>无张力状态方程把噪声整流</td><td>跟踪 J + 对称能量（即原文模型）</td><td>J 不再漂移，粒子照样压实约 25%</td><td><span class="tag no">推翻</span></td></tr>
+</tbody></table></div>
+<p>“贴壁层支撑”是贴壁 4 mm 内粒子的压力与当地静水压之比。它在所有变体里都只有 0.47–0.76：贴壁的水没有被托住，于是下沉，带出整个涡环。
+最后一行最关键：原文模型里体积状态不漂，粒子却照样被压实，说明<b>网格的变形根本没有看到粒子的挤压</b>。</p>
+
+<h2 id="root"><span class="step-no">8</span>根因：固壁只作用在粒子上，没有作用在网格上<span class="date">10-10</span></h2>
+<p>MPM Lite 在<b>网格</b>上保证不可压：体积比 \(J_c\) 由节点位移算出。而我们的器壁只通过 IPC 障碍作用在<b>粒子</b>上。
+被器壁切开的单元（切割单元）有一半节点落在玻璃一侧，它们是自由的自由度：单元的压力可以靠这些节点“流进玻璃”释放掉，粒子却被障碍挡在原地。</p>
+<figure class="fig">
+<svg class="diagram" viewBox="0 0 720 330" role="img" aria-label="切割单元示意：默认情况下玻璃一侧的网格节点自由，根本修正后由壁面场约束和幽灵罚项确定">
+<defs>
+<marker id="ah-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m-red"/></marker>
+<marker id="ah-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m-blue"/></marker>
+<marker id="ah-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m-green"/></marker>
+<marker id="ah-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m-amber"/></marker>
+</defs>
+<g transform="translate(0,0)">
+<text x="170" y="22" text-anchor="middle" class="t-title">默认：网格看不见壁面</text>
+<polygon points="20,70 167.5,70 185.0,280 20,280" class="s-fluid"/>
+<polygon points="165.0,40 191.0,40 211.0,280 185.0,280" class="s-glass"/>
+<line x1="20" y1="40" x2="20" y2="280" class="s-grid"/>
+<line x1="80" y1="40" x2="80" y2="280" class="s-grid"/>
+<line x1="140" y1="40" x2="140" y2="280" class="s-grid"/>
+<line x1="200" y1="40" x2="200" y2="280" class="s-grid"/>
+<line x1="260" y1="40" x2="260" y2="280" class="s-grid"/>
+<line x1="320" y1="40" x2="320" y2="280" class="s-grid"/>
+<line x1="20" y1="40" x2="320" y2="40" class="s-grid"/>
+<line x1="20" y1="100" x2="320" y2="100" class="s-grid"/>
+<line x1="20" y1="160" x2="320" y2="160" class="s-grid"/>
+<line x1="20" y1="220" x2="320" y2="220" class="s-grid"/>
+<line x1="20" y1="280" x2="320" y2="280" class="s-grid"/>
+<rect x="140" y="160" width="60" height="60" class="s-cut"/>
+<circle cx="25.4" cy="77.3" r="3.2" class="s-part"/>
+<circle cx="41.2" cy="77.6" r="3.2" class="s-part"/>
+<circle cx="57.8" cy="74.4" r="3.2" class="s-part"/>
+<circle cx="69.1" cy="79.0" r="3.2" class="s-part"/>
+<circle cx="85.6" cy="75.4" r="3.2" class="s-part"/>
+<circle cx="105.0" cy="76.8" r="3.2" class="s-part"/>
+<circle cx="119.0" cy="76.9" r="3.2" class="s-part"/>
+<circle cx="132.8" cy="74.9" r="3.2" class="s-part"/>
+<circle cx="147.8" cy="79.2" r="3.2" class="s-part"/>
+<circle cx="162.1" cy="78.4" r="3.2" class="s-part"/>
+<circle cx="25.8" cy="89.2" r="3.2" class="s-part"/>
+<circle cx="44.2" cy="91.8" r="3.2" class="s-part"/>
+<circle cx="58.3" cy="94.3" r="3.2" class="s-part"/>
+<circle cx="73.3" cy="94.5" r="3.2" class="s-part"/>
+<circle cx="86.4" cy="93.8" r="3.2" class="s-part"/>
+<circle cx="101.7" cy="94.6" r="3.2" class="s-part"/>
+<circle cx="119.3" cy="89.6" r="3.2" class="s-part"/>
+<circle cx="129.8" cy="90.3" r="3.2" class="s-part"/>
+<circle cx="149.8" cy="91.6" r="3.2" class="s-part"/>
+<circle cx="162.8" cy="90.8" r="3.2" class="s-part"/>
+<circle cx="27.5" cy="109.4" r="3.2" class="s-part"/>
+<circle cx="43.1" cy="109.6" r="3.2" class="s-part"/>
+<circle cx="59.1" cy="109.9" r="3.2" class="s-part"/>
+<circle cx="73.0" cy="105.0" r="3.2" class="s-part"/>
+<circle cx="89.2" cy="109.8" r="3.2" class="s-part"/>
+<circle cx="104.4" cy="107.4" r="3.2" class="s-part"/>
+<circle cx="118.3" cy="105.3" r="3.2" class="s-part"/>
+<circle cx="134.0" cy="107.4" r="3.2" class="s-part"/>
+<circle cx="145.7" cy="104.4" r="3.2" class="s-part"/>
+<circle cx="164.1" cy="109.9" r="3.2" class="s-part"/>
+<circle cx="25.8" cy="123.6" r="3.2" class="s-part"/>
+<circle cx="44.2" cy="119.3" r="3.2" class="s-part"/>
+<circle cx="57.7" cy="119.3" r="3.2" class="s-part"/>
+<circle cx="73.3" cy="121.0" r="3.2" class="s-part"/>
+<circle cx="89.3" cy="124.9" r="3.2" class="s-part"/>
+<circle cx="102.0" cy="125.0" r="3.2" class="s-part"/>
+<circle cx="115.9" cy="119.5" r="3.2" class="s-part"/>
+<circle cx="132.6" cy="119.2" r="3.2" class="s-part"/>
+<circle cx="145.2" cy="121.4" r="3.2" class="s-part"/>
+<circle cx="162.7" cy="119.9" r="3.2" class="s-part"/>
+<circle cx="29.4" cy="136.3" r="3.2" class="s-part"/>
+<circle cx="41.8" cy="137.1" r="3.2" class="s-part"/>
+<circle cx="57.9" cy="137.6" r="3.2" class="s-part"/>
+<circle cx="72.4" cy="137.7" r="3.2" class="s-part"/>
+<circle cx="89.6" cy="137.0" r="3.2" class="s-part"/>
+<circle cx="101.6" cy="138.3" r="3.2" class="s-part"/>
+<circle cx="115.4" cy="135.8" r="3.2" class="s-part"/>
+<circle cx="134.9" cy="137.1" r="3.2" class="s-part"/>
+<circle cx="147.3" cy="134.1" r="3.2" class="s-part"/>
+<circle cx="161.5" cy="137.5" r="3.2" class="s-part"/>
+<circle cx="27.8" cy="151.8" r="3.2" class="s-part"/>
+<circle cx="43.1" cy="151.1" r="3.2" class="s-part"/>
+<circle cx="58.2" cy="153.4" r="3.2" class="s-part"/>
+<circle cx="69.1" cy="149.4" r="3.2" class="s-part"/>
+<circle cx="88.1" cy="154.8" r="3.2" class="s-part"/>
+<circle cx="100.5" cy="151.7" r="3.2" class="s-part"/>
+<circle cx="117.6" cy="150.9" r="3.2" class="s-part"/>
+<circle cx="131.2" cy="150.9" r="3.2" class="s-part"/>
+<circle cx="146.2" cy="152.6" r="3.2" class="s-part"/>
+<circle cx="160.8" cy="151.3" r="3.2" class="s-part"/>
+<circle cx="25.9" cy="165.3" r="3.2" class="s-part"/>
+<circle cx="43.8" cy="165.4" r="3.2" class="s-part"/>
+<circle cx="55.1" cy="166.6" r="3.2" class="s-part"/>
+<circle cx="73.2" cy="164.6" r="3.2" class="s-part"/>
+<circle cx="85.9" cy="166.0" r="3.2" class="s-part"/>
+<circle cx="104.0" cy="166.6" r="3.2" class="s-part"/>
+<circle cx="119.1" cy="165.0" r="3.2" class="s-part"/>
+<circle cx="131.0" cy="167.9" r="3.2" class="s-part"/>
+<circle cx="149.3" cy="166.7" r="3.2" class="s-part"/>
+<circle cx="160.4" cy="164.7" r="3.2" class="s-part"/>
+<circle cx="25.1" cy="180.7" r="3.2" class="s-part"/>
+<circle cx="43.8" cy="182.9" r="3.2" class="s-part"/>
+<circle cx="58.8" cy="181.1" r="3.2" class="s-part"/>
+<circle cx="69.8" cy="180.8" r="3.2" class="s-part"/>
+<circle cx="88.8" cy="180.6" r="3.2" class="s-part"/>
+<circle cx="101.1" cy="181.5" r="3.2" class="s-part"/>
+<circle cx="116.5" cy="181.5" r="3.2" class="s-part"/>
+<circle cx="134.5" cy="179.9" r="3.2" class="s-part"/>
+<circle cx="144.0" cy="184.7" r="3.2" class="s-part"/>
+<circle cx="164.3" cy="184.9" r="3.2" class="s-part"/>
+<circle cx="28.5" cy="199.0" r="3.2" class="s-part"/>
+<circle cx="43.0" cy="197.1" r="3.2" class="s-part"/>
+<circle cx="55.7" cy="196.0" r="3.2" class="s-part"/>
+<circle cx="70.4" cy="194.4" r="3.2" class="s-part"/>
+<circle cx="87.5" cy="195.7" r="3.2" class="s-part"/>
+<circle cx="103.9" cy="194.3" r="3.2" class="s-part"/>
+<circle cx="119.4" cy="198.2" r="3.2" class="s-part"/>
+<circle cx="134.5" cy="199.4" r="3.2" class="s-part"/>
+<circle cx="149.4" cy="197.5" r="3.2" class="s-part"/>
+<circle cx="159.1" cy="198.5" r="3.2" class="s-part"/>
+<circle cx="26.5" cy="214.6" r="3.2" class="s-part"/>
+<circle cx="42.7" cy="211.0" r="3.2" class="s-part"/>
+<circle cx="55.5" cy="214.2" r="3.2" class="s-part"/>
+<circle cx="71.9" cy="213.7" r="3.2" class="s-part"/>
+<circle cx="86.1" cy="210.2" r="3.2" class="s-part"/>
+<circle cx="102.2" cy="213.9" r="3.2" class="s-part"/>
+<circle cx="115.0" cy="213.8" r="3.2" class="s-part"/>
+<circle cx="134.5" cy="213.8" r="3.2" class="s-part"/>
+<circle cx="148.9" cy="209.0" r="3.2" class="s-part"/>
+<circle cx="162.8" cy="214.2" r="3.2" class="s-part"/>
+<circle cx="26.5" cy="226.8" r="3.2" class="s-part"/>
+<circle cx="43.7" cy="224.0" r="3.2" class="s-part"/>
+<circle cx="54.3" cy="224.8" r="3.2" class="s-part"/>
+<circle cx="69.7" cy="224.4" r="3.2" class="s-part"/>
+<circle cx="89.8" cy="229.1" r="3.2" class="s-part"/>
+<circle cx="99.5" cy="227.0" r="3.2" class="s-part"/>
+<circle cx="115.9" cy="225.9" r="3.2" class="s-part"/>
+<circle cx="131.1" cy="227.9" r="3.2" class="s-part"/>
+<circle cx="147.5" cy="226.2" r="3.2" class="s-part"/>
+<circle cx="160.1" cy="226.0" r="3.2" class="s-part"/>
+<circle cx="24.5" cy="240.1" r="3.2" class="s-part"/>
+<circle cx="41.2" cy="242.6" r="3.2" class="s-part"/>
+<circle cx="58.7" cy="241.3" r="3.2" class="s-part"/>
+<circle cx="73.8" cy="242.7" r="3.2" class="s-part"/>
+<circle cx="86.6" cy="241.2" r="3.2" class="s-part"/>
+<circle cx="102.0" cy="243.2" r="3.2" class="s-part"/>
+<circle cx="116.5" cy="243.2" r="3.2" class="s-part"/>
+<circle cx="131.8" cy="240.5" r="3.2" class="s-part"/>
+<circle cx="147.2" cy="243.2" r="3.2" class="s-part"/>
+<circle cx="159.4" cy="241.5" r="3.2" class="s-part"/>
+<circle cx="29.4" cy="258.7" r="3.2" class="s-part"/>
+<circle cx="40.6" cy="256.8" r="3.2" class="s-part"/>
+<circle cx="54.7" cy="258.9" r="3.2" class="s-part"/>
+<circle cx="73.0" cy="259.3" r="3.2" class="s-part"/>
+<circle cx="88.8" cy="258.0" r="3.2" class="s-part"/>
+<circle cx="103.4" cy="257.4" r="3.2" class="s-part"/>
+<circle cx="114.6" cy="257.5" r="3.2" class="s-part"/>
+<circle cx="129.0" cy="254.9" r="3.2" class="s-part"/>
+<circle cx="148.6" cy="254.3" r="3.2" class="s-part"/>
+<circle cx="159.6" cy="254.6" r="3.2" class="s-part"/>
+<circle cx="24.7" cy="274.1" r="3.2" class="s-part"/>
+<circle cx="43.0" cy="274.0" r="3.2" class="s-part"/>
+<circle cx="59.7" cy="272.5" r="3.2" class="s-part"/>
+<circle cx="73.8" cy="269.2" r="3.2" class="s-part"/>
+<circle cx="88.6" cy="272.1" r="3.2" class="s-part"/>
+<circle cx="103.3" cy="269.6" r="3.2" class="s-part"/>
+<circle cx="118.5" cy="274.6" r="3.2" class="s-part"/>
+<circle cx="129.4" cy="270.9" r="3.2" class="s-part"/>
+<circle cx="147.4" cy="274.0" r="3.2" class="s-part"/>
+<circle cx="160.5" cy="270.1" r="3.2" class="s-part"/>
+<circle cx="175.5" cy="272.7" r="3.2" class="s-part"/>
+<circle cx="20" cy="100" r="4.6" class="s-node"/>
+<circle cx="20" cy="160" r="4.6" class="s-node"/>
+<circle cx="20" cy="220" r="4.6" class="s-node"/>
+<circle cx="20" cy="280" r="4.6" class="s-node"/>
+<circle cx="80" cy="100" r="4.6" class="s-node"/>
+<circle cx="80" cy="160" r="4.6" class="s-node"/>
+<circle cx="80" cy="220" r="4.6" class="s-node"/>
+<circle cx="80" cy="280" r="4.6" class="s-node"/>
+<circle cx="140" cy="100" r="4.6" class="s-node"/>
+<circle cx="140" cy="160" r="4.6" class="s-node"/>
+<circle cx="140" cy="220" r="4.6" class="s-node"/>
+<circle cx="140" cy="280" r="4.6" class="s-node"/>
+<circle cx="200" cy="100" r="5.2" class="s-ghost"/>
+<line x1="206" y1="100" x2="230" y2="104" class="s-leak" marker-end="url(#ah-red)"/>
+<circle cx="200" cy="160" r="5.2" class="s-ghost"/>
+<line x1="206" y1="160" x2="230" y2="164" class="s-leak" marker-end="url(#ah-red)"/>
+<circle cx="200" cy="220" r="5.2" class="s-ghost"/>
+<line x1="206" y1="220" x2="230" y2="224" class="s-leak" marker-end="url(#ah-red)"/>
+<circle cx="200" cy="280" r="5.2" class="s-ghost"/>
+<line x1="206" y1="280" x2="230" y2="284" class="s-leak" marker-end="url(#ah-red)"/>
+<line x1="169.8" y1="110" x2="155.8" y2="110" class="s-bar" marker-end="url(#ah-blue)"/>
+<line x1="177.3" y1="200" x2="163.3" y2="200" class="s-bar" marker-end="url(#ah-blue)"/>
+<line x1="181.1" y1="245" x2="167.1" y2="245" class="s-bar" marker-end="url(#ah-blue)"/>
+<text x="224" y="176" class="t-red halo">玻璃一侧的节点</text>
+<text x="224" y="193" class="t-red halo">是自由的：网格场</text>
+<text x="224" y="210" class="t-red halo">可以“流进”玻璃</text>
+<text x="24" y="300" class="t-note">IPC 障碍（蓝箭头）只推粒子；切割单元（虚线框）</text>
+<text x="24" y="316" class="t-note">的压力经玻璃一侧节点泄掉 → 贴壁层支撑不足</text>
+</g>
+<g transform="translate(370,0)">
+<text x="170" y="22" text-anchor="middle" class="t-title">根本修正：网格也看见壁面</text>
+<polygon points="20,70 167.5,70 185.0,280 20,280" class="s-fluid"/>
+<polygon points="165.0,40 191.0,40 211.0,280 185.0,280" class="s-glass"/>
+<line x1="20" y1="40" x2="20" y2="280" class="s-grid"/>
+<line x1="80" y1="40" x2="80" y2="280" class="s-grid"/>
+<line x1="140" y1="40" x2="140" y2="280" class="s-grid"/>
+<line x1="200" y1="40" x2="200" y2="280" class="s-grid"/>
+<line x1="260" y1="40" x2="260" y2="280" class="s-grid"/>
+<line x1="320" y1="40" x2="320" y2="280" class="s-grid"/>
+<line x1="20" y1="40" x2="320" y2="40" class="s-grid"/>
+<line x1="20" y1="100" x2="320" y2="100" class="s-grid"/>
+<line x1="20" y1="160" x2="320" y2="160" class="s-grid"/>
+<line x1="20" y1="220" x2="320" y2="220" class="s-grid"/>
+<line x1="20" y1="280" x2="320" y2="280" class="s-grid"/>
+<rect x="140" y="160" width="60" height="60" class="s-cut"/>
+<rect x="80" y="160" width="60" height="60" class="s-nbr"/>
+<circle cx="26.2" cy="76.4" r="3.2" class="s-part"/>
+<circle cx="41.1" cy="76.5" r="3.2" class="s-part"/>
+<circle cx="54.5" cy="77.0" r="3.2" class="s-part"/>
+<circle cx="74.8" cy="76.5" r="3.2" class="s-part"/>
+<circle cx="88.5" cy="75.0" r="3.2" class="s-part"/>
+<circle cx="103.1" cy="78.5" r="3.2" class="s-part"/>
+<circle cx="118.0" cy="77.1" r="3.2" class="s-part"/>
+<circle cx="131.9" cy="77.9" r="3.2" class="s-part"/>
+<circle cx="149.4" cy="74.9" r="3.2" class="s-part"/>
+<circle cx="159.6" cy="78.5" r="3.2" class="s-part"/>
+<circle cx="25.1" cy="90.6" r="3.2" class="s-part"/>
+<circle cx="40.2" cy="92.5" r="3.2" class="s-part"/>
+<circle cx="55.9" cy="90.4" r="3.2" class="s-part"/>
+<circle cx="73.1" cy="94.7" r="3.2" class="s-part"/>
+<circle cx="85.8" cy="93.2" r="3.2" class="s-part"/>
+<circle cx="101.5" cy="94.1" r="3.2" class="s-part"/>
+<circle cx="117.5" cy="90.6" r="3.2" class="s-part"/>
+<circle cx="130.3" cy="89.1" r="3.2" class="s-part"/>
+<circle cx="146.9" cy="91.3" r="3.2" class="s-part"/>
+<circle cx="160.0" cy="91.2" r="3.2" class="s-part"/>
+<circle cx="26.9" cy="107.6" r="3.2" class="s-part"/>
+<circle cx="41.8" cy="109.0" r="3.2" class="s-part"/>
+<circle cx="58.9" cy="107.3" r="3.2" class="s-part"/>
+<circle cx="71.9" cy="108.3" r="3.2" class="s-part"/>
+<circle cx="89.1" cy="106.4" r="3.2" class="s-part"/>
+<circle cx="103.4" cy="109.8" r="3.2" class="s-part"/>
+<circle cx="116.8" cy="105.4" r="3.2" class="s-part"/>
+<circle cx="130.4" cy="108.3" r="3.2" class="s-part"/>
+<circle cx="148.1" cy="109.8" r="3.2" class="s-part"/>
+<circle cx="164.1" cy="105.5" r="3.2" class="s-part"/>
+<circle cx="29.2" cy="124.4" r="3.2" class="s-part"/>
+<circle cx="40.5" cy="124.2" r="3.2" class="s-part"/>
+<circle cx="55.9" cy="121.5" r="3.2" class="s-part"/>
+<circle cx="73.4" cy="119.5" r="3.2" class="s-part"/>
+<circle cx="84.6" cy="124.0" r="3.2" class="s-part"/>
+<circle cx="100.8" cy="121.1" r="3.2" class="s-part"/>
+<circle cx="117.5" cy="123.1" r="3.2" class="s-part"/>
+<circle cx="129.0" cy="121.0" r="3.2" class="s-part"/>
+<circle cx="146.6" cy="121.9" r="3.2" class="s-part"/>
+<circle cx="160.3" cy="122.5" r="3.2" class="s-part"/>
+<circle cx="25.6" cy="138.0" r="3.2" class="s-part"/>
+<circle cx="39.7" cy="139.3" r="3.2" class="s-part"/>
+<circle cx="59.5" cy="134.6" r="3.2" class="s-part"/>
+<circle cx="74.6" cy="136.2" r="3.2" class="s-part"/>
+<circle cx="88.6" cy="138.5" r="3.2" class="s-part"/>
+<circle cx="100.8" cy="138.1" r="3.2" class="s-part"/>
+<circle cx="117.9" cy="138.8" r="3.2" class="s-part"/>
+<circle cx="130.6" cy="138.5" r="3.2" class="s-part"/>
+<circle cx="149.8" cy="138.0" r="3.2" class="s-part"/>
+<circle cx="162.2" cy="134.7" r="3.2" class="s-part"/>
+<circle cx="27.4" cy="150.1" r="3.2" class="s-part"/>
+<circle cx="42.9" cy="152.8" r="3.2" class="s-part"/>
+<circle cx="55.1" cy="154.3" r="3.2" class="s-part"/>
+<circle cx="72.9" cy="149.7" r="3.2" class="s-part"/>
+<circle cx="89.6" cy="149.8" r="3.2" class="s-part"/>
+<circle cx="101.0" cy="153.3" r="3.2" class="s-part"/>
+<circle cx="117.6" cy="152.3" r="3.2" class="s-part"/>
+<circle cx="132.9" cy="151.7" r="3.2" class="s-part"/>
+<circle cx="145.9" cy="150.1" r="3.2" class="s-part"/>
+<circle cx="159.4" cy="153.3" r="3.2" class="s-part"/>
+<circle cx="25.6" cy="166.3" r="3.2" class="s-part"/>
+<circle cx="44.2" cy="164.3" r="3.2" class="s-part"/>
+<circle cx="57.0" cy="165.5" r="3.2" class="s-part"/>
+<circle cx="73.6" cy="166.1" r="3.2" class="s-part"/>
+<circle cx="86.0" cy="166.4" r="3.2" class="s-part"/>
+<circle cx="102.2" cy="168.6" r="3.2" class="s-part"/>
+<circle cx="116.1" cy="169.1" r="3.2" class="s-part"/>
+<circle cx="129.7" cy="165.6" r="3.2" class="s-part"/>
+<circle cx="144.6" cy="164.7" r="3.2" class="s-part"/>
+<circle cx="163.7" cy="168.4" r="3.2" class="s-part"/>
+<circle cx="28.9" cy="183.5" r="3.2" class="s-part"/>
+<circle cx="42.6" cy="179.9" r="3.2" class="s-part"/>
+<circle cx="56.4" cy="180.2" r="3.2" class="s-part"/>
+<circle cx="72.2" cy="182.4" r="3.2" class="s-part"/>
+<circle cx="85.2" cy="180.5" r="3.2" class="s-part"/>
+<circle cx="103.7" cy="179.2" r="3.2" class="s-part"/>
+<circle cx="118.8" cy="184.3" r="3.2" class="s-part"/>
+<circle cx="134.7" cy="181.3" r="3.2" class="s-part"/>
+<circle cx="147.3" cy="182.5" r="3.2" class="s-part"/>
+<circle cx="162.8" cy="184.9" r="3.2" class="s-part"/>
+<circle cx="27.6" cy="198.4" r="3.2" class="s-part"/>
+<circle cx="39.0" cy="198.6" r="3.2" class="s-part"/>
+<circle cx="58.0" cy="197.0" r="3.2" class="s-part"/>
+<circle cx="72.1" cy="196.8" r="3.2" class="s-part"/>
+<circle cx="85.2" cy="197.2" r="3.2" class="s-part"/>
+<circle cx="99.2" cy="197.0" r="3.2" class="s-part"/>
+<circle cx="117.9" cy="196.7" r="3.2" class="s-part"/>
+<circle cx="132.4" cy="199.8" r="3.2" class="s-part"/>
+<circle cx="149.4" cy="194.8" r="3.2" class="s-part"/>
+<circle cx="163.8" cy="197.7" r="3.2" class="s-part"/>
+<circle cx="27.2" cy="214.6" r="3.2" class="s-part"/>
+<circle cx="40.9" cy="214.2" r="3.2" class="s-part"/>
+<circle cx="58.2" cy="209.8" r="3.2" class="s-part"/>
+<circle cx="74.1" cy="212.6" r="3.2" class="s-part"/>
+<circle cx="89.6" cy="213.3" r="3.2" class="s-part"/>
+<circle cx="103.4" cy="211.1" r="3.2" class="s-part"/>
+<circle cx="118.8" cy="214.6" r="3.2" class="s-part"/>
+<circle cx="134.2" cy="211.6" r="3.2" class="s-part"/>
+<circle cx="148.5" cy="211.9" r="3.2" class="s-part"/>
+<circle cx="159.7" cy="209.3" r="3.2" class="s-part"/>
+<circle cx="28.2" cy="227.2" r="3.2" class="s-part"/>
+<circle cx="41.5" cy="227.9" r="3.2" class="s-part"/>
+<circle cx="55.8" cy="226.8" r="3.2" class="s-part"/>
+<circle cx="73.5" cy="226.4" r="3.2" class="s-part"/>
+<circle cx="85.1" cy="229.4" r="3.2" class="s-part"/>
+<circle cx="103.3" cy="226.2" r="3.2" class="s-part"/>
+<circle cx="116.2" cy="227.2" r="3.2" class="s-part"/>
+<circle cx="132.6" cy="225.3" r="3.2" class="s-part"/>
+<circle cx="144.0" cy="225.3" r="3.2" class="s-part"/>
+<circle cx="163.7" cy="224.9" r="3.2" class="s-part"/>
+<circle cx="26.4" cy="240.0" r="3.2" class="s-part"/>
+<circle cx="39.2" cy="239.7" r="3.2" class="s-part"/>
+<circle cx="55.0" cy="241.9" r="3.2" class="s-part"/>
+<circle cx="69.4" cy="239.1" r="3.2" class="s-part"/>
+<circle cx="86.7" cy="241.4" r="3.2" class="s-part"/>
+<circle cx="103.2" cy="239.3" r="3.2" class="s-part"/>
+<circle cx="116.4" cy="241.4" r="3.2" class="s-part"/>
+<circle cx="129.2" cy="244.8" r="3.2" class="s-part"/>
+<circle cx="145.3" cy="239.6" r="3.2" class="s-part"/>
+<circle cx="161.8" cy="240.0" r="3.2" class="s-part"/>
+<circle cx="28.4" cy="255.7" r="3.2" class="s-part"/>
+<circle cx="43.7" cy="256.8" r="3.2" class="s-part"/>
+<circle cx="59.6" cy="255.8" r="3.2" class="s-part"/>
+<circle cx="70.5" cy="255.6" r="3.2" class="s-part"/>
+<circle cx="88.9" cy="257.8" r="3.2" class="s-part"/>
+<circle cx="101.1" cy="254.6" r="3.2" class="s-part"/>
+<circle cx="118.1" cy="259.8" r="3.2" class="s-part"/>
+<circle cx="132.6" cy="254.0" r="3.2" class="s-part"/>
+<circle cx="144.2" cy="254.5" r="3.2" class="s-part"/>
+<circle cx="160.0" cy="254.2" r="3.2" class="s-part"/>
+<circle cx="174.3" cy="257.9" r="3.2" class="s-part"/>
+<circle cx="29.8" cy="271.9" r="3.2" class="s-part"/>
+<circle cx="43.8" cy="274.5" r="3.2" class="s-part"/>
+<circle cx="59.6" cy="269.2" r="3.2" class="s-part"/>
+<circle cx="70.8" cy="272.6" r="3.2" class="s-part"/>
+<circle cx="89.7" cy="269.5" r="3.2" class="s-part"/>
+<circle cx="100.8" cy="274.1" r="3.2" class="s-part"/>
+<circle cx="114.7" cy="271.3" r="3.2" class="s-part"/>
+<circle cx="131.0" cy="273.1" r="3.2" class="s-part"/>
+<circle cx="149.6" cy="270.0" r="3.2" class="s-part"/>
+<circle cx="163.4" cy="273.4" r="3.2" class="s-part"/>
+<circle cx="20" cy="100" r="4.6" class="s-node"/>
+<circle cx="20" cy="160" r="4.6" class="s-node"/>
+<circle cx="20" cy="220" r="4.6" class="s-node"/>
+<circle cx="20" cy="280" r="4.6" class="s-node"/>
+<circle cx="80" cy="100" r="4.6" class="s-node"/>
+<circle cx="80" cy="160" r="4.6" class="s-node"/>
+<circle cx="80" cy="220" r="4.6" class="s-node"/>
+<circle cx="80" cy="280" r="4.6" class="s-node"/>
+<circle cx="140" cy="100" r="4.6" class="s-node"/>
+<circle cx="140" cy="160" r="4.6" class="s-node"/>
+<circle cx="140" cy="220" r="4.6" class="s-node"/>
+<circle cx="140" cy="280" r="4.6" class="s-node"/>
+<circle cx="200" cy="100" r="5.2" class="s-ghost-ok"/>
+<circle cx="200" cy="160" r="5.2" class="s-ghost-ok"/>
+<circle cx="200" cy="220" r="5.2" class="s-ghost-ok"/>
+<circle cx="200" cy="280" r="5.2" class="s-ghost-ok"/>
+<rect x="166.9" y="101.5" width="7" height="7" class="s-wp"/>
+<line x1="166.4" y1="105" x2="146.4" y2="103.5" class="s-n" marker-end="url(#ah-green)"/>
+<rect x="170.7" y="146.5" width="7" height="7" class="s-wp"/>
+<line x1="170.2" y1="150" x2="150.2" y2="148.5" class="s-n" marker-end="url(#ah-green)"/>
+<rect x="174.0" y="186.5" width="7" height="7" class="s-wp"/>
+<line x1="173.5" y1="190" x2="153.5" y2="188.5" class="s-n" marker-end="url(#ah-green)"/>
+<rect x="177.8" y="231.5" width="7" height="7" class="s-wp"/>
+<line x1="177.2" y1="235" x2="157.2" y2="233.5" class="s-n" marker-end="url(#ah-green)"/>
+<path d="M 110 228 Q 140 250 170 228" class="s-gp" marker-start="url(#ah-amber)" marker-end="url(#ah-amber)"/>
+<text x="224" y="176" class="t-green halo">玻璃一侧的节点</text>
+<text x="224" y="193" class="t-green halo">= 流体场的光滑</text>
+<text x="224" y="210" class="t-green halo">延拓，不再泄压</text>
+<text x="24" y="300" class="t-note">■ 壁面点：场在法向不得穿入固体，切向自由</text>
+<text x="24" y="316" class="t-note">⌒ 幽灵罚项：切割单元与邻格的速度梯度一致</text>
+</g>
+</svg>
+<figcaption><b>切割单元示意（二维）</b>：玻璃壁比一个网格还薄。左：默认情况下网格看不见壁面。右：第 10 步的根本修正让玻璃一侧的节点成为流体场的光滑延拓。</figcaption>
+</figure>
+<p>这一个缺口同时解释了两种症状：</p>
+<ul>
+<li><b>压力按粒子位置算（默认）</b>：能看到粒子在壁边的堆积，但贴壁单元的支撑经过自由节点泄掉，贴壁层只得到 47–76% 的静水压支撑，于是下沉，形成涡环。</li>
+<li><b>压力按原文的跟踪 J 算</b>：网格根本看不到压缩，没有压力；粒子被障碍挡在壁和底处堆积，体积丢掉 26%。</li>
+</ul>
+<p><b>因果检验。</b>用一个只适用于静止烧瓶的解析几何开关，把玻璃一侧的网格节点直接固定（Dirichlet），其余不变：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>变体</th><th class="num">静置速度</th><th class="num">贴壁层支撑</th><th class="num">体积比 J<sub>c</sub></th><th>涡环</th></tr></thead>
+<tbody>
+<tr><td>默认（压力按粒子位置）</td><td class="num">2.0 cm/s</td><td class="num">0.73</td><td class="num">1.055（发泡）</td><td>壁面 −20 mm/s</td></tr>
+<tr class="hl"><td>默认 + 固定玻璃侧节点</td><td class="num">0.07 cm/s</td><td class="num">1.16</td><td class="num">1.053</td><td>消失</td></tr>
+<tr><td>原文的跟踪 J</td><td class="num">0.35 cm/s</td><td class="num">0.36</td><td class="num">0.746（压实 26%）</td><td>消失</td></tr>
+<tr class="hl"><td>原文的跟踪 J + 固定玻璃侧节点</td><td class="num">0.05 cm/s</td><td class="num">1.09</td><td class="num">1.0001（体积精确）</td><td>消失</td></tr>
+</tbody></table></div>
+<p>根因确认。之前的 J 重锚定、无张力状态方程和粒子推开，治的都是这个缺口的症状。</p>
+<div class="note"><b>为什么 MPM Lite 原文没有这个问题</b>
+原文没有与外部固体的耦合：所有例子（水、沙、果冻、金属轮、雪、奶油、断裂）都是同一张网格上的 MPM 材料，材料之间只通过共享的网格速度相互作用；
+固壁是网格节点上的 Dirichlet 值，原文选线性核的理由之一正是边界条件能“直接、无歧义地”加在网格上。
+与刚体、可变形体的双向耦合被列为未来工作。我们把壁面接触搬到粒子上，是因为玻璃比网格薄（第 1 步）；这修好了薄壁和双向力，却让网格压力看不见壁面。
+所以根本的修正必须是<b>亚网格</b>的：退回节点级边界条件会重新遇到薄壁问题。</div>
+
+<h2 id="stopgap"><span class="step-no">9</span>应急版网格固壁（用于演示重跑）<span class="date">10-11</span></h2>
+<p>为了先把演示做完，我们给每个轴对称的刚体容器写了“内半径随高度”的轮廓，把落在玻璃一侧的节点约束起来。
+第一版让这些节点很重、不受重力、切向沿用上一步的流速；第二版改成只锁法向的罚项，节点保留真实质量和重力，切向完全自由：</p>
+$$ E_{\text{wall}} = \tfrac{K}{2}\bigl(\mathbf n\cdot(\mathbf x_i - \mathbf x_t)\bigr)^2,\qquad \mathbf x_t = \mathbf x_i^0 + \Delta t\,\mathbf v_{\text{body}},\qquad K = 1000\,\rho\Delta x^3 $$
+<p>两版静置都达标，但倾倒都失败：试管里的水倒不出来。最后查明是我们自己的实现错误。
+ABD 刚体的状态 \(q=(\mathbf p,\mathbf a_1,\mathbf a_2,\mathbf a_3)\) 表示 \(\mathbf x = \mathbf p + R\,\bar{\mathbf x}\)，\(R\) 的<b>行</b>是 \(\mathbf a_1,\mathbf a_2,\mathbf a_3\)；
+节点分类时我们把它们当成了列，用的是 \(R^\top\)。容器不转时 \(R\approx I\)，转置没有影响，所有静置测试都正常；
+一倾倒，节点就被放进一个反向倾斜的“虚拟容器”里分类，真实腔体里的流体节点被当成壁外节点钉住。<b>教训：只用静止物体验证不出朝向错误，必须用转动的物体验证。</b></p>
+<div class="tblwrap"><table>
+<thead><tr><th>修正后的验证（全部 5 个容器）</th><th class="num">默认</th><th class="num">应急版固壁</th></tr></thead>
+<tbody>
+<tr><td>烧瓶静置速度</td><td class="num">1.89 cm/s</td><td class="num">0.16 cm/s</td></tr>
+<tr><td>试管倒空用时（5–95%）</td><td class="num">0.52 s</td><td class="num">0.48 s</td></tr>
+<tr><td>倒完后烧杯静置速度</td><td class="num">2.35 cm/s</td><td class="num">0.32 cm/s</td></tr>
+<tr><td>摇匀时溅出的粒子</td><td class="num">5</td><td class="num">0</td></tr>
+<tr><td>倒进废液杯</td><td class="num">2561 / 2567</td><td class="num">2567 / 2567</td></tr>
+<tr><td>废液杯最后 3 s 静置速度</td><td class="num">0.54 cm/s</td><td class="num">0.08 cm/s</td></tr>
+<tr><td>第 4 段墙钟时间</td><td class="num">94.2 分钟</td><td class="num">74.5 分钟</td></tr>
+</tbody></table></div>
+<p>用这个配置重跑了完整五段（362 分钟，之前 403.7 分钟）。烧瓶的静置速度从 1.84–1.99 降到 0.11–0.14 cm/s，渲染出的水面每帧爬动从 0.181 降到 0.020 mm。</p>
+<figure class="fig">
+<video src="../media/liquid_still_water_compare.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>同一时刻的两次完整运行</b>（路径追踪，局部放大 2 倍）：左为修复前，右为应急版固壁。左边无人触碰的烧瓶里水面一直在“沸腾”。</figcaption>
+</figure>
+<p>重跑也暴露了应急版的两个缺陷：</p>
+<ul>
+<li><b>耦合是单向、滞后一步的。</b>约束目标按上一步末的刚体速度外推。轻的试管被夹爪挤动时，管内的水像锚一样顶住它，触觉刚度估计从“刚性”变成约 4 MPa。
+最终演示只给烧瓶和两个烧杯加固壁（已验证此时倒液正常、试管估计恢复“刚性”）。</li>
+<li><b>规划打平。</b>第 4 段两个侧抓姿态的规划代价相同，这次选到的那个让第 6 连杆擦到烧瓶。规划里加了与其他器皿保持 40 mm 的避让项，复验最近距离 40.6 mm。这是演示层的修正，与液体无关。</li>
+</ul>
+<p>另一个副作用：滴管送液从 33–34 个粒子降到 21–23 个。滴管泵按位置搬运管口附近的粒子，不产生真实负压；原来的伪环流一直把水送到管口补给，水静止后就没有补给了。</p>
+<p>应急版不是根本解：逐节点锁法向不是严格的切割单元条件，斜切网格的壁仍会漏压（原文的跟踪 J 仍压实约 5%）；轮廓要逐个容器手写；耦合滞后一步。</p>
+
+<h2 id="fix"><span class="step-no">10</span>根本修正：壁面场约束 + 全梯度幽灵罚项<span class="date">10-11</span></h2>
+<p>目标：保留粒子的 IPC 障碍（不穿透、可分离、对薄壁有效），<b>同时</b>让网格压力看见壁面；双向、隐式、不滞后，也不需要逐个容器写轮廓。分两部分。</p>
+
+<h3>(a) 壁面场约束：场不得穿入固体</h3>
+<p>每一步，离任意固体表面三角形不到一个粒子间距的粒子，取它在该三角形上的最近点 \(\mathbf X_w\)（重心坐标 \(b_j\)）和指向流体的法向 \(\mathbf n\)。
+在这个壁面点上比较流体场的位移和固体的位移：</p>
+$$ g = \mathbf n\cdot\Bigl(\sum_{i\in c} N_i(\mathbf X_w)\,(\mathbf x_i - \mathbf X_i) \;-\; \sum_{j=1}^{3} b_j\,(\mathbf x_j - \mathbf x_j^0)\Bigr),\qquad
+   E_{\text{wfc}} = \tfrac{K}{2}\,\min(0,\,g)^2 $$
+<p>第一项是包含 \(\mathbf X_w\) 的单元 8 个节点的 Q1 场，第二项是三角形 3 个顶点从步首起的位移。只罚 \(g<0\)：场不得穿入固体，分离和切向滑移都自由。
+每个壁面点涉及 11 个顶点，产生 66 个 Hessian 块，追加到接触 Hessian 里；刚体三角形的顶点由引擎归约到刚体自由度。
+所以这项约束对容器是<b>双向、隐式</b>的，没有一步滞后，对任何三角网都适用。</p>
+<p><b>单独使用不够。</b>静置速度 0.83–0.92 cm/s，原文的跟踪 J 仍压实 15%。原因是 Q1 切割单元有一个“绕壁面点转动”的模式：
+玻璃一侧节点移进固体，流体一侧节点向内移，壁面点处的场纹丝不动（约束满足），整个单元却膨胀了，压力照样泄掉。</p>
+
+<h3>(b) 幽灵罚项：玻璃一侧的节点只能是流体场的光滑延拓</h3>
+<p>非贴体有限元（CutFEM）用“幽灵罚项”稳定被边界切开的单元：惩罚切割单元与邻格之间的梯度跳变，让落在区域外的自由度只能是物理场的光滑延拓。
+我们先只罚了体积部分（梯度的迹），没有效果，加大 10 倍也不变，还更吵。换成<b>完整梯度</b>后奏效：</p>
+$$ E_{\text{gp}} = \tfrac12\,\gamma\,V\,\bigl\|G_c - G_{c'}\bigr\|_F^2,\qquad G_c = \sum_{i\in c}\mathbf u_i\otimes\nabla w_{ic},\qquad \gamma = \kappa $$
+<p>对每一对（含壁面点的切割单元 \(c\)，与它共面的活动邻格 \(c'\)）施加。两个单元共 12 个节点，78 个 Hessian 块，Hessian 是 \(K(\mathbf w_i\cdot\mathbf w_j)I_3\)，
+其中 \(\mathbf w_i = \nabla w_{ic}-\nabla w_{ic'}\)。它只惩罚相邻单元之间梯度的<b>差</b>：整体平移、均匀滑移和线性剪切都不受影响。</p>
+
+<figure class="fig">
+<img src="../media/liquid_rest_speed.png" alt="静置烧瓶的粒子速度随时间变化：默认约 1.9 cm/s，应急版 0.16，因果检验 0.054，根本修正 0.008 cm/s" loading="lazy">
+<figcaption><b>每一步对静置速度的影响</b>（对数坐标）。灰色区间是机械臂移动到位的 3 s。“因果检验”与“根本修正”两条用原文的跟踪 J，其余用默认的 J。根本修正比固定玻璃侧节点的因果检验还安静，而壁面仍然可以滑移。</figcaption>
+</figure>
+<div class="tblwrap"><table>
+<thead><tr><th>烧瓶静置 8 s</th><th class="num">静置速度</th><th class="num">体积比 J<sub>c</sub></th><th class="num">贴壁层支撑</th><th class="num">贴壁层 v<sub>y</sub></th><th class="num">11 s 仿真用时</th></tr></thead>
+<tbody>
+<tr><td>默认</td><td class="num">2.0 cm/s</td><td class="num">1.055（发泡）</td><td class="num">0.73</td><td class="num">—</td><td class="num">12–18 分钟</td></tr>
+<tr><td>因果检验：固定玻璃侧节点（跟踪 J）</td><td class="num">0.05</td><td class="num">1.000</td><td class="num">1.09</td><td class="num">−0.02 mm/s</td><td class="num">8.3 分钟</td></tr>
+<tr><td>应急版固壁（跟踪 J）</td><td class="num">0.13</td><td class="num">0.949</td><td class="num">0.48</td><td class="num">−0.89 mm/s</td><td class="num">11 分钟</td></tr>
+<tr><td>只加壁面场约束（跟踪 J）</td><td class="num">0.18</td><td class="num">0.845</td><td class="num">—</td><td class="num">−1.81 mm/s</td><td class="num">—</td></tr>
+<tr class="hl"><td>壁面场约束 + 全梯度幽灵罚项（跟踪 J）</td><td class="num">0.01</td><td class="num">0.993</td><td class="num">0.87</td><td class="num">−0.07 mm/s</td><td class="num">7.7 分钟</td></tr>
+<tr><td>同上，罚项 ×10</td><td class="num">0.01</td><td class="num">0.993</td><td class="num">0.90</td><td class="num">−0.03 mm/s</td><td class="num">9.0 分钟</td></tr>
+<tr><td>同上，压力按粒子位置（默认 J）</td><td class="num">0.01</td><td class="num">1.032</td><td class="num">0.88</td><td class="num">−0.12 mm/s</td><td class="num">8.2 分钟</td></tr>
+</tbody></table></div>
+<p>0.01 cm/s 相当于每 40 ms 走 0.004 mm，肉眼不可见。这是第一次在<b>可滑移</b>的壁面下，让 MPM Lite 原文的跟踪 J 保持体积（误差 −0.7%）；
+各区域的粒子密度分布与“固定节点”的因果检验一致，底部不再堆积。罚项加大 10 倍结果几乎不变，说明对参数不敏感。
+11 s 仿真只用 7.7 分钟，比默认的 12–18 分钟还快。</p>
+
+<h3>验证进度</h3>
+<div class="tblwrap"><table>
+<thead><tr><th>验证项</th><th>标准</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td>静置：烧瓶</td><td>≤ 0.05 cm/s，贴壁层支撑接近 1，跟踪 J 体积精确</td><td><span class="tag ok">通过</span></td></tr>
+<tr><td>试管倾倒（试管也加约束）</td><td>倒空约 0.5 s、管内不留水、进烧杯不少于默认</td><td><span class="tag run">运行中</span></td></tr>
+<tr><td>试管的触觉刚度估计</td><td>保持“刚性”（双向耦合应消除应急版的锚效应）</td><td><span class="tag run">运行中</span></td></tr>
+<tr><td>烧杯摇匀 + 倒废液</td><td>不溅出，倒进废液杯不少于默认</td><td><span class="tag run">运行中</span></td></tr>
+<tr><td>滴管吸液 / 滴液</td><td>送液量与壁内粒子数</td><td><span class="tag na">待排队</span></td></tr>
+</tbody></table></div>
+
+<h2 id="status">现状与下一步</h2>
+<ul>
+<li><b>已完成并验证</b>：液体与固体在同一 Newton 里双向隐式耦合；演示五段全部跑通；精确提速与 6 处修复；静止水的根因与根本修正（静置）。</li>
+<li><b>正在进行</b>：根本修正的倾倒与摇匀验证；用应急版固壁加规划避让的最终演示重跑。动态验证通过后，再用根本修正重跑完整五段，届时试管也能加约束。</li>
+<li><b>还没解决</b>：两侧都有水的薄壁（插在烧瓶里的滴管玻璃管）需要一个单元承载两块互不连通的流体，要用虚拟节点或界面积分；
+修好以后计划回到原文的跟踪 J 加对称能量，去掉 J 重锚定、无张力状态方程和粒子推开这些补丁；滴管泵从“按位置搬运”换成管口的压力或速度条件。</li>
+</ul>
+
+<h2 id="refs">参考文献</h2>
+<ul>
+<li>X. Feng, Y. Chen, C. Yu, H. Su, D. Terzopoulos, Y. Yang, J. Masterjohn, A. Castro, C. Jiang. <i>MPM Lite: Linear Kernels and Integration Without Particles.</i> ACM TOG 45(4), SIGGRAPH 2026. <a href="https://mpmlite.github.io">mpmlite.github.io</a></li>
+<li>X. Li, Y. Fang, M. Li, C. Jiang. <i>BFEMP: Interpenetration-free MPM–FEM coupling with barrier contact.</i> CMAME 390, 2022. 隐式 MPM + 障碍接触，与我们的架构最接近。<a href="https://arxiv.org/abs/2108.03349">arXiv</a></li>
+<li>C. Batty, F. Bertails, R. Bridson. <i>A fast variational framework for accurate solid-fluid coupling.</i> SIGGRAPH 2007. 切割单元的体积分数与变分压力。</li>
+<li>Y. T. Ng, C. Min, F. Gibou. <i>An efficient fluid–solid coupling algorithm for single-phase flows.</i> JCP 2009.</li>
+<li>A. Robinson-Mosher, T. Shinar, J. Gretarsson, J. Su, R. Fedkiw. <i>Two-way coupling of fluids to rigid and deformable solids and shells.</i> SIGGRAPH 2008.</li>
+<li>Y. Fang, Z. Qu, M. Li, X. Zhang, Y. Zhu, M. Aanjaneya, C. Jiang. <i>IQ-MPM: An interface quadrature material point method for non-sticky strongly two-way coupled nonlinear solids and fluids.</i> ACM TOG 39(4), 2020. <a href="https://github.com/penn-graphics-research/ziran2020">code</a></li>
+<li>X. Li, M. Li, X. Han, H. Wang, Y. Yang, C. Jiang. <i>A Dynamic Duo of Finite Elements and Material Points.</i> SIGGRAPH 2024 Conference Papers. <a href="https://doi.org/10.1145/3641519.3657449">doi</a></li>
+<li>E. Burman. <i>Ghost penalty.</i> C. R. Acad. Sci. Paris, Ser. I 348, 2010；E. Burman, S. Claus, P. Hansbo, M. G. Larson, A. Massing. <i>CutFEM: Discretizing geometry and partial differential equations.</i> IJNME 104(7), 2015.</li>
+<li>N. Molino, Z. Bao, R. Fedkiw. <i>A virtual node algorithm for changing mesh topology during simulation.</i> SIGGRAPH 2004.</li>
+</ul>
+</article>
+
+<footer><div class="container">
+  <span><a href="modalities.html">← 上一篇：两种触觉模态的实现</a></span>
+  <span><a href="../">返回首页</a></span>
+</div></footer>
+</body>
+</html>
