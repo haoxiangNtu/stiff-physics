@@ -75,13 +75,13 @@ svg.diagram .m-green { fill: var(--acc-data); } svg.diagram .m-amber { fill: var
 
 <div class="note warn"><b>代码状态</b>
 液体模块和本页的全部改动都在引擎的开发分支上，<b>还没有进入公开发布的 wheel</b>（v0.8.5.4 不含液体）。
-演示视频用第九步的应急版。第十步的根本修正第一版在细试管倾倒上失败，改成只罚法向拉伸后通过了全部分段验证，用它跑的完整五段也已通过。</div>
+演示视频已换成第十一步的最终版：根本修正加上静止处理，完整五段全部通过。第九步的应急版视频留在该节作对照。</div>
 
 <div class="toc"><b>目录</b>
 <a href="#overview">全程一览</a><a href="#why">1 起点</a><a href="#grid">2 网格进 Newton</a><a href="#contact">3 粒子成为接触点</a>
 <a href="#demo">4 演示跑通</a><a href="#audit">5 审计与提速</a><a href="#symptom">6 静止的水在动</a>
 <a href="#hypotheses">7 排除假设</a><a href="#root">8 根因</a><a href="#stopgap">9 应急版固壁</a>
-<a href="#fix">10 根本修正</a><a href="#status">现状</a><a href="#refs">参考文献</a>
+<a href="#fix">10 根本修正</a><a href="#rest">11 让静水静下来</a><a href="#status">现状</a><a href="#refs">参考文献</a>
 </div>
 
 <h2 id="overview">全程一览</h2>
@@ -97,7 +97,8 @@ svg.diagram .m-green { fill: var(--acc-data); } svg.diagram .m-amber { fill: var
 <tr><td>7</td><td class="mono">10-10</td><td>逐个排除 9 个假设</td><td>环流是确定性的，与噪声、播种、求解精度无关</td></tr>
 <tr><td>8</td><td class="mono">10-10</td><td>根因：固壁只作用于粒子，不作用于网格</td><td>因果检验：0.05–0.07 cm/s，原文的跟踪 J 体积精确</td></tr>
 <tr><td>9</td><td class="mono">10-11</td><td>应急版网格固壁 + 一个转置错误 + 规划避让</td><td>烧瓶 2.0 → 0.16 cm/s，倒液正常，完整五段重跑</td></tr>
-<tr class="hl"><td>10</td><td class="mono">10-11</td><td>根本修正：壁面场约束 + 法向拉伸幽灵罚项</td><td>静置 0.04 cm/s，体积误差 0.8%；分段验证与完整五段都通过</td></tr>
+<tr><td>10</td><td class="mono">10-11</td><td>根本修正：壁面场约束 + 法向拉伸幽灵罚项</td><td>静置 0.04 cm/s，体积误差 0.8%；分段验证与完整五段都通过</td></tr>
+<tr class="hl"><td>11</td><td class="mono">10-12 → 10-13</td><td>静止处理：随速度切换的幽灵罚项 + 求解内的静止拖曳；试管倒水改瞄准</td><td>静止的水 0.03 → 0.001 cm/s，水位不再下沉；完整五段通过（226 分钟）</td></tr>
 </tbody></table></div>
 
 <h2 id="why"><span class="step-no">1</span>起点：为什么要把水放进引擎<span class="date">10-04 → 10-06</span></h2>
@@ -659,12 +660,12 @@ ABD 刚体的状态 \(q=(\mathbf p,\mathbf a_1,\mathbf a_2,\mathbf a_3)\) 表示
 <p>带上这三处演示层修正的最终重跑（325 分钟）全部通过：滴管送进烧杯 33 个粒子，试管 354/354 进烧杯，废液 2952/2952、无一洒出，滴管壁内 0 个粒子；胶头 600 kPa，试管、玻璃棒、烧杯都判“刚性”；无人触碰的烧瓶和废液杯全程位移不超过 0.8 mm。</p>
 <div class="fig-grid">
 <figure class="fig">
-<video src="../media/liquid_final_overview_4x.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>最终演示全程（4 倍速）</b>：滴管取液与滴液、试管倾倒、搅拌、摇匀并倒入废液杯。路径追踪渲染，145.7 s 仿真。</figcaption>
+<video src="../media/liquid_stopgap_overview_4x.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>应急版的演示全程（4 倍速）</b>：滴管取液与滴液、试管倾倒、搅拌、摇匀并倒入废液杯。路径追踪渲染，145.7 s 仿真。最终版见第十一步。</figcaption>
 </figure>
 <figure class="fig">
-<video src="../media/liquid_final_waste_pour.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>倒入废液杯（实时）</b>：倒液途中杯口按含夹爪的高度表抬高，倒完先抬高 30 mm 再转回竖直，废液杯全程不被碰到。</figcaption>
+<video src="../media/liquid_stopgap_waste_pour.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>倒入废液杯（实时，应急版）</b>：倒液途中杯口按含夹爪的高度表抬高，倒完先抬高 30 mm 再转回竖直，废液杯全程不被碰到。</figcaption>
 </figure>
 </div>
 <p>另一个现象：加了固壁后，滴管送液量在 21–33 个粒子之间波动（修复前两次都是 33–34）。滴管泵按位置搬运管口附近的粒子，不产生真实负压，原来的伪环流一直在给管口补水；水静止后，送液量取决于管口周围剩下多少水。</p>
@@ -730,7 +731,7 @@ $$ E_{\text{gp}} = \tfrac12\,\gamma\,V\,\bigl(\mathbf n^{\top}(G_c - G_{c'})\,\m
 <tr><td>法向位移的完整梯度</td><td class="num">0.018</td><td class="num">0.994</td><td class="num">86%</td><td class="num">54</td><td class="num">0.68 s</td></tr>
 <tr class="hl"><td>只罚法向拉伸</td><td class="num">0.038</td><td class="num">0.992</td><td class="num">100%</td><td class="num">0</td><td class="num">0.12 s</td></tr>
 </tbody></table></div>
-<p>只罚法向拉伸时，静置 0.038 cm/s（应急版 0.13，固定节点的因果检验 0.05），体积误差 0.8%，试管的水全部落进烧杯。
+<p>只罚法向拉伸时，静置 0.038 cm/s（应急版 0.13，固定节点的因果检验 0.05），体积误差 0.8%，试管的水全部落进烧杯（这一次如此；换播种扰动后的结果见第十一步）。
 留下的差别是倒空方式：细试管里的水要到约 98° 才一次性倒出，而默认从约 92° 开始、0.5 s 内流完。
 我们的解释是，这个罚项也会阻碍水从试管上壁剥离，表现得像轻微的附着。</p>
 
@@ -764,18 +765,127 @@ $$ E_{\text{gp}} = \tfrac12\,\gamma\,V\,\bigl(\mathbf n^{\top}(G_c - G_{c'})\,\m
 <thead><tr><th>验证项（法向拉伸罚项，所有器皿都加约束，跟踪 J）</th><th>结果</th></tr></thead>
 <tbody>
 <tr><td>静置：烧瓶</td><td><span class="tag ok">通过</span> 0.038 cm/s，体积比 0.992</td></tr>
-<tr><td>试管倾倒</td><td><span class="tag part">通过，有差异</span> 100% 进烧杯、0 落在外面；约 98° 时一次性倒出（默认 92° 开始，0.5 s）</td></tr>
+<tr><td>试管倾倒</td><td><span class="tag part">通过，有差异</span> 100% 进烧杯、0 落在外面；约 98° 时一次性倒出（默认 92° 开始，0.5 s）。后来发现这个 100% 是播种运气，换一次扰动会有 11–19 个粒子落到桌上，第十一步改了瞄准</td></tr>
 <tr><td>试管的触觉刚度估计</td><td><span class="tag ok">通过</span> “刚性”，物体压入 0.09 mm（应急版加在试管上时 0.38 mm，被误判为 4 MPa）</td></tr>
 <tr><td>烧杯摇匀 + 倒废液</td><td><span class="tag ok">通过</span> 2564/2564 进废液杯，废液杯不动，废液静置 0.034 cm/s</td></tr>
 <tr><td>滴管吸液 / 滴液</td><td><span class="tag part">通过，有差异</span> 滴管壁内 0 个粒子，胶头估计 619 kPa；送液 15 个粒子（应急版 21–33）</td></tr>
 <tr><td>完整五段</td><td><span class="tag ok">通过</span> 288 分钟（应急版 325）；试管 354/354、废液 2935/2935，滴管壁内 0 个粒子，四次触觉估计与应急版相同，无人触碰的器皿位移 ≤ 0.8 mm；送液 17 个粒子</td></tr>
 </tbody></table></div>
 
+<h2 id="rest"><span class="step-no">11</span>让静止的水真正静下来<span class="date">10-12 → 10-13</span></h2>
+<p>根本修正之后，静止的水还剩约 0.04 cm/s 的慢环流：贴壁层往下沉，中间往上补。速度虽小，但重建出的水面在路径追踪视频里仍有细小的闪动，
+每 40 ms 一帧，10% 的水面点移动超过 0.16 mm。我们想弄清楚，为什么会有一股持续的小驱动一直在推它，然后把它压住。</p>
+
+<h3>(a) 驱动从哪来：每一步求解都重新推一次</h3>
+<p>法向拉伸罚项只管住了切割单元沿壁面法向的拉伸。玻璃一侧“幽灵”单元的其他梯度分量仍然自由，贴壁层只得到约 63% 的静水支撑。
+于是每一步网格求解都会让贴壁层下沉一点。关键在于粒子怎么动：位置按本步<b>解出来的</b>网格速度前进，
+\( \mathbf x_p \leftarrow \mathbf x_p + \Delta t\,\mathbf v_n(\mathbf x_p) \)。
+对没有刚度的“软”模式，从静止出发一步也会走 \( \Delta t^2 a \)，其中 \(a\) 是残余的不平衡加速度，与粒子带进这一步的速度无关。</p>
+<p>实验证实了这一点。只阻尼粒子带到下一步的速度，速度从 0.039 降到 0.034 cm/s，几乎没用。
+每一步把慢于 3 mm/s 的粒子速度直接清零，也还剩 70%（0.027 cm/s）。所以推力是每一步重新产生的，不是攒下来的动量。</p>
+
+<h3>(b) 两条走不通的路</h3>
+<ul>
+<li><b>粒子级“休眠”</b>：慢了 0.3 s 的粒子钉住不动，网格速度超过 3 mm/s 再放开。84% 的粒子静止了，但网格求解默认每个粒子都跟着网格走，
+钉住一部分就破坏了体积平衡。没睡着的 15% 反而动得更快（p90 翻倍，个别粒子 3 s 漂了 27 mm），睡着的也被陆续吵醒。
+刚体引擎按“岛”整体休眠，正是为了避免这种不一致。</li>
+<li><b>很强的求解内拖曳</b>（见下文，k = 100）：静止时最安静，但它对慢速流动像一个屈服应力，10° 倾斜的水面根本晃不起来。</li>
+</ul>
+
+<h3>(c) 最终做法：两项都放进隐式求解</h3>
+<p><b>随速度切换的幽灵罚项。</b>每一对切割单元和相邻单元，取它们 12 个节点在步首的最大速度 \(v\)：
+慢于 3 mm/s 时罚完整梯度跳变，把贴壁层托住；快于 10 mm/s 时回到只罚法向拉伸，细试管照常倒得出来；中间平滑过渡。
+权重在一步之内固定，能量、梯度和 Hessian 保持一致：</p>
+$$ E_{\text{gp}} = \tfrac12\,\gamma V\Bigl[w\,\|G_c - G_{c'}\|^2 + (1-w)\bigl(\mathbf n^{\top}(G_c - G_{c'})\mathbf n\bigr)^2\Bigr],\qquad w = \mathrm{smoothstep}\Bigl(\tfrac{10 - v}{10 - 3}\Bigr) $$
+<p>它罚的是速度梯度的跳变，不是速度本身，所以挡不住刚体运动和线性流动，不会产生屈服应力。</p>
+<p><b>求解内的静止拖曳。</b>速度慢于 3 mm/s 的网格节点，惯性放大 \(1+k\) 倍，目标位置同时拉向原地：</p>
+$$ m' = (1+k)\,m,\qquad \tilde{\mathbf x}' = \frac{\tilde{\mathbf x} + k\,\mathbf x}{1+k} $$
+<p>步首的梯度 \(m'(\mathbf x - \tilde{\mathbf x}') = m(\mathbf x - \tilde{\mathbf x})\) 不变，重量和压力平衡照旧；压力这样的刚性模式不受影响；
+软模式每步只走原来的 \(1/(1+k)\)。它和“阻尼粒子速度”的区别在于：它作用在求解里，直接减小这一步被推出去的位移。
+\(k\) 随速度平滑淡出，从静止起步的运动只有驱动加速度低于约 \(0.29\,k\,v_0/\Delta t\) 时才会被拖住。
+k = 20 时这个阈值约 3.4 m/s²，10° 倾斜的晃动照常发生。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>烧瓶静置（最后 3 s）</th><th class="num">粒子速度中位数</th><th class="num">3 s 累计漂移中位数</th><th class="num">渲染水面每帧爬动 p90</th><th class="num">晃动阻尼比 ζ</th></tr></thead>
+<tbody>
+<tr><td>法向拉伸罚项（第十步）</td><td class="num">0.039 cm/s</td><td class="num">0.99 mm</td><td class="num">0.160 mm</td><td class="num">0.155</td></tr>
+<tr><td>+ 阻尼粒子速度</td><td class="num">0.034</td><td class="num">0.90</td><td class="num">—</td><td class="num">0.158</td></tr>
+<tr><td>+ 每步清零慢粒子速度（对照）</td><td class="num">0.027</td><td class="num">0.75</td><td class="num">—</td><td class="num">—</td></tr>
+<tr><td>+ 粒子级休眠</td><td class="num">0（84% 钉住）</td><td class="num">0（p90 5.0）</td><td class="num">—</td><td class="num">0.147</td></tr>
+<tr><td>+ 求解内拖曳 k = 100</td><td class="num">0.0059</td><td class="num">0.18</td><td class="num">—</td><td class="num">晃不起来</td></tr>
+<tr><td>+ 求解内拖曳 k = 20</td><td class="num">0.0035</td><td class="num">0.10</td><td class="num">0.019</td><td class="num">0.160</td></tr>
+<tr><td>随速度切换的罚项（替换法向拉伸罚项）</td><td class="num">0.0084</td><td class="num">0.25</td><td class="num">0.060</td><td class="num">0.158</td></tr>
+<tr class="hl"><td>随速度切换的罚项 + 求解内拖曳 k = 20</td><td class="num">0.0050</td><td class="num">0.15</td><td class="num">0.018</td><td class="num">0.155</td></tr>
+</tbody></table></div>
+<p>“+”表示加在法向拉伸罚项上。k = 100 的晃动测试拟合出 1 Hz、ζ = 1，也就是根本没有晃起来。单看 11 s 的静止测试，两项叠加和只加拖曳差不多；在完整五段里烧瓶静置的时间长得多，水面几乎完全静止（见下）。</p>
+
+<h3>(d) 顺带发现：试管倒水的落点余量不够</h3>
+<p>为了确认新做法没有影响倾倒，我们把第十步的法向拉伸罚项也换了两次播种扰动（抖动幅度 0.30 → 0.29 / 0.31）重跑试管倾倒。
+结果它也有 11 和 19 个粒子落到了桌上，和新做法的 12–19 个在同一范围。第十步表里的“100% 进烧杯”其实是运气。
+原因在瞄准：试管一次性倒出时，水流带着约 24 cm/s 的水平速度，在杯口平面越过杯轴约 20 mm，离内壁只剩 2–3 mm。
+我们把试管口的瞄准点往回挪了 14 mm：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>瞄准点离杯轴</th><th class="num">杯口平面落点半径 p10 / 50 / 90</th><th class="num">落在杯口以内</th><th class="num">落到桌上</th></tr></thead>
+<tbody>
+<tr><td>20 mm（原来）</td><td class="num">17.1 / 21.1 / 23.5 mm</td><td class="num">97%</td><td class="num">12</td></tr>
+<tr><td>26 mm</td><td class="num">17.4 / 20.4 / 22.4</td><td class="num">100%</td><td class="num">0</td></tr>
+<tr><td>30 mm</td><td class="num">12.3 / 18.2 / 21.7</td><td class="num">100%</td><td class="num">0</td></tr>
+<tr class="hl"><td>34 mm</td><td class="num">6.9 / 13.8 / 19.8</td><td class="num">100%</td><td class="num">0</td></tr>
+</tbody></table></div>
+<p>34 mm 时离内壁还有约 6 mm 余量，远大于播种扰动带来的 ±0.7 mm 波动；烧杯在所有扫描里都没有被碰到（位移 ≤ 0.8 mm）。</p>
+
+<h3>(e) 完整五段</h3>
+<div class="tblwrap"><table>
+<thead><tr><th>完整五段</th><th class="num">上一版成片（应急版固壁）</th><th class="num">根本修正（第十步）</th><th class="num">最终版</th></tr></thead>
+<tbody>
+<tr><td>无人触碰的烧瓶，滴管段之后（粒子速度中位数）</td><td class="num">0.13 cm/s</td><td class="num">0.033 cm/s</td><td class="num">0.0009 cm/s</td></tr>
+<tr><td>废液杯最后 3 s</td><td class="num">0.10 cm/s</td><td class="num">0.04 cm/s</td><td class="num">0.002 cm/s</td></tr>
+<tr><td>渲染水面每帧爬动（中位数 / p90）</td><td class="num">0.043 / 0.254 mm</td><td class="num">0.015 / 0.158 mm</td><td class="num">0.0001 / 0.0002 mm</td></tr>
+<tr><td>烧瓶水位（3.5 s → 100 s）</td><td class="num">28.0 → 28.0 mm</td><td class="num">27.0 → 24.3 mm</td><td class="num">28.1 → 27.7 mm</td></tr>
+<tr><td>试管的水落进烧杯</td><td class="num">354 / 354</td><td class="num">354 / 354（播种运气）</td><td class="num">354 / 354（瞄准 34 mm）</td></tr>
+<tr><td>滴管送液（粒子数）</td><td class="num">33</td><td class="num">17</td><td class="num">15</td></tr>
+<tr><td>墙钟时间</td><td class="num">325 分钟</td><td class="num">288 分钟</td><td class="num">226 分钟</td></tr>
+</tbody></table></div>
+<p>（水面用和成片相同的 SDF 方法重建，所以爬动数字与第十步表里的 splashsurf 数字不能直接比较。）</p>
+<figure class="fig">
+<img src="../media/liquid_full_rest.png" alt="完整五段里的静止水：左图为滴管段之后烧瓶里粒子速度中位数，上一版 0.13、第十步 0.033、最终版约 0.0009 cm/s；右图为水位，第十步的烧瓶和混合烧杯水位持续下降，最终版和上一版保持水平" loading="lazy">
+<figcaption><b>完整五段里的静止水。</b>左：滴管段之后烧瓶不再被触碰，图中是粒子速度的中位数（对数坐标）。
+最终版的尖峰出现在 45、115、125、139 s，分别是滴管放回烧瓶、机械臂在附近动作带来的扰动，几秒内就平息，说明水是被阻尼住，不是被冻住。
+右：水位，取粒子高度的 95% 分位。第十步的水在慢慢压实：混合烧杯到 39 s 降了 4 mm，烧瓶到 100 s 降了 2.7 mm。这是残余环流把粒子沿壁带到底部堆积，跟踪 J 看不到。
+最终版和应急版一样保持水位；图中的台阶是滴管插入、拔出和试管倒入。</figcaption>
+</figure>
+<p>这次还发现了一个此前没测出来的问题：第十步的水在长时间运行里会慢慢压实，水位持续下降，烧瓶 100 s 内降了 2.7 mm。
+之前检查体积只用了 11 s 的静止测试（体积比 0.992），所以没有发现。把残余环流压住以后，这个问题也一起消失了。</p>
+<p>最终版的完整五段全部通过：</p>
+<ul>
+<li>滴管壁内 0 个粒子，胶头估计 625 kPa。</li>
+<li>试管的水 354/354 进了烧杯，其中 29 个贴着内壁，全部在水面以下。</li>
+<li>废液 2933/2933，无一洒出。</li>
+<li>试管、玻璃棒、烧杯都判为“刚性”。</li>
+<li>无人触碰的器皿位移不超过 0.8 mm。</li>
+<li>墙钟时间 226 分钟（第十步 288，应急版 325）。水静下来以后，每一步的求解也更省。</li>
+</ul>
+<figure class="fig">
+<video src="../media/liquid_still_water_final.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>同一时刻的两次完整运行</b>（路径追踪，局部放大 2 倍，66–86 s）。左为上一版成片（应急版固壁），右为最终版。
+左边无人触碰的烧瓶水面还在细细地闪动，右边是静止的：0.5 s 内亮度变化超过 8/255 的像素，左边 2.8%，右边 0.4%。</figcaption>
+</figure>
+<div class="fig-grid">
+<figure class="fig">
+<video src="../media/liquid_final_overview_4x.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>最终演示全程（4 倍速）</b>：滴管取液与滴液、试管倾倒、搅拌、摇匀并倒入废液杯。路径追踪渲染，145.7 s 仿真。</figcaption>
+</figure>
+<figure class="fig">
+<video src="../media/liquid_final_waste_pour.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>倒入废液杯（实时）</b>：倒液途中杯口按含夹爪的高度表抬高，倒完先抬高 30 mm 再转回竖直，废液杯全程不被碰到。</figcaption>
+</figure>
+</div>
+
+
 <h2 id="status">现状与下一步</h2>
 <ul>
-<li><b>已完成并验证</b>：液体与固体在同一 Newton 里双向隐式耦合；精确提速与 6 处修复；静止水的根因；最终演示（应急版固壁 + 三处演示层修正）五段全部通过；根本修正（壁面场约束 + 法向拉伸罚项）通过全部分段验证和完整五段。</li>
-<li><b>根本修正的完整五段已通过</b>：所有器皿都加约束（包括试管）、回到原文的跟踪 J，288 分钟跑完，静止的水比应急版还安静三到四倍。</li>
-<li><b>还没解决</b>：细试管里的水倒出得偏晚、偏急；滴管泵按位置搬运，送液量受水的状态影响；两侧都有水的薄壁（插在烧瓶里的滴管玻璃管）需要一个单元承载两块互不连通的流体，要用虚拟节点或界面积分；
+<li><b>已完成并验证</b>：液体与固体在同一 Newton 里双向隐式耦合；精确提速与 6 处修复；静止水的根因；应急版固壁和三处演示层修正；根本修正（壁面场约束 + 法向拉伸罚项）；静止处理（随速度切换的幽灵罚项 + 求解内的静止拖曳）和试管瞄准修正。</li>
+<li><b>最终演示</b>：根本修正 + 静止处理，所有器皿都加约束（包括试管），用原文的跟踪 J，226 分钟跑完五段全部通过；静止的水约 0.001 cm/s（第十步 0.03，应急版 0.13），水位不再下沉。</li>
+<li><b>还没解决</b>：静止拖曳对很慢的流动相当于一个弱屈服（k = 20 时，约 3.4 m/s² 以下的驱动会被拖慢，而不是被挡住）；细试管里的水倒出得偏晚、偏急；滴管泵按位置搬运，送液量受水的状态影响；两侧都有水的薄壁（插在烧瓶里的滴管玻璃管）需要一个单元承载两块互不连通的流体，要用虚拟节点或界面积分；
 修好以后计划回到原文的跟踪 J 加对称能量，去掉 J 重锚定、无张力状态方程和粒子推开这些补丁；滴管泵从“按位置搬运”换成管口的压力或速度条件。</li>
 </ul>
 

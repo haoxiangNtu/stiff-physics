@@ -379,6 +379,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <p class="lead">化学实验台演示需要能和薄玻璃器皿、凝胶指垫双向耦合的液体。我们把隐式 MPM Lite 直接放进 IPC 的 Newton 求解：
     网格节点是未知量，粒子是 IPC 接触点，“水推玻璃、玻璃兜住水”在同一次求解里完成。随后的全量审计让完整五段演示快了 2.61 倍；
     路径追踪视频里“静止的水面在动”，则追到了一个根因：固壁只作用在粒子上，没有作用在网格上。
+    修好根因后，又把残余的慢环流压住：静止的水从约 0.04 降到约 0.001 cm/s，长时间运行中水位也不再下沉。
     <a class="more" href="docs/liquid.html">阅读逐步改动日志 →</a></p>
   </div>
   <figure class="fig">
@@ -386,8 +387,8 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <figcaption><b>最终演示（4 倍速）</b> — FR3 机械臂靠指尖触觉完成滴管取液滴液、试管倾倒、搅拌、摇匀并倒入废液杯；水与玻璃、夹爪在同一个 IPC 求解里双向耦合。路径追踪渲染。</figcaption>
   </figure>
   <figure class="fig">
-    <video src="media/liquid_still_water_compare.mp4" muted loop playsinline controls preload="metadata"></video>
-    <figcaption><b>静止的水</b> — 同一时刻的两次完整运行（路径追踪）：左为修复前，无人触碰的烧瓶里水以约 2 cm/s 环流；右为加网格固壁后，约 0.12 cm/s。
+    <video src="media/liquid_still_water_final.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>静止的水</b> — 同一时刻的两次完整运行（路径追踪）：左为上一版成片（应急版固壁），无人触碰的烧瓶里水以约 0.13 cm/s 慢慢环流；右为最终版（根本修正 + 静止处理），约 0.001 cm/s。修复前这里是约 2 cm/s。
     液体模块目前在引擎开发分支上，尚未进入公开发布的 wheel。</figcaption>
   </figure>
 </div></section>
