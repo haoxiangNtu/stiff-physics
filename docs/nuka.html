@@ -117,7 +117,7 @@ MLS-MPM 是显式积分（演示里 7680 Hz），弹塑性用 Hencky J2 加线�
 <figure class="fig"><video src="../media/nuka_go2_walk.mp4" muted loop playsinline controls preload="metadata"></video>
 <figcaption><b>Go2 行走（公开策略 sim2sim）</b> — unitree_rl_gym 的 Go2 行走策略（48 维观测 / 12 维动作，Kp 20、Kd 0.5，策略 50 Hz）直接在 StiffGIPC 的浮动基座 Go2 上跑：指令 0.5 m/s，6 s 内平均前进速度 0.50 m/s、走出 3.0 m，机身倾角平均 2.6°、最大 4.4°，未摔；交付版 4 s 走 2.06 m。关节用纯力矩模式加显式 PD，接触交给 IPC。</figcaption></figure>
 <figure class="fig"><video src="../media/nuka_g1_dance.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>G1 跳舞（外部 ONNX 策略 sim2sim）</b> — G1 Moves 数据集的 Shuffle 舞蹈 ONNX 策略（160 维观测 / 29 维动作，50 Hz）在 StiffGIPC 的浮动基座 G1（29 自由度 + 两只 Dex3 手，逐连杆凸包碰撞）上回放 8 s：始终站立，机身倾角平均 4.1°、最大 8.6°，关节跟踪 RMSE 0.107 rad（原站 20 s 录像自报 0.211 rad）。关节用隐式 PD（见本节末尾的坑），手指位置保持；8 s 用时 15 分钟。</figcaption></figure>
+<figcaption><b>G1 跳舞（外部 ONNX 策略 sim2sim）</b> — G1 Moves 数据集的 Shuffle 舞蹈 ONNX 策略（160 维观测 / 29 维动作，50 Hz）在 StiffGIPC 的浮动基座 G1（29 自由度 + 两只 Dex3 手，逐连杆凸包碰撞）上回放 20 s：始终站立，机身倾角平均 5.9°、最大 23.7°（一次踏步后的晃动），关节跟踪 RMSE 0.143 rad（原站 20 s 录像自报 0.211 rad）；8 s 的短回放为 4.1° / 8.6° / 0.107 rad。关节用隐式 PD（见本节末尾的坑），手指位置保持；20 s 用时 40 分钟。</figcaption></figure>
 </div>
 <p><b>这一轮的坑（都已实验确认）。</b></p>
 <ul>
