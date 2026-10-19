@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>对照 Nuka-Physics：现状与路线图</title>
+<meta name="description" content="StiffGIPC 对照 Nuka-Physics（kry4r）演示的复现计划：已完成的 robotgym 三个任务、两个引擎的差异、每个 Nuka 演示的做法与状态、策略与训练类演示的路线。">
+<link rel="stylesheet" href="docs.css">
+<style>
+.fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
+  margin: 1.2rem 0 1.5rem; padding: .6rem; box-shadow: var(--fig-shadow); }
+.fig img, .fig video { border-radius: .4rem; width: 100%; height: auto; display: block; background: #fff; }
+.fig figcaption { color: var(--sub); text-align: center; padding: .6rem .5rem .1rem; font-size: .86rem; line-height: 1.6; }
+.fig figcaption b { color: var(--ink); font-weight: 600; }
+figure { margin: 0; }
+.fig-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; margin: 1.2rem 0 1.5rem; }
+.fig-grid .fig { margin: 0; }
+@media (max-width: 768px) { .fig-grid { grid-template-columns: 1fr; } }
+.step-no { display: inline-block; min-width: 2.1em; padding: 0 .45em; margin-right: .45em; border-radius: .4rem;
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface)); color: var(--primary);
+  font-size: .8em; text-align: center; vertical-align: .12em; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tag { display: inline-block; border-radius: 999px; padding: 0 .55rem; font-size: .76rem; font-weight: 600;
+  background: var(--e200); white-space: nowrap; }
+.tag.ok { color: var(--acc-data); } .tag.part { color: var(--acc-hw); } .tag.run { color: var(--primary); } .tag.no { color: #d0453a; }
+.dl { display: inline-block; margin: .2rem .6rem .2rem 0; padding: .25rem .7rem; border: 1px solid var(--e300); border-radius: .5rem; font-size: .88rem; }
+</style>
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="liquid.html">液体改动日志</a>
+  <a class="item" href="outputs.html">技术详解</a>
+  <a class="item" href="robotgym.html">三个任务</a>
+  <a class="item" href="../#robotgym">返回演示 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / 对照 Nuka-Physics</div>
+<div class="kicker">Roadmap · Benchmarks · Engine comparison</div>
+<h1>对照 Nuka-Physics：现状与路线图</h1>
+<p class="lead">robotgym.io 的三个操作任务复现完成之后，下一阶段的对照目标是 <a href="https://github.com/kry4r/Nuka-Physics">Nuka-Physics</a>（kry4r，AGPL-3.0 / 商业双许可）首页展示的演示：
+一套面向机器人学习的 GPU 常驻 CUDA 引擎，用同一个块下降接触求解器处理关节机器人、刚体、VBD 布料和 MLS-MPM 固体与液体。
+这一页记录三件事：我们目前做到哪里，两个引擎在物理建模上有什么不同，以及 Nuka 的每一个演示准备怎么做、做到了什么程度。页面会随进度更新，日期见文末。
+我们不使用 Nuka 的代码和美术资产，复现只参照它公开的场景参数。</p>
+
+<h2 id="status">1 · 现状一览</h2>
+<div class="tblwrap"><table>
+<thead><tr><th>阶段</th><th>内容</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td>robotgym 三个任务</td><td>双臂床单对折（近半 96 % 叠到远半）、PET 瓶捏瘪（凹 15.8 mm，松开留 14.0 mm，不洒）、海绵吸水拧水（三次拧水 16.8 ml，原站 33.5 ml）；方法、差异与数值陷阱见 <a href="robotgym.html">专页</a></td><td><span class="tag ok">已完成</span></td></tr>
+<tr><td>为此新增的引擎能力</td><td>壳的二面角塑性铰链；水与开孔海绵的多孔耦合（吸入、随材料运动、按饱和度保水 / 放水、泡沫孔容量）</td><td><span class="tag ok">已完成 · 未进公开 wheel</span></td></tr>
+<tr><td>Nuka 材料与耦合类演示</td><td>兔子落水、果冻球、弹塑性三件套、Go2 披布、G1 叠衬衫（见第 4 节）</td><td><span class="tag run">进行中 · 从兔子落水开始</span></td></tr>
+<tr><td>Nuka 策略与训练类演示</td><td>Go2 行走 / 后空翻 / 倒立、G1 跳舞、Microduck 平衡球（RL 训练）；先做策略的 sim2sim 回放，再谈训练（见第 5 节）</td><td><span class="tag part">探索中</span></td></tr>
+</tbody></table></div>
+
+<h2 id="nuka">2 · Nuka-Physics 是什么</h2>
+<p>按它的 README 和文档：生产求解器是统一增广块下降（UABD），刚体、Featherstone 关节体（RNEA / CRBA，LDLᵀ 因子）、VBD 布料顶点和 MLS-MPM 网格结点通过同一套接触行交换冲量；
+MLS-MPM 是显式积分（演示里 7680 Hz），弹塑性用 Hencky J2 加线性硬化，水是弱可压的 Tait 状态方程；
+一个烘焙好的世界模板可以在一张 GPU 上驱动上千个环境，通过 DLPack 直接喂给 PyTorch 做 RL；自带传感器模型、Vulkan 光栅和 CUDA 路径追踪器；场景来自 NKS / MJCF / URDF / USD。
+首页的八个演示里，四个是策略推理（π0.5 抓放、G1 跳舞、Go2 后空翻与倒立）、一个是在 Nuka 里训练的 RL（Microduck 平衡球）、三个是材料与耦合（G1 叠衬衫、兔子落水、兔子砸弹塑性垫），
+另有压缩试件、Panda 捏弹塑性试件、果冻球、Go2 披布等补充录像。它的视频都是 60–120 Hz 状态回放的 2–5 倍慢放，用自家路径追踪器以 128–256 spp 渲染。</p>
+
+<h2 id="diff">3 · 两个引擎怎么不一样</h2>
+<div class="tblwrap"><table>
+<thead><tr><th></th><th>StiffGIPC</th><th>Nuka-Physics</th><th>对复现的影响</th></tr></thead>
+<tbody>
+<tr><td>时间积分与接触</td><td>隐式 Newton，IPC 对数障碍 + 连续碰撞检测，所有物体在同一个牛顿系统里收敛；接触零穿透</td><td>块下降接触求解（有限迭代预算），MLS-MPM 显式小步；文档给出的穿透预算为毫米级（演示里 2–4 mm）</td><td>捏、压、拧这类接触主导的场景是我们的强项；代价是每步更贵</td></tr>
+<tr><td>刚体与机器人</td><td>仿射体（ABD）刚体；URDF 机器人是带关节约束的 ABD 连杆，关节用位置目标驱动（软约束，可设刚度）；固定基座的机械臂已充分验证</td><td>Featherstone 关节体，力矩 PD 驱动，浮动基座，专为腿式机器人和 RL 设计</td><td>浮动基座 + 策略闭环对我们是新路径（第 5 节）</td></tr>
+<tr><td>布料与软体</td><td>IPC 三角壳（拉伸 / 弯曲 / 塑性铰链）、四面体 FEM（stable neo-Hookean），摩擦捏取可靠</td><td>VBD 布料与缆索，MLS-MPM 软体</td><td>披布、叠衣、果冻球直接可做</td></tr>
+<tr><td>液体</td><td>引擎内的 MPM 液体，在同一次牛顿求解里与固体双向耦合；多孔耦合；目前粒子规模数万</td><td>弱可压 MLS-MPM 水，演示用 67 万粒子</td><td>兔子落水要在 6–9 万粒子的预算下做，飞溅细节会粗一些</td></tr>
+<tr><td>塑性</td><td>壳的铰链塑性已有；<b>四面体的体积塑性还没有</b></td><td>MLS-MPM Hencky J2 + 线性硬化（+ Kelvin–Voigt 粘性）</td><td>弹塑性三件套依赖这一项引擎新增</td></tr>
+<tr><td>多环境与 RL</td><td>多环境（块对角求解）在私有分支，刚体场景几百个环境、布料场景二十个左右；与 IsaacLab 有管理器级的集成</td><td>原生批量：上千环境、DLPack、传感器、PyTorch 训练管线</td><td>训练类演示的吞吐差距在两个数量级</td></tr>
+<tr><td>渲染与交付</td><td>离线：录制 → USD → Mitsuba 路径追踪</td><td>自带 Vulkan 光栅 + CUDA 路径追踪</td><td>成片风格可以对齐</td></tr>
+<tr><td>许可证</td><td>公开 wheel 的 Python 包 <span class="mono">stiff-physics</span>；液体与塑性尚未发布</td><td>AGPL-3.0 或商业许可</td><td>我们不引入它的代码</td></tr>
+</tbody></table></div>
+
+<h2 id="roadmap">4 · 演示路线图</h2>
+<p>参数取自 Nuka 仓库里的演示源码和录像元数据；「需要新增」指我们这边还缺的部分。状态会随进度更新。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>Nuka 演示</th><th>它的设置</th><th>我们的做法</th><th>需要新增</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td>兔子落水</td><td>120 mm 刚体斯坦福兔（0.41 kg）从 150 mm 高落入 36 × 28 cm 玻璃水箱、水深 18 cm；Tait 水，网格 6 mm、粒子 2.5 mm（67 万粒子）；录 1.5 s，2 倍慢放</td><td>ABD 刚体兔 + 引擎液体双向耦合；另加一版软体（FEM）兔子落水</td><td>自由刚体上的浮力验证；粒子预算 6–9 万</td><td><span class="tag run">下一步</span></td></tr>
+<tr><td>果冻球落地</td><td>半径 100 mm 的 MLS-MPM 弹性球，E 30 kPa，从 50 mm 落下</td><td>FEM 四面体球</td><td>无</td><td><span class="tag run">下一步</span></td></tr>
+<tr><td>弹塑性压缩</td><td>80 × 80 × 100 mm 试件在两块平板间轻压（恢复误差 0.065 %）、重压（残留 33.1 %）；E 50 kPa，ν 0.30，屈服 12 kPa，硬化 3 kPa</td><td>FEM 试件 + 两块 ABD 平板，复现同一加载历史并对照这两个数</td><td>四面体体积塑性（每单元塑性形变 + J2 回映射，在牛顿步之间更新静止形状）</td><td><span class="tag part">需引擎新增</span></td></tr>
+<tr><td>兔子砸弹塑性垫</td><td>2.5 kg 兔子从 180 mm 落到 240 × 200 × 60 mm 的垫上，同一材料加 80 Pa·s 粘性，实时播放</td><td>ABD 兔 + 塑性 FEM 垫</td><td>同上；粘性用阻尼代替</td><td><span class="tag part">需引擎新增</span></td></tr>
+<tr><td>Panda 捏弹塑性试件</td><td>Panda 对 24 × 36 × 28 mm 试件轻捏、松开、重捏、释放；PD 驱动，120 Hz 控制；它自己报告的穿透 4 mm，预算 2 mm</td><td>我们现成的 FR3 捏取场景 + 塑性 FEM 试件；IPC 的穿透为零，可直接对照</td><td>同上</td><td><span class="tag part">需引擎新增</span></td></tr>
+<tr><td>Go2 披布</td><td>一块布从站立的 Go2 上方落下披住它（VBD 布料，摩擦系数 1.8）</td><td>IPC 布料 + 站立姿态的 Go2 URDF</td><td>Go2 模型（unitree_ros）</td><td><span class="tag run">计划</span></td></tr>
+<tr><td>G1 叠衬衫</td><td>带灵巧手的 Unitree G1 叠一件棉衬衫，25.8 s，脚本动作回放（无公开脚本）</td><td>我们已有的衬衫网格与叠衣轨迹 + G1 与 Dex3 手的 URDF，双臂 IK</td><td>G1 模型、双臂叠衣编排</td><td><span class="tag run">计划 · 后期</span></td></tr>
+<tr><td>Go2 行走（sim2sim）</td><td>公开的 48 维观测 / 12 维动作合同，Kp 20、Kd 0.5，策略 50 Hz，物理 5 ms</td><td>浮动基座的 Go2 URDF 在 StiffGIPC 里按同一合同跑公开策略，先看站立与行走</td><td>浮动基座 + 关节 PD 的闭环管线</td><td><span class="tag part">探索</span></td></tr>
+<tr><td>Go2 后空翻 / 倒立</td><td>它仓库里的 TorchScript 技能策略经 PD 回放</td><td>行走通过之后再试这两个策略</td><td>同上</td><td><span class="tag part">探索</span></td></tr>
+<tr><td>G1 跳舞</td><td>29 自由度人形，ONNX 策略 50 Hz，物理 5 ms</td><td>同一管线换成 G1</td><td>同上</td><td><span class="tag part">探索</span></td></tr>
+<tr><td>Microduck 平衡球</td><td>在 Nuka 里训练的 RL 策略</td><td>在 StiffGIPC 多环境里训练一个平衡类任务</td><td>多环境吞吐、训练管线</td><td><span class="tag part">探索 · 最后</span></td></tr>
+<tr><td>π0.5 LIBERO 抓放</td><td>视觉-语言-动作模型推理 + 操作空间力矩控制</td><td>物理上只是刚体抓放；演示的重点是 VLA 推理和渲染管线</td><td>VLA 推理栈</td><td><span class="tag no">暂不做</span></td></tr>
+</tbody></table></div>
+
+<h2 id="policy">5 · 策略与训练类演示怎么做</h2>
+<p><b>先 sim2sim，再训练。</b>Nuka 的 Go2 演示用的是外部训练好的策略，观测与动作合同是公开的：观测 48 维（基座线速度 × 2、角速度 × 0.25、机体系重力方向、指令、关节角偏差、关节速度 × 0.05、上一步动作），
+动作 12 维映射为关节目标角 = 默认角 + 0.25 × 动作，关节 PD 增益 Kp 20、Kd 0.5，策略 50 Hz、物理 5 ms。
+我们这边的对应物是：Go2 的 URDF 导入为浮动基座（基座是自由的 ABD 体），12 个关节用带刚度和阻尼的位置目标充当 PD，地面接触交给 IPC，每 4 个物理步取一次观测喂策略。
+验收分三级：站得住（PD 基线），走得动（指令 0.5 m/s 的速度跟踪），然后才是后空翻、倒立和 G1 跳舞这些对动力学细节更敏感的策略。
+这是一条新路径——我们的关节是软约束而不是力矩 PD，接触模型也不同——所以失败是有信息量的，结果好坏都会写在这里。</p>
+<p><b>训练。</b>Microduck 平衡球是在 Nuka 里从零训练的；我们的多环境是块对角牛顿求解，刚体场景能跑几百个环境，吞吐比原生批量引擎低两个数量级，
+所以先选平衡类的小任务，训练管线复用与 IsaacLab 的集成。能不能在可接受的时间里训出来，取决于多环境吞吐的后续工作，这里不预设结论。</p>
+
+<h2 id="log">6 · 更新记录</h2>
+<ul>
+<li><b>2026-10-19</b> — 页面创建：robotgym 三个任务完成；Nuka 演示目录与可行性评估完成；下一步从兔子落水和果冻球开始。</li>
+</ul>
+</article>
+
+<footer><div class="container">
+  <span><a href="robotgym.html">← 三个操作任务的复现</a></span>
+  <span><a href="../">返回首页</a></span>
+</div></footer>
+</body>
+</html>

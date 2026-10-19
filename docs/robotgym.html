@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>三个操作任务的复现：床单对折、捏瘪水瓶、海绵吸水拧水</title>
+<meta name="description" content="用 StiffGIPC（IPC 接触 + FEM/壳 + 引擎内 MPM 液体）复现 robotgym.io 首页的三个展示任务：双臂床单对折、PET 水瓶捏瘪（壳塑性）、海绵吸水与拧水（多孔耦合）。每个任务给出方法、与原站的差异、视频与 USD。">
+<link rel="stylesheet" href="docs.css">
+<style>
+.fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
+  margin: 1.2rem 0 1.5rem; padding: .6rem; box-shadow: var(--fig-shadow); }
+.fig img, .fig video { border-radius: .4rem; width: 100%; height: auto; display: block; background: #fff; }
+.fig figcaption { color: var(--sub); text-align: center; padding: .6rem .5rem .1rem; font-size: .86rem; line-height: 1.6; }
+.fig figcaption b { color: var(--ink); font-weight: 600; }
+figure { margin: 0; }
+.fig-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; margin: 1.2rem 0 1.5rem; }
+.fig-grid .fig { margin: 0; }
+@media (max-width: 768px) { .fig-grid { grid-template-columns: 1fr; } }
+.step-no { display: inline-block; min-width: 2.1em; padding: 0 .45em; margin-right: .45em; border-radius: .4rem;
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface)); color: var(--primary);
+  font-size: .8em; text-align: center; vertical-align: .12em; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tag { display: inline-block; border-radius: 999px; padding: 0 .55rem; font-size: .76rem; font-weight: 600;
+  background: var(--e200); white-space: nowrap; }
+.tag.ok { color: var(--acc-data); } .tag.part { color: var(--acc-hw); } .tag.run { color: var(--primary); } .tag.no { color: #d0453a; }
+.dl { display: inline-block; margin: .2rem .6rem .2rem 0; padding: .25rem .7rem; border: 1px solid var(--e300); border-radius: .5rem; font-size: .88rem; }
+</style>
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="liquid.html">液体改动日志</a>
+  <a class="item" href="outputs.html">技术详解</a>
+  <a class="item" href="nuka.html">Nuka 路线图</a>
+  <a class="item" href="../#robotgym">返回演示 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / 三个操作任务的复现</div>
+<div class="kicker">Benchmarks · Cloth · Shell plasticity · Porous liquid</div>
+<h1>三个操作任务的复现：床单对折、捏瘪水瓶、海绵吸水拧水</h1>
+<p class="lead">robotgym.io 首页用三个任务展示它的物理栈（刚体 MuJoCo、VBD 布料与海绵、PBF 液体）：双臂把床单抬起对折、机械臂捏瘪一只装满水的 PET 瓶、
+机械臂把海绵在水碗里浸湿再到杯子上方拧三次。我们用 StiffGIPC 把这三个任务各做了一遍——同一个 IPC 求解器里的布料、薄壳、软体和水，
+接触全部是障碍函数 + 连续碰撞检测，不用任何附着约束。这一页记录做法、与原站的差异、数值上踩过的坑，以及每个任务的视频与 USD。</p>
+
+<div class="note warn"><b>代码状态</b>
+三个示例脚本在引擎开发分支的 <span class="mono">examples/robotgym/</span>；本页用到的两处引擎新增——薄壳塑性铰链（<span class="mono">bend_yield_angle</span>）
+和海绵的多孔液体耦合（<span class="mono">set_liquid_porous</span>）——以及液体模块本身都<b>还没有进入公开发布的 wheel</b>。
+视频为路径追踪成片，USD 为时间采样的几何（刚体变换 + 变形体顶点 + 液体粒子）。</div>
+
+<div class="toc"><b>目录</b>
+<a href="#overview">一览</a><a href="#sheet">1 床单对折</a><a href="#bottle">2 捏瘪水瓶</a><a href="#sponge">3 海绵吸水拧水</a>
+<a href="#traps">数值陷阱</a><a href="#repro">怎样复现</a>
+</div>
+
+<h2 id="overview">一览</h2>
+<div class="tblwrap"><table>
+<thead><tr><th>任务</th><th>原站的物理</th><th>我们的物理</th><th>需要新增的部分</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td>床单对折（双 FR3）</td><td>VBD 布料 + MuJoCo 刚体</td><td>IPC 三角壳布料（拉伸 / 弯曲），URDF 关节驱动的 FR3 ×2，摩擦捏取</td><td>无</td><td><span class="tag ok">已复现 · 近半 96% 叠到远半</span></td></tr>
+<tr><td>PET 瓶捏瘪</td><td>0.3 mm 塑料壳 + 屈服，PBF 水</td><td>0.3 mm IPC 薄壳（PET 模量）+ 二面角铰链塑性，引擎 MPM 水与壳双向耦合</td><td>壳塑性铰链</td><td><span class="tag ok">已复现 · 凹 15.8 mm，松开留 14.0 mm，不洒</span></td></tr>
+<tr><td>海绵吸水拧水</td><td>VBD 海绵（实验性）+ PBF 水</td><td>FEM 四面体海绵 + 引擎 MPM 水，多孔耦合（吸入 / 保水 / 挤出）</td><td>多孔耦合</td><td><span class="tag ok">已复现 · 三次拧水共 16.8 ml（原站 33.5 ml）</span></td></tr>
+</tbody></table></div>
+
+<h2 id="sheet"><span class="step-no">1</span>床单对折</h2>
+<p><b>场景。</b>1.0 × 0.6 m 的床单（三角壳，25 mm 网格，1025 顶点）铺在一块薄板上，前后各悬出 10 cm。两台 FR3 分别从左右两侧沿板边伸进来，
+张开的手指跨在垂下的布边两侧，捏住、抬起、越过板面放到对面，松开——床单被对折。全程只有接触与摩擦，没有把布“粘”在手指上的约束。</p>
+<p><b>做法。</b>手指是 URDF 里的标准 Franka 手指（棱柱关节位置驱动），布料是 IPC 三角壳：膜模量 3×10<sup>5</sup> Pa、弯曲模量 3×10<sup>4</sup> Pa（厚 1 mm），面密度 0.2 kg/m²。
+逆运动学在 CPU 上逐帧求解（阻尼最小二乘，全程位置误差 0.2 mm），关节目标交给引擎的转动关节驱动。捏取用 2 mm 的障碍距离、1 mm 的指垫间隙（每侧 d̂/4），
+捏住后先把布边向外拉到手掌完全离开薄板的投影，再竖直抬起、越过薄板放到对面。</p>
+<p><b>与原站的差异。</b>原站是 VBD 布料，捏取靠的是同一类接触。我们的床单网格更粗（25 mm），时间步 5 ms；对折的轨迹是手写的分段最小加加速度轨迹，不是学出来的策略。</p>
+<figure class="fig">
+<video src="../media/robotgym_sheet.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>床单对折</b> — 22.7 s 的动作（时间步 10 ms，一张 A800 上 24 分钟）：两臂捏住、外拉、抬起、越过、放下、松开；结束时近半边 96% 的面积压在远半边上。</figcaption>
+</figure>
+<div class="tblwrap"><table>
+<thead><tr><th>阶段</th><th class="num">时间 (s)</th><th class="num">指垫间隙 (mm)</th><th class="num">布边最高点 (m)</th><th class="num">布边到指尖 (mm)</th></tr></thead>
+<tbody>
+<tr><td>捏住</td><td class="num">7.0</td><td class="num">1.0</td><td class="num">0.305</td><td class="num">7.9</td></tr>
+<tr><td>外拉</td><td class="num">9.0</td><td class="num">1.0</td><td class="num">0.307</td><td class="num">8.0</td></tr>
+<tr><td>抬起</td><td class="num">12.0</td><td class="num">1.0</td><td class="num">0.491</td><td class="num">8.2</td></tr>
+<tr><td>放下</td><td class="num">16.0</td><td class="num">1.0</td><td class="num">0.426</td><td class="num">15.5</td></tr>
+<tr><td>松开后</td><td class="num">21.2</td><td class="num">60.0</td><td class="num">0.414</td><td class="num">81.7</td></tr>
+</tbody></table></div>
+<p>"布边到指尖"是布料顶点到指尖中心的最小距离：捏住期间一直在 8 mm 左右（25 mm 的网格里就是"布在指垫之间"），松开后才拉开。
+USD（刚体变换 + 布料顶点，568 帧，8.5 MB）：<a class="dl" href="../media/bedsheet_fold.usdc">bedsheet_fold.usdc</a></p>
+
+<h2 id="bottle"><span class="step-no">2</span>捏瘪水瓶</h2>
+<p><b>场景。</b>一只 PET 瓶（半径 32 mm、高 200 mm、壁厚 0.3 mm，旋转体网格 5 mm 边长，1527 顶点）立在桌上，装水 400 ml（2.6 万粒子，静置后水面约 12 cm）。
+FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）合拢到 32 mm，保持 1.5 s，再张开退回。全程 15 s，时间步 5 ms。</p>
+<p><b>做法。</b>瓶壁是零厚度的 IPC 三角壳，膜刚度按 PET 取（E = 2.5 GPa、t = 0.3 mm），弯曲用二面角铰链模型（D = E t³ / 12(1−ν²)）。
+为了让凹痕留下来，我们给铰链加了一个<b>塑性角</b>：每条边记一个永久偏转角 θ<sub>p</sub>，弯曲能用 θ − θ<sub>rest</sub> − θ<sub>p</sub>；
+每步结束后，超过屈服角 0.2 rad 的部分全部变成永久的（比例 1.0）。瓶里的水是引擎内的 MPM Lite 水，粒子是 IPC 接触点，壳推水、水顶壳在同一次 Newton 里完成。</p>
+<p><b>与原站的差异。</b>原站的壳用的是“真实刚度与屈服”，液体是 PBF；我们的屈服是铰链级的（弯曲塑性），膜本身保持弹性，PET 的膜屈服没有建模。
+瓶子是开口的，水不会密封加压；原站视频里瓶子被捏得更深，我们的捏合深度由夹爪目标间隙决定。</p>
+<figure class="fig">
+<video src="../media/robotgym_bottle.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>捏瘪水瓶</b> — 两指合到 32 mm 时瓶身凹进 15.8 mm；松开后凹痕留下 14.0 mm（弹性回弹只有 1.8 mm），水没有洒出，瓶子始终立着（倾斜 &lt; 2.5 mm）。</figcaption>
+</figure>
+<div class="tblwrap"><table>
+<thead><tr><th>阶段</th><th class="num">时间 (s)</th><th class="num">指间距 (mm)</th><th class="num">瓶身最小半径 (mm)</th><th class="num">凹痕 (mm)</th><th class="num">水面高度 (mm)</th></tr></thead>
+<tbody>
+<tr><td>静置</td><td class="num">1.5</td><td class="num">78</td><td class="num">31.9</td><td class="num">0.1</td><td class="num">122</td></tr>
+<tr><td>捏合</td><td class="num">8.0</td><td class="num">32</td><td class="num">16.2</td><td class="num">15.8</td><td class="num">134</td></tr>
+<tr><td>保持</td><td class="num">9.0</td><td class="num">32</td><td class="num">16.2</td><td class="num">15.8</td><td class="num">134</td></tr>
+<tr><td>松开</td><td class="num">11.0</td><td class="num">78</td><td class="num">18.0</td><td class="num">14.0</td><td class="num">128</td></tr>
+<tr><td>结束</td><td class="num">15.0</td><td class="num">78</td><td class="num">18.0</td><td class="num">14.0</td><td class="num">127</td></tr>
+</tbody></table></div>
+<p>凹痕按瓶身中部一圈顶点到该圈中心的最小距离算（静止半径 32 mm）。捏合时水面升高 12 mm（被挤占的体积），松开后回落。
+一次完整运行在一张 A800 上用时 14 分钟（3000 步）。USD（刚体变换 + 壳顶点 + 2.6 万个水粒子，376 帧）约 120 MB，文件较大，暂未随页面提供（整理后以 GitHub Release 发布）。</p>
+
+<h2 id="sponge"><span class="step-no">3</span>海绵吸水拧水</h2>
+<p><b>场景。</b>一块 6 × 3.5 × 10 cm 的开孔海绵（FEM 四面体 720 个，E = 50 kPa，ν = 0.35，密度 120 kg/m³，孔隙率 0.85）泡在 28 × 14 cm、水深 5.5 cm 的水盆里；FR3 自上而下、手指沿盆的长边抓住它（指垫合到 44 mm，海绵压扁 27 %），泡 2 s 后提出水面（多余的水滴回盆里），移到杯子上方，分三次把手指合到 24 / 18 / 12 mm 拧水，每次保持 2 s，再放回盆里。判据和原站一样：杯子里收到多少水。</p>
+<p><b>做法。</b>海绵本身是普通软体（stable neo-Hookean 四面体；泊松比取 0.35 而不是泡沫「应有」的 0.1，原因见下文「坑」——这套能量在低泊松比下会被捏到塌缩）；关键是水与海绵的<b>多孔耦合</b>（引擎新增 <span class="mono">set_liquid_porous</span>）：取消海绵表面与水粒子的接触，水可以自由进入海绵区域（吸水）；每步先在海绵的四面体里定位粒子（重心坐标），求解前把它们的速度向海绵材料速度松弛（达西式阻力）并抵消重力，求解后再把它们拉回各自的物质点——这三件事都乘一个保水系数 f(s)：饱和度 s ≤ 1 时 f = 1（水完全锁在物质点上，跟着海绵走），s ≥ 1.25 时 f = 0（多余的水完全放开，重力和 MPM 压力把它从开放的表面压出去），中间线性过渡。饱和度 s = 海绵内水体积 / 孔容量，按顶点聚合（一个四面体在 8 mm 水下只装半个粒子，按四面体算会级联漏水；按全局算又看不见局部挤压）。孔容量不能简单取「孔隙率 × 当前体积」：ν = 0.35 的 FEM 被指垫捏扁时主要是向两边鼓，体积掉得很少（60 → 24 mm 时指垫下方的四面体只少 25 % 体积，s 停在 1.0，什么都挤不出来），所以按开孔泡沫算：骨架体积 (1 − φ)V₀ 不变，孔容量 = V₀ · max(0.02, min(J, λ<sub>min</sub>) − (1 − φ))，λ<sub>min</sub> 取四面体最短棱的伸长比——单轴捏扁时孔跟着塌掉。网格级的壁面约束对海绵表面不生效，其余器皿照常。</p>
+<p><b>与原站的差异。</b>原站的海绵是 VBD（实验性），吸排水机制未公开；我们的模型是三个显式规则（自由进入、随材料运动、按饱和度保水 / 放水），没有真实的毛细压力曲线和达西渗透率。几个中途被实验推翻的版本也值得记一笔：按单个四面体算饱和度在 8 mm 的水粒子下会级联漏水（抬起时漏掉 110 ml）；只在求解前设速度则水跟不上海绵（上升速度只有海绵的一半，然后全部掉回盆里）；把达西阻力从 200 /s 降到 60 / 30 /s 想让多余的水流得快些，结果抬起时所有水都漏回盆里——同一个阻力也是保水的机制，放水只能靠按饱和度切换的系数，而不是调阻力。</p>
+<figure class="fig">
+<video src="../media/robotgym_sponge.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>海绵吸水拧水</b> — 泡水后海绵带着 235 ml 提出水面，到杯子上方时还剩 134 ml（多余的滴回盆里）；三次拧水（24 / 18 / 12 mm）分别收到 9.7 / 2.8 / 4.1 ml，杯中最终 16.8 ml（原站 33.5 ml）。</figcaption>
+</figure>
+<p>海绵含水量与杯中水量随时间（录制里按粒子计数，每个水粒子 0.064 ml）：</p>
+<div class="tblwrap"><table><thead><tr><th>t (s)</th><th>阶段</th><th>指垫间距 (mm)</th><th>海绵含水 (ml)</th><th>杯中 (ml)</th></tr></thead><tbody>
+<tr><td>7.5</td><td>提出水面</td><td>44</td><td>235</td><td>0</td></tr>
+<tr><td>9.5</td><td>到杯子上方</td><td>44</td><td>134</td><td>0</td></tr>
+<tr><td>14.5</td><td>拧 1 到位</td><td>24</td><td>126</td><td>8.1</td></tr>
+<tr><td>16.5</td><td>松开 1</td><td>44</td><td>124</td><td>9.2</td></tr>
+<tr><td>20.5</td><td>拧 2 到位</td><td>18</td><td>124</td><td>9.9</td></tr>
+<tr><td>22.5</td><td>松开 2</td><td>44</td><td>122</td><td>12.1</td></tr>
+<tr><td>26.5</td><td>拧 3 到位</td><td>12</td><td>121</td><td>12.5</td></tr>
+<tr><td>28.5</td><td>松开 3</td><td>44</td><td>117</td><td>16.5</td></tr>
+<tr><td>38.0</td><td>放回盆里后</td><td>78</td><td>246</td><td>16.8</td></tr>
+</tbody></table></div>
+<p>一次完整运行（39 s，7800 步，2.4 万个水粒子）在一张 A800 上用时 150 分钟。USD（刚体变换 + 海绵顶点 + 水粒子，976 帧）约 290 MB，文件较大，暂未随页面提供（整理后以 GitHub Release 发布）。</p>
+
+<h2 id="traps">数值陷阱（都用实验确认过）</h2>
+<ul>
+<li><b>捏零厚度布料不能把手指合死。</b>手指目标间隙为 0 时，两块指垫把布压到总间隙 0.2 mm（障碍距离 d̂ 的 0.2 倍），静止时一次 Newton 就收敛，
+但一开始移动每帧就打满迭代上限、碰撞检测一帧几十秒；不放布料、只让两指合拢再移动也一样。做法：d̂ = 2 mm，手指目标间隙 1 mm（每侧 d̂/4）。间隙恰好等于 d̂ 时接触力为零，布会滑掉。</li>
+<li><b>固定物体的面不能重合。</b>盆壁盒子直接立在盆底盒子上，两张面距离为 0，第一步能量就是 NaN。做法：壁沉入底 4 mm，并让盆的几块之间互不碰撞。</li>
+<li><b>一条很长的三角形边会让碰撞检测串行。</b>1 m 长的薄板边、18 cm 长的手掌边都出现过；盒子按 5 cm 细分即可。</li>
+<li><b>瓶底要站在环上。</b>旋转体生成器第一版把瓶底做成了中心最低的凸底，瓶子立在一个点上来回摇，看起来像壳太软；改成凹底（环最低、中心上拱 6 mm）后消失。</li>
+<li><b>先查手掌和固定物体的包围盒，再怪抓握。</b>海绵「抓不牢」（抬起后沿指垫下滑 16 mm、搬运时倾斜 30°、一拧就飞）查了一整轮刚度、握持间隙和指速，最后用无水重跑加录制里每个刚体的包围盒才发现：Franka 手掌沿指轴长 204 mm，盆内只有 140 mm，手掌下探时坐在了两侧盆壁顶上（手掌底面高度与壁顶完全相等），比计划高 18 mm，指垫只夹住海绵最上面 14 mm；抬起时机械臂顶着固定的盆壁，Newton 每帧打满。关节是软约束，驱动角度照样「到位」，所以只看关节角会被骗过。修法：手指轴转到盆的长边方向、盆加宽到 280 mm、指垫对准海绵中高。另外指垫合拢速度也要限制：80 mm/s 是砸，拧水用 12 mm/s。</li>
+
+<li><b>低泊松比的 stable neo-Hookean 会被捏成零体积。</b>海绵第一次拧水时（指垫从 32 mm 合到 26 mm）整块 FEM 在不到 1 s 内塌成 1 mm 厚的薄片，100 ml 水一次全倒进杯子。引擎编译的是不带 log 项的 stable neo-Hookean（Ψ = ½u(I₂−3) + ½r(J−1−u/r)²，u = 4μ/3，r = λ + 5μ/6）：完全塌缩与静止态的能量差是 ½(λ − μ/2)，ν &lt; 1/6 时为负——静止只是局部极小，ν = 0.1 下压到 50 % 就不再存在任何稳定状态。按 F = diag(a, b, b) 扫能量面：ν = 0.35 压到 26 mm 仍只掉体积、几乎不侧鼓（b ≈ 1.0），ν = 0.45 侧鼓 30–50 %。泡沫真正想要的是 ARAP 那类没有体积项的能量。</li>
+<li><b>拧不出水，不是「阀门」的错。</b>最初三次拧水只收到 4–7 ml（原站 33.5 ml），先后换了放水系数的形状、降低达西阻力都没用；把录制离线重算每个粒子看到的饱和度才看清三件事：① ν = 0.35 的四面体被捏时鼓而不缩，「孔隙率 × 当前体积」的容量几乎不变，指垫下方 s 只到 1.0，没有一粒水被放开——改成随最短棱伸长比塌缩的开孔泡沫容量后，第一次拧水从 2 ml 变成 8 ml；② 海绵吸走约 180 ml 后盆里水位降了 5 mm，被捏高的海绵上面三分之一根本没泡到水——水深从 4 cm 改到 5.5 cm；③ 20 mm 宽的指垫只压到 10 cm 长海绵的五分之一：三次拧水放出的 9.7 / 2.8 / 4.1 ml 基本就是指垫正下方那 15 ml 左右的水，邻区的水被锁在物质点上不会流过来。把海绵缩短到 6 cm 和 5 cm 再跑（指垫下的水占三分之一到一半）每次也只放出 5–6 ml——被压扁的区域由指垫脚印决定，而不是海绵多大。这就是和原站 33.5 ml 剩下的差距：两指尖捏一块厨房海绵，在这个模型里一次只能挤出指垫下面的水。</li>
+<li><b>Franka 手指只有 58 mm 长。</b>225 mm 高的瓶子不能从上往下抓，只能侧抓：底座后移 30 cm、手下俯 40°，逆运动学全程误差 0.2 mm。</li>
+</ul>
+
+<h2 id="repro">怎样复现</h2>
+<p>三个脚本都在 <span class="mono">examples/robotgym/</span>，共用 <span class="mono">common.py</span>（FR3 加载与关节映射、细分盒子、布料 / FEM 加载、录制）。
+每个脚本都有 <span class="mono">--dry</span>（只做逆运动学可达性检查，不启动引擎）和 <span class="mono">--max-time</span>（截断测试）。</p>
+<pre class="mono">PYTHONPATH=. python examples/robotgym/bedsheet_fold.py   --out out/robotgym/bedsheet
+PYTHONPATH=. python examples/robotgym/bottle_squeeze.py  --out out/robotgym/bottle     # 需要二面角弯曲构建（GIPC_QUADRATIC_BENDING=OFF）
+LIQ_POROUS_REL=0.25 LIQ_POROUS_FOAM=1 PYTHONPATH=. python examples/robotgym/sponge_transfer.py --water-h 0.055 --squeeze-gap 0.024,0.018,0.012 --wring-hold 2 --out out/robotgym/sponge
+python examples/robotgym/check_bedsheet.py / check_bottle.py / check_sponge.py out/robotgym/&lt;example&gt;/recording.npz</pre>
+<p>录制文件 <span class="mono">recording.npz</span> 用实验台演示的同一套格式，可直接交给 <span class="mono">render_lab_video.py</span>（预览）、
+路径追踪渲染器和 <span class="mono">export_lab_usd.py</span>（USD）。液体场景需要 <span class="mono">preconditioner_type=0</span>。</p>
+</article>
+
+<footer><div class="container">
+  <span><a href="liquid.html">← 液体与引擎改动日志</a></span>
+  <span><a href="nuka.html">下一步：对照 Nuka-Physics 的进度与路线图 →</a></span>
+  <span><a href="../">返回首页</a></span>
+</div></footer>
+</body>
+</html>

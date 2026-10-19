@@ -210,6 +210,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <a class="item opt" href="#hands">灵巧手</a>
   <a class="item opt" href="#data">数据与验证</a>
   <a class="item opt" href="#liquid">液体</a>
+  <a class="item opt" href="#robotgym">三个任务</a>
   <a class="item opt" href="#modules">模块</a>
   <a class="item opt" href="docs/outputs.html">技术详解</a>
   <a class="item" href="https://github.com/haoxiangNtu/stiff-physics">GitHub</a>
@@ -390,6 +391,31 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <video src="media/liquid_still_water_final.mp4" muted loop playsinline controls preload="metadata"></video>
     <figcaption><b>静止的水</b> — 同一时刻的两次完整运行（路径追踪）：左为上一版成片（应急版固壁），无人触碰的烧瓶里水以约 0.13 cm/s 慢慢环流；右为最终版（根本修正 + 静止处理），约 0.001 cm/s。修复前这里是约 2 cm/s。
     液体模块目前在引擎开发分支上，尚未进入公开发布的 wheel。</figcaption>
+  </figure>
+</div></section>
+
+<section class="block" id="robotgym"><div class="container">
+  <div class="section-intro">
+    <div class="kicker kicker--data">Benchmarks · Cloth · Shell · Sponge</div>
+    <h2>三个操作任务：床单对折、捏瘪水瓶、海绵吸水拧水</h2>
+    <p class="lead">robotgym.io 首页用三个任务展示它的物理栈；我们用同一个 IPC 求解器把它们各做了一遍：双臂靠摩擦捏住床单抬起对折，
+    0.3 mm 的 PET 瓶壳被捏瘪后凹痕留下来（新增的铰链塑性），海绵在水里吸饱、提起、在杯子上方拧三次（新增的多孔液体耦合）。
+    每个任务都有路径追踪视频和时间采样的 USD。
+    <a class="more" href="docs/robotgym.html">阅读方法、差异与数值陷阱 →</a> · <a class="more" href="docs/nuka.html">下一步：对照 Nuka-Physics 的进度与路线图 →</a></p>
+  </div>
+  <div class="fig-grid">
+  <figure class="fig">
+    <video src="media/robotgym_sheet.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>床单对折</b> — 两台 FR3 只靠接触与摩擦捏住布边。</figcaption>
+  </figure>
+  <figure class="fig">
+    <video src="media/robotgym_bottle.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>捏瘪水瓶</b> — PET 薄壳 + 铰链塑性，水与壳在同一次 Newton 里耦合。</figcaption>
+  </figure>
+  </div>
+  <figure class="fig">
+    <video src="media/robotgym_sponge.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>海绵吸水拧水</b> — 开孔海绵的多孔耦合：自由进入、随材料运动、按饱和度保水 / 放水；三次拧水收到 16.8 ml。</figcaption>
   </figure>
 </div></section>
 
