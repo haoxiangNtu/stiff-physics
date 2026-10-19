@@ -51,8 +51,8 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <tbody>
 <tr><td>robotgym 三个任务</td><td>双臂床单对折（近半 96 % 叠到远半）、PET 瓶捏瘪（凹 15.8 mm，松开留 14.0 mm，不洒）、海绵吸水拧水（三次拧水 16.8 ml，原站 33.5 ml）；方法、差异与数值陷阱见 <a href="robotgym.html">专页</a></td><td><span class="tag ok">已完成</span></td></tr>
 <tr><td>为此新增的引擎能力</td><td>壳的二面角塑性铰链；水与开孔海绵的多孔耦合（吸入、随材料运动、按饱和度保水 / 放水、泡沫孔容量）；四面体的体积塑性（J2 屈服 + 线性硬化，牛顿步之间做静止形状更新）</td><td><span class="tag ok">已完成 · 未进公开 wheel</span></td></tr>
-<tr><td>Nuka 材料与耦合类演示</td><td>兔子落水（刚体 / 软体）、果冻球、弹塑性三件套、Go2 披布已复现；G1 叠衬衫待做（见第 4、5 节）</td><td><span class="tag ok">已复现 7 个 · 见第 5 节</span></td></tr>
-<tr><td>Nuka 策略与训练类演示</td><td>Go2 行走 / 后空翻 / 倒立、G1 跳舞、Microduck 平衡球（RL 训练）；先做策略的 sim2sim 回放，再谈训练（见第 6 节）</td><td><span class="tag part">探索中</span></td></tr>
+<tr><td>Nuka 材料与耦合类演示</td><td>兔子落水（刚体 / 软体）、果冻球、弹塑性三件套、Go2 披布已复现；G1 叠衬衫：G1 + Dex3 手已导入，双臂捏衣摆对折的场景在调（见第 4、5 节）</td><td><span class="tag ok">已复现 7 个 · 见第 5 节</span></td></tr>
+<tr><td>Nuka 策略与训练类演示</td><td>Go2 行走（公开策略 sim2sim）和 G1 跳舞（外部 ONNX 策略 sim2sim）已在 StiffGIPC 里跑通；Nuka 自己训练的后空翻 / 倒立策略不可迁移；多环境吞吐已测，训练未开始（见第 5、6 节）</td><td><span class="tag ok">sim2sim 2 个 · 训练未做</span></td></tr>
 </tbody></table></div>
 
 <h2 id="nuka">2 · Nuka-Physics 是什么</h2>
@@ -88,10 +88,10 @@ MLS-MPM 是显式积分（演示里 7680 Hz），弹塑性用 Hencky J2 加线�
 <tr><td>Panda 捏弹塑性试件</td><td>Panda 对 24 × 36 × 28 mm 试件轻捏、松开、重捏、释放；PD 驱动，120 Hz 控制；它自己报告的穿透 4 mm，预算 2 mm</td><td>我们现成的 FR3 捏取场景 + 塑性 FEM 试件；IPC 的穿透为零，可直接对照</td><td>已新增：<span class="mono">set_fem_plasticity</span></td><td><span class="tag ok">已复现 · FR3</span></td></tr>
 <tr><td>Go2 披布</td><td>一块布从站立的 Go2 上方落下披住它（VBD 布料，摩擦系数 1.8）</td><td>IPC 布料 + 站立姿态的 Go2 URDF</td><td>已完成：unitree_ros 模型转为逐连杆凸包</td><td><span class="tag ok">已复现</span></td></tr>
 <tr><td>G1 叠衬衫</td><td>带灵巧手的 Unitree G1 叠一件棉衬衫，25.8 s，脚本动作回放（无公开脚本）</td><td>我们已有的衬衫网格与叠衣轨迹 + G1 与 Dex3 手的 URDF，双臂 IK</td><td>G1 模型、双臂叠衣编排</td><td><span class="tag run">计划 · 后期</span></td></tr>
-<tr><td>Go2 行走（sim2sim）</td><td>公开的 48 维观测 / 12 维动作合同，Kp 20、Kd 0.5，策略 50 Hz，物理 5 ms</td><td>浮动基座的 Go2 URDF 在 StiffGIPC 里按同一合同跑公开策略，先看站立与行走</td><td>浮动基座 + 关节 PD 的闭环管线</td><td><span class="tag part">探索</span></td></tr>
-<tr><td>Go2 后空翻 / 倒立</td><td>它仓库里的 TorchScript 技能策略经 PD 回放</td><td>行走通过之后再试这两个策略</td><td>同上</td><td><span class="tag part">探索</span></td></tr>
-<tr><td>G1 跳舞</td><td>29 自由度人形，ONNX 策略 50 Hz，物理 5 ms</td><td>同一管线换成 G1</td><td>同上</td><td><span class="tag part">探索</span></td></tr>
-<tr><td>Microduck 平衡球</td><td>在 Nuka 里训练的 RL 策略</td><td>在 StiffGIPC 多环境里训练一个平衡类任务</td><td>多环境吞吐、训练管线</td><td><span class="tag part">探索 · 最后</span></td></tr>
+<tr><td>Go2 行走（sim2sim）</td><td>公开的 48 维观测 / 12 维动作合同，Kp 20、Kd 0.5，策略 50 Hz，物理 5 ms</td><td>浮动基座的 Go2 URDF 在 StiffGIPC 里按同一合同跑公开策略，先看站立与行走</td><td>已完成：浮动基座 URDF、纯力矩关节 + 显式 PD、观测装配</td><td><span class="tag ok">已复现 · 0.50 m/s</span></td></tr>
+<tr><td>Go2 后空翻 / 倒立</td><td>它仓库里的 TorchScript 技能策略经 PD 回放</td><td>同一管线接入它的两个策略（60 维 / 48 维观测合同）</td><td>—</td><td><span class="tag no">已试 · 不可迁移</span></td></tr>
+<tr><td>G1 跳舞</td><td>29 自由度人形，ONNX 策略 50 Hz，物理 5 ms</td><td>同一管线换成 G1（mjlab 训练约定、隐式 PD）</td><td>已完成：G1 凸包 URDF、隐式关节 PD</td><td><span class="tag ok">已复现</span></td></tr>
+<tr><td>Microduck 平衡球</td><td>在 Nuka 里训练的 RL 策略</td><td>在 StiffGIPC 多环境里训练一个平衡类任务</td><td>多环境吞吐（已测：64 个 Go2 单卡 74 env-step/s）、训练管线</td><td><span class="tag part">吞吐已测 · 训练未做</span></td></tr>
 <tr><td>π0.5 LIBERO 抓放</td><td>视觉-语言-动作模型推理 + 操作空间力矩控制</td><td>物理上只是刚体抓放；演示的重点是 VLA 推理和渲染管线</td><td>VLA 推理栈</td><td><span class="tag no">暂不做</span></td></tr>
 </tbody></table></div>
 
@@ -113,28 +113,45 @@ MLS-MPM 是显式积分（演示里 7680 Hz），弹塑性用 Hencky J2 加线�
 </div>
 <figure class="fig"><video src="../media/nuka_go2_drape.mp4" muted loop playsinline controls preload="metadata"></video>
 <figcaption><b>Go2 披布</b> — 0.9 m 见方的 IPC 布料从 0.6 m 高落到站立的 Go2（unitree_ros 模型，逐连杆凸包碰撞）上，贴着背部和四条腿垂下，没有滑落；3.5 s 用时 2.9 分钟。</figcaption></figure>
+<div class="fig-grid">
+<figure class="fig"><video src="../media/nuka_go2_walk.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>Go2 行走（公开策略 sim2sim）</b> — unitree_rl_gym 的 Go2 行走策略（48 维观测 / 12 维动作，Kp 20、Kd 0.5，策略 50 Hz）直接在 StiffGIPC 的浮动基座 Go2 上跑：指令 0.5 m/s，6 s 内平均前进速度 0.50 m/s、走出 3.0 m，机身倾角平均 2.6°、最大 4.4°，未摔；交付版 4 s 走 2.06 m。关节用纯力矩模式加显式 PD，接触交给 IPC。</figcaption></figure>
+<figure class="fig"><video src="../media/nuka_g1_dance.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>G1 跳舞（外部 ONNX 策略 sim2sim）</b> — G1 Moves 数据集的 Shuffle 舞蹈 ONNX 策略（160 维观测 / 29 维动作，50 Hz）在 StiffGIPC 的浮动基座 G1（29 自由度 + 两只 Dex3 手，逐连杆凸包碰撞）上回放 8 s：始终站立，机身倾角平均 4.1°、最大 8.6°，关节跟踪 RMSE 0.107 rad（原站 20 s 录像自报 0.211 rad）。关节用隐式 PD（见本节末尾的坑），手指位置保持；8 s 用时 15 分钟。</figcaption></figure>
+</div>
 <p><b>这一轮的坑（都已实验确认）。</b></p>
 <ul>
 <li><b>兔子悬在水里不沉。</b>ρ = 1200 的兔子入水后减速到停，悬在离缸底几厘米处。不是休眠、不是静止阻尼、不是摩擦、不是容差、不是 dhat（都试过），而是为静止水设计的「幽灵惩罚」（wall-cut cell 的体积率惩罚）把每个固体周围的水变成了强粘滞层；ρ = 5000 的兔子能穿过去说明它是阻力不是锁定。关掉幽灵惩罚、只留壁面约束，粒子 ≤ 10 mm 时兔子落到底，2 s 内水位几乎不漏。</li>
 <li><b>动平台不能靠「每步瞬移」。</b>固定刚体瞬移后碰撞几何不动；自由重刚体每步瞬移，压板一接触试件，势垒的平衡间隙随载荷缩小到比每步位移还小，下一步就瞬移进试件、接触对被丢弃。正确做法是把压板挂在 URDF 的平移关节上，用和手指一样的关节驱动——驱动器在牛顿求解之内，线搜索和 CCD 都看得见它。</li>
 <li><b>加载顺序与网格格式。</b>ABD 刚体必须在 FEM 之前加载（否则直接 abort）；引擎的 STL 读取器只认二进制 STL。</li>
 <li><b>量「宽度」要量腰。</b>两指捏块时，指垫上下的部分向外鼓，整体 x 跨度反而变大；要看指垫高度那一段的宽度。</li>
-<li><b>快而重的自由刚体会穿透。</b>弹性垫（无塑性）把 2.5 kg 的兔子弹起 13 cm，第二次落下时穿过了垫子和底板；2 ms 步长下 4.3 kg 的自由压板也能穿过固定底板。塑性垫吸能后没有这个问题。这是引擎层面待查的稳健性问题（CCD 跳过策略、势垒刚度与质量比），本页的「零穿透」只对准静态场景成立。</li>
+<li><b>「快而重的刚体会穿透」是误判，已撤回。</b>专门写了探针：自由刚块自由落体撞固定底板，撞击速度 1–8 m/s、质量 1–20 kg、步长 1 / 2 / 5 ms、dhat 0.5 / 2 mm、不同牛顿容差与迭代上限，最小间隙 0.0–0.3 mm，从未穿过；落在 E 50 kPa 的软垫上同样如此。回看弹性垫上的兔子：它是反弹后侧向滚出垫子、再滚下底板一角落到地面，逐帧检查没有任何顶点进入垫子或底板（四面体也无翻转）；压板那次则是「每步瞬移」造成的。真正留下的稳健性问题是：某个顶点恰好贴到地面时（倒立策略乱甩的腿），引擎直接以不变量检查中止，而不是把它推开。</li>
+<li><b>给引擎接策略时踩到的三件事。</b>（1）轻连杆（G1 的手腕）上显式阻尼 Kd·dt/I &gt; 1 会自激，关节速度飙到 100 rad/s：把阻尼改成指向上一步位置的弹簧，与刚度合成一根隐式弹簧 K = Kp + Kd/dt、目标 (Kp·q* + (Kd/dt)·q)/K，就是完全隐式的 PD；（2）位置驱动默认每帧最多走 0.1 rad，这等于把驱动力矩封顶在 K·0.1，必须放开；（3）关节驱动刚度按「导入时的凸包质量」算而不是按 URDF 惯量算，测出的 Kp 只有设定值的 40 %，换成凸包质量后逐关节核对一致。</li>
+<li><b>策略约定要看训练源码，不看数据集附带的播放脚本。</b>G1 舞蹈数据集自带的播放脚本把线速度和角速度的顺序写反、默认关节角写成零；按固定版本的 mjlab 训练任务源码（线速度在前、默认角是屈膝关键帧、动作尺度按每个电机 0.25·力矩上限/刚度、锚点是 torso_link）才跑通。Nuka 自己在它的动力学里训练的后空翻 / 倒立策略带着滤波和分段保持的脚手架，换引擎后不工作，这是预期之内的。</li>
 </ul>
 
 <h2 id="policy">6 · 策略与训练类演示怎么做</h2>
-<p><b>先 sim2sim，再训练。</b>Nuka 的 Go2 演示用的是外部训练好的策略，观测与动作合同是公开的：观测 48 维（基座线速度 × 2、角速度 × 0.25、机体系重力方向、指令、关节角偏差、关节速度 × 0.05、上一步动作），
-动作 12 维映射为关节目标角 = 默认角 + 0.25 × 动作，关节 PD 增益 Kp 20、Kd 0.5，策略 50 Hz、物理 5 ms。
-我们这边的对应物是：Go2 的 URDF 导入为浮动基座（基座是自由的 ABD 体），12 个关节用带刚度和阻尼的位置目标充当 PD，地面接触交给 IPC，每 4 个物理步取一次观测喂策略。
-验收分三级：站得住（PD 基线），走得动（指令 0.5 m/s 的速度跟踪），然后才是后空翻、倒立和 G1 跳舞这些对动力学细节更敏感的策略。
-这是一条新路径——我们的关节是软约束而不是力矩 PD，接触模型也不同——所以失败是有信息量的，结果好坏都会写在这里。</p>
-<p><b>训练。</b>Microduck 平衡球是在 Nuka 里从零训练的；我们的多环境是块对角牛顿求解，刚体场景能跑几百个环境，吞吐比原生批量引擎低两个数量级，
-所以先选平衡类的小任务，训练管线复用与 IsaacLab 的集成。能不能在可接受的时间里训出来，取决于多环境吞吐的后续工作，这里不预设结论。</p>
+<p><b>sim2sim 已经跑通两条线。</b>Go2：URDF 导入为浮动基座（基座是自由的 ABD 体），12 个关节设为纯力矩模式，每个物理步（5 ms）按 τ = Kp(q* − q) − Kd·q̇ 算力矩喂给引擎，每 4 步装一次 48 维观测（机体系线速度 × 2、角速度 × 0.25、机体系重力、指令、关节角偏差、关节速度 × 0.05、上一步动作）给公开的行走策略；站立、0.5 m/s 行走都通过。
+G1（29 自由度 + 两只 Dex3 手）：同一管线换成 G1 Moves 的 Shuffle 舞蹈 ONNX 策略（160 维观测 / 29 维动作），关节 PD 用上面说的隐式弹簧，手指关节位置保持；8 s 与 20 s 的回放都站得住、跟得上参考动作。
+这两个结果的意义不在于「能跑」，而在于确认了引擎的接触、关节驱动与质量属性能和外部训练的策略对上——这是把 StiffGIPC 放进 RL 管线的前提。</p>
+<p><b>Nuka 自己训练的技能策略不可迁移。</b>后空翻与倒立的 TorchScript 策略是在 Nuka 的动力学里训练、并靠回放脚本里的滤波和分段保持才成立的；换到 StiffGIPC 后倒立乱甩、后空翻翻到一半仰面落地。这是 sim2sim 的常态，要在我们引擎里得到这两个动作得重新训练。</p>
+<p><b>训练：先给出吞吐的真实数字。</b>单卡 A800、一个引擎实例里放 N 个 Go2（浮动基座 + PD 站立，5 ms 步长）：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>N</th><th>容差 / 迭代上限</th><th>每步耗时</th><th>env-step / s</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>严（1e-4 / 40）</td><td>377 ms</td><td>3</td></tr>
+<tr><td>1</td><td>松（1e-3 / 10）</td><td>87 ms</td><td>12</td></tr>
+<tr><td>16</td><td>严</td><td>1.79 s</td><td>9</td></tr>
+<tr><td>16</td><td>松</td><td>0.78 s</td><td>20</td></tr>
+<tr><td>64</td><td>松</td><td>0.87 s</td><td>74</td></tr>
+</tbody></table></div>
+<p>批量确实在摊薄固定开销（64 个环境比 1 个快 25 倍），但离 GPU 批量刚体引擎的 10<sup>4</sup>–10<sup>5</sup> env-step/s 还差两三个数量级：牛顿迭代和 PCG 占了全部时间，每个机器人 27 个凸包连杆对 IPC 来说是重的。所以 Microduck 那种从零训练暂不做；可行的路线是把策略的「训练」留在批量引擎里，把 StiffGIPC 用作接触细节的 sim2sim 验证与微调环境（现在这两条线做的正是这件事），以及和 IsaacLab 集成的多环境分支继续降本。</p>
 
 <h2 id="log">7 · 更新记录</h2>
 <ul>
 <li><b>2026-10-19</b> — 页面创建：robotgym 三个任务完成；Nuka 演示目录与可行性评估完成；下一步从兔子落水和果冻球开始。</li>
 <li><b>2026-10-19 晚</b> — 七个材料与耦合类演示复现（兔子落水刚体 / 软体、果冻球、弹塑性压缩、兔子砸垫、FR3 捏试件、Go2 披布）；引擎新增四面体体积塑性；压缩试验的两个验收数对上。剩下 G1 叠衬衫和策略类。</li>
+<li><b>2026-10-19 夜</b> — 策略类：Go2 公开行走策略 sim2sim 通过（0.50 m/s）；G1 Shuffle 舞蹈 ONNX 策略 sim2sim 通过；Nuka 自训的后空翻 / 倒立不可迁移；多环境吞吐测到 64 个 Go2；「快重刚体穿透」经探针与逐帧复查确认为误判并撤回；G1 + Dex3 模型导入，叠衬衫场景在调。渲染改为 URDF 的可视网格。</li>
 </ul>
 </article>
 
