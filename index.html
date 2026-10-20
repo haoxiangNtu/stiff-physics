@@ -210,7 +210,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <a class="item opt" href="#hands">灵巧手</a>
   <a class="item opt" href="#data">数据与验证</a>
   <a class="item opt" href="#liquid">液体</a>
-  <a class="item opt" href="#robotgym">三个任务</a>
+  <a class="item opt" href="#robotgym">三个任务</a><a class="item opt" href="#washroom">晾衣间</a>
   <a class="item opt" href="#modules">模块</a>
   <a class="item opt" href="docs/outputs.html">技术详解</a>
   <a class="item" href="https://github.com/haoxiangNtu/stiff-physics">GitHub</a>
@@ -417,6 +417,20 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <figure class="fig">
     <video src="media/robotgym_sponge.mp4" muted loop playsinline controls preload="metadata"></video>
     <figcaption><b>海绵吸水拧水</b> — 开孔海绵的多孔耦合：自由进入、随材料运动、按饱和度保水 / 放水；三次拧水收到 16.8 ml。</figcaption>
+  </figure>
+</div></section>
+
+<section class="block" id="washroom"><div class="container">
+  <div class="section-intro">
+    <div class="kicker kicker--data">Dexterous hands · Cloth</div>
+    <h2>晾衣间：两只 WujiHand 把衬衫挂上衣架</h2>
+    <p class="lead">一个洗衣间场景里，两只 20 关节的 WujiHand 把衣架穿进 831 顶点的衬衫、双手抓住、松开一只手、再把衣服向外抻平；动作用遥操作界面录成 take 回放。
+    衬衫与手指之间只有接触和摩擦。6 月在 v0.6.2 分支上完成，这里补上它的布料与碰撞参数，并与床单对折逐项对照。
+    <a class="more" href="docs/washing_room.html">阅读场景、参数与对照 →</a></p>
+  </div>
+  <figure class="fig">
+    <video src="media/washroom_overall.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>穿衣架 → 双手抓 → 松右手 → 抻平</b> — 四段录制连播，引擎视口截图（时间步 20 ms，全 Newton）。</figcaption>
   </figure>
 </div></section>
 

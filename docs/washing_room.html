@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>晾衣间：两只 WujiHand 把衬衫挂上衣架</title>
+<meta name="description" content="用 StiffGIPC（IPC 接触 + FEM/壳 + 引擎内 MPM 液体）复现 robotgym.io 首页的三个展示任务：双臂床单对折、PET 水瓶捏瘪（壳塑性）、海绵吸水与拧水（多孔耦合）。每个任务给出方法、与原站的差异、视频与 USD。">
+<link rel="stylesheet" href="docs.css">
+<style>
+.fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
+  margin: 1.2rem 0 1.5rem; padding: .6rem; box-shadow: var(--fig-shadow); }
+.fig img, .fig video { border-radius: .4rem; width: 100%; height: auto; display: block; background: #fff; }
+.fig figcaption { color: var(--sub); text-align: center; padding: .6rem .5rem .1rem; font-size: .86rem; line-height: 1.6; }
+.fig figcaption b { color: var(--ink); font-weight: 600; }
+figure { margin: 0; }
+.fig-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; margin: 1.2rem 0 1.5rem; }
+.fig-grid .fig { margin: 0; }
+@media (max-width: 768px) { .fig-grid { grid-template-columns: 1fr; } }
+.date { color: var(--sub); font-size: .82rem; font-weight: 400; margin-left: .4rem; }
+.step-no { display: inline-block; min-width: 2.1em; padding: 0 .45em; margin-right: .45em; border-radius: .4rem;
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface)); color: var(--primary);
+  font-size: .8em; text-align: center; vertical-align: .12em; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tag { display: inline-block; border-radius: 999px; padding: 0 .55rem; font-size: .76rem; font-weight: 600;
+  background: var(--e200); white-space: nowrap; }
+.tag.ok { color: var(--acc-data); } .tag.part { color: var(--acc-hw); } .tag.run { color: var(--primary); } .tag.no { color: #d0453a; }
+.dl { display: inline-block; margin: .2rem .6rem .2rem 0; padding: .25rem .7rem; border: 1px solid var(--e300); border-radius: .5rem; font-size: .88rem; }
+</style>
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="liquid.html">液体改动日志</a>
+  <a class="item" href="outputs.html">技术详解</a>
+  <a class="item" href="nuka.html">Nuka 路线图</a>
+  <a class="item" href="../#robotgym">返回演示 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / 晾衣间：两只 WujiHand 把衬衫挂上衣架</div>
+<div class="kicker">Dexterous hands · Cloth · Teleop recording</div>
+<h1>晾衣间：两只 WujiHand 把衬衫挂上衣架</h1>
+<p class="lead">这是 6 月在 v0.6.2 发布分支上做的灵巧手布料示例：一个洗衣间场景（水盆、晾衣架、滚筒洗衣机、衣架），一件 831 顶点的衬衫落在盆里，
+两只 WujiHand（每只 20 个驱动指关节）用遥操作界面把衣架穿进衬衫、双手抓住、松开一只手、把衣服往外抻平。动作先在交互界面里录成一段段"take"，
+再从存档的状态开始按顺序回放并逐帧截图。衬衫与手指之间只有接触和摩擦，没有附着约束。这一页把它和床单对折放在一起，对照两处布料的材料与碰撞参数。</p>
+
+<div class="note warn"><b>代码状态</b>
+示例在引擎的 <span class="mono">example/wujihand-cloth</span> 分支（基于 v0.6.2，<span class="mono">examples/wujihand/case_wujihand_washing_room.py</span>，
+交互界面 + 录制 / 回放 / 逐帧渲染脚本）。视频是引擎视口的截图序列（不是路径追踪）；每段的全场景 OBJ 序列已保存，可以后续用离线渲染器重新出片。</div>
+
+<div class="toc"><b>目录</b>
+<a href="#scene">场景与动作</a><a href="#params">布料与碰撞参数</a><a href="#compare">与床单对折的对照</a><a href="#repro">怎样复现</a>
+</div>
+
+<h2 id="scene">场景与动作</h2>
+<p><b>场景。</b>洗衣间 USD：水盆（0.51 × 0.51 × 0.19 m，表面 ABD 刚体，保留盆腔）、一只衣架（0.46 × 0.21 m 的细金属丝，可动的表面 ABD 刚体）、晾衣架与滚筒洗衣机（运动学背景）。
+衬衫是 IPC 三角壳布料（<span class="mono">shirt_831v.obj</span>，831 顶点 / 1596 三角形，平铺 0.65 × 0.65 m，边长约 2 cm），开始时落进盆里。
+两只 WujiHand（左右手各一只）从 URDF/USD 载入：手掌和指节是关节连接的刚体，碰撞体取每个连杆的凸包并抽稀到每只手约 1000 顶点（粗一点的 300 顶点衬衫被测出会让手指在快动作时"散开" 16 mm——大而稀疏的三角形把手与布的接触弄得病态，全局求解的条件数变差，手的关节每步收敛不了；831 顶点或更细的衬衫下手保持刚性，0.1 mm）。
+手的根部是"动画体"：界面上的位置 / 转角滑块变成根连杆的目标位姿，由电机项拉着走；20 个指关节按预设的抓握角度在 1 s 内合拢。</p>
+<p><b>动作。</b>从一个存档状态（衬衫已在盆里静止、两手就位）开始，回放四段录制好的 take，段间停 50 步：</p>
+<div class="fig-grid">
+<figure class="fig"><video src="../media/washroom_01_insert_hanger.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><b>1 · 把衣架穿进衣服</b></figcaption></figure>
+<figure class="fig"><video src="../media/washroom_02_grasp_both.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><b>2 · 双手抓住衣服和衣架</b></figcaption></figure>
+<figure class="fig"><video src="../media/washroom_03_release_right.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><b>3 · 右手松开、从衣架里退出来</b></figcaption></figure>
+<figure class="fig"><video src="../media/washroom_04_stretch_over.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><b>4 · 沿衣服向外抻平</b></figcaption></figure>
+</div>
+<figure class="fig">
+<video src="../media/washroom_overall.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>完整序列</b> — 四段连播（9 s，1280 × 720 视口截图，时间步 20 ms，全 Newton）。</figcaption>
+</figure>
+
+<h2 id="params">布料与碰撞参数</h2>
+<p>引擎里布料的三项刚度都由两个"模量"和厚度换算：拉伸刚度 = E / 2(1+ν)，弯曲刚度 = E<sub>b</sub> t³ / 24(1−ν²)，剪切刚度 = 0.03 × 拉伸刚度 × strain_rate。
+弯曲用的是 Bergou 的二次弯曲能（假定平面静止形状），两条演示用的是同一种模型。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>参数</th><th>晾衣间衬衫</th><th>床单对折（交付版）</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>网格</td><td>831 顶点 / 1596 三角形，边长 ≈ 2 cm</td><td>2788 顶点 / 5400 三角形，边长 15 mm</td><td>床单第一版是 25 mm（1025 顶点）</td></tr>
+<tr><td>厚度 t</td><td class="num">1 mm</td><td class="num">1 mm</td><td>只进入弯曲刚度（t³）和面密度</td></tr>
+<tr><td>膜模量 E</td><td class="num">1 × 10<sup>4</sup> Pa</td><td class="num">1 × 10<sup>5</sup> Pa</td><td>拉伸刚度 3.4 × 10<sup>3</sup> / 3.4 × 10<sup>4</sup> Pa</td></tr>
+<tr><td>弯曲模量 E<sub>b</sub></td><td class="num">1 × 10<sup>3</sup> Pa</td><td class="num">1 × 10<sup>5</sup> Pa</td><td>弯曲刚度 5.5 × 10<sup>−8</sup> / 5.2 × 10<sup>−6</sup> N·m（相差约 95 倍）</td></tr>
+<tr><td>泊松比 ν</td><td class="num">0.49</td><td class="num">0.45</td><td></td></tr>
+<tr><td>strain_rate</td><td class="num">100</td><td class="num">100</td><td>剪切刚度 = 3 × 拉伸刚度</td></tr>
+<tr><td>面密度</td><td class="num">0.2 kg/m²</td><td class="num">0.2 kg/m²</td><td>cloth_density 200 kg/m³ × 1 mm</td></tr>
+<tr><td>摩擦系数</td><td class="num">0.4</td><td class="num">0.5</td><td>全局，手 / 指垫 / 布 / 板共用</td></tr>
+<tr><td>障碍距离 d̂</td><td>相对值 5 × 10<sup>−3</sup>（× 场景包围盒对角线）</td><td>绝对值 2 mm</td><td>床单要把 1 mm 的指缝做成 d̂/2，所以用绝对值</td></tr>
+<tr><td>时间步</td><td class="num">20 ms</td><td class="num">5 ms</td><td></td></tr>
+<tr><td>Newton</td><td>全 Newton（回放 / 渲染）；交互时可用半隐式，β 容差 5 × 10<sup>−2</sup>，上限 200 次</td><td>全 Newton，容差 10<sup>−3</sup>，上限 60 次，MAS 预条件</td><td></td></tr>
+<tr><td>关节</td><td>joint_strength_ratio 1000，驱动 1000</td><td>同左（FR3 转动关节）</td><td></td></tr>
+</tbody></table></div>
+
+<h2 id="compare">与床单对折的对照：为什么一个软一个硬</h2>
+<p>真实棉布的弯曲刚度（Kawabata 弯曲试验）量级在 10<sup>−6</sup> N·m 附近。按上表换算：晾衣间衬衫的弯曲刚度 5.5 × 10<sup>−8</sup> N·m 比棉布软约 20 倍，所以它挂在衣架上垂得很"顺"，
+褶皱细碎；床单交付版 5.2 × 10<sup>−6</sup> N·m 比棉布硬约 5 倍，翻折处是大半径的圆弧，看上去偏硬。床单第一版（25 mm 网格）用的其实是接近棉布的 1.6 × 10<sup>−6</sup> N·m（E<sub>b</sub> 3 × 10<sup>4</sup>），
+但配上 3 × 10<sup>5</sup> 的膜模量和 25 mm 的粗网格，布在被捏起、对折时在单元尺度上屈曲成一片片尖褶（膜锁死 + 弯曲太软），画面显得"疙瘩"。
+这一轮把网格细到 15 mm、时间步 5 ms 之后，弯曲模量才提到 10<sup>5</sup> 来消掉碎褶——代价就是偏硬。接下来在 15 mm 网格上回落到 3 × 10<sup>4</sup> 和 10<sup>4</sup>（≈ 棉布和更软）各跑一组，看细网格下能否既无碎褶又柔软。</p>
+<p>膜模量的差别（10<sup>4</sup> 对 10<sup>5</sup>）主要是数值上的：床单被两只手拉着抬起时整张布受拉，膜太软会被明显拉长；衬衫只是挂着，10<sup>4</sup> 够用，
+而且更软的膜让手指抓布时的接触更好收敛。真实织物的面内刚度（10<sup>3</sup>–10<sup>4</sup> N/m）比两处都高得多，这是 IPC 布料为了 Newton 可解而普遍做的折衷。</p>
+<p>碰撞参数的差别来自任务：晾衣间的手指只需要"抓住"约 2 cm 三角形的布，d̂ 用相对值即可；床单的指垫要在 1 mm 的缝里夹住零厚度的布，d̂ 必须是绝对的 2 mm（指缝 = d̂/2，
+每侧 d̂/4），指尖完全闭合（d = 0）会把布压到 0.2 × d̂ 的总间隙上，第一次运动就让 Newton 停滞；指缝恰好等于 d̂ 又没有接触力，布会滑出去——这两个坑记录在
+<a href="robotgym.html#traps">三个任务那一页</a>。</p>
+
+<h2 id="repro">怎样复现</h2>
+<p>在 <span class="mono">example/wujihand-cloth</span> 分支编译引擎后：交互界面 <span class="mono">examples/wujihand/case_wujihand_washing_room.py</span>（环境变量 CLOTH_YOUNG / BEND_YOUNG / CLOTH_MESH / HAND_APPROX 等见脚本头），
+录制的 take 用 <span class="mono">replay_2hand.py</span> 顺序回放，<span class="mono">case_wujihand_render_sequence.py</span> 从存档状态回放四段并逐帧截图 / 导出 OBJ。
+简化场景（抽稀的道具、固定的盆、无洗衣机）见 <span class="mono">case_wujihand_simple.py</span>，同一只手抓篮子里软玩具的变体见 <span class="mono">case_wujihand_basket.py</span>。</p>
+</article>
+
+<footer><div class="container">
+  <span><a href="liquid.html">← 液体与引擎改动日志</a></span>
+  <span><a href="nuka.html">下一步：对照 Nuka-Physics 的进度与路线图 →</a></span>
+  <span><a href="../">返回首页</a></span>
+</div></footer>
+</body>
+</html>
