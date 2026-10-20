@@ -400,24 +400,28 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <div class="kicker kicker--data">Benchmarks · Cloth · Shell · Sponge</div>
     <h2>三个操作任务：床单对折、捏瘪水瓶、海绵吸水拧水</h2>
     <p class="lead">robotgym.io 首页用三个任务展示它的物理栈；我们用同一个 IPC 求解器把它们各做了一遍：双臂靠摩擦捏住床单抬起对折，
-    0.3 mm 的 PET 瓶壳被捏瘪后凹痕留下来（新增的铰链塑性），海绵在水里吸饱、提起、在杯子上方拧三次（新增的多孔液体耦合）。
+    0.3 mm 的 PET 瓶壳被捏瘪后凹痕留下来（新增的铰链塑性，慢捏、快捏各一版），海绵在水里吸饱、提起、在杯子上方拧三次（新增的多孔液体耦合）。
     每个任务都有路径追踪视频和时间采样的 USD。
     <a class="more" href="docs/robotgym.html">阅读方法、差异与数值陷阱 →</a> · <a class="more" href="docs/nuka.html">下一步：对照 Nuka-Physics 的进度与路线图 →</a></p>
   </div>
   <div class="fig-grid">
   <figure class="fig">
-    <video src="media/robotgym_sheet.mp4" muted loop playsinline controls preload="metadata"></video>
+    <video src="media/robotgym_sheet.mp4?v=1021" muted loop playsinline controls preload="metadata"></video>
     <figcaption><b>床单对折</b> — 两台 FR3 在离布角 4 cm 处只靠接触与摩擦捏住布边，把布边竖直放到对面后松开，近半 100% 叠到远半；15 mm 网格、棉布量级的弯曲刚度。</figcaption>
   </figure>
   <figure class="fig">
-    <video src="media/robotgym_bottle.mp4" muted loop playsinline controls preload="metadata"></video>
-    <figcaption><b>捏瘪水瓶</b> — PET 薄壳 + 铰链塑性，水与壳在同一次 Newton 里耦合；慢捏溢出约 5 ml，快捏 0.25 s 涌出 20 多毫升，落到桌上的水停住、不再蠕动（见详情页）。</figcaption>
+    <video src="media/robotgym_bottle.mp4?v=1021" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>捏瘪水瓶 · 慢捏</b> — PET 薄壳 + 铰链塑性，水与壳在同一次 Newton 里耦合；两指 2.5 s 合到 20 mm，瓶身凹 21.8 mm、松开后留 18.8 mm；约 5 ml 从瓶口溢出，在桌上凝成几颗停住的水珠。</figcaption>
   </figure>
-  </div>
   <figure class="fig">
-    <video src="media/robotgym_sponge.mp4" muted loop playsinline controls preload="metadata"></video>
+    <video src="media/robotgym_bottle_fast.mp4?v=1021" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>捏瘪水瓶 · 快捏</b> — 同一只瓶子装到接近瓶肩（467 ml），两指 0.8 s 合到 18 mm，约 0.25 s 内 20 多毫升从瓶口涌出；落到桌上的水 1 s 内收成一滩、不再蠕动（桌上共 23 ml）。<a href="docs/robotgym.html#bottle-fast">慢放与数据 →</a></figcaption>
+  </figure>
+  <figure class="fig">
+    <video src="media/robotgym_sponge.mp4?v=1021" muted loop playsinline controls preload="metadata"></video>
     <figcaption><b>海绵吸水拧水</b> — 开孔海绵的多孔耦合：自由进入、随材料运动、按饱和度保水 / 放水；三次拧水收到 16.8 ml。</figcaption>
   </figure>
+  </div>
 </div></section>
 
 <section class="block" id="washroom"><div class="container">
