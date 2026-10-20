@@ -75,13 +75,15 @@ svg.diagram .m-green { fill: var(--acc-data); } svg.diagram .m-amber { fill: var
 
 <div class="note warn"><b>代码状态</b>
 液体模块和本页的全部改动都在引擎的开发分支上，<b>还没有进入公开发布的 wheel</b>（v0.8.5.4 不含液体）。
-演示视频已换成第十一步的最终版：根本修正加上静止处理，完整五段全部通过。第九步的应急版视频留在该节作对照。</div>
+演示视频已换成第十一步的最终版：根本修正加上静止处理，完整五段全部通过。第九步的应急版视频留在该节作对照。<br>
+<b>10-19 起的复审</b>（第 12 步以后）：把液固耦合从头再审一遍，按“先可追溯、再传输与界面、再固体映射、再滴管、最后标定”的顺序改代码；每一步的改动都列在<a href="#changes">改动清单</a>里，方便日后回看。</div>
 
 <div class="toc"><b>目录</b>
 <a href="#overview">全程一览</a><a href="#why">1 起点</a><a href="#grid">2 网格进 Newton</a><a href="#contact">3 粒子成为接触点</a>
 <a href="#demo">4 演示跑通</a><a href="#audit">5 审计与提速</a><a href="#symptom">6 静止的水在动</a>
 <a href="#hypotheses">7 排除假设</a><a href="#root">8 根因</a><a href="#stopgap">9 应急版固壁</a>
-<a href="#fix">10 根本修正</a><a href="#rest">11 让静水静下来</a><a href="#status">现状</a><a href="#refs">参考文献</a>
+<a href="#fix">10 根本修正</a><a href="#rest">11 让静水静下来</a>
+<a href="#reaudit">12 复审：可追溯</a><a href="#divider">13 薄板试验</a><a href="#cpic">14 兼容性屏蔽</a><a href="#budget">15 支撑力预算</a><a href="#pump">16 滴管</a><a href="#changes">改动清单</a><a href="#status">现状</a><a href="#refs">参考文献</a>
 </div>
 
 <h2 id="overview">全程一览</h2>
@@ -99,6 +101,11 @@ svg.diagram .m-green { fill: var(--acc-data); } svg.diagram .m-amber { fill: var
 <tr><td>9</td><td class="mono">10-11</td><td>应急版网格固壁 + 一个转置错误 + 规划避让</td><td>烧瓶 2.0 → 0.16 cm/s，倒液正常，完整五段重跑</td></tr>
 <tr><td>10</td><td class="mono">10-11</td><td>根本修正：壁面场约束 + 法向拉伸幽灵罚项</td><td>静置 0.04 cm/s，体积误差 0.8%；分段验证与完整五段都通过</td></tr>
 <tr class="hl"><td>11</td><td class="mono">10-12 → 10-13</td><td>静止处理：随速度切换的幽灵罚项 + 求解内的静止拖曳；试管倒水改瞄准</td><td>静止的水 0.03 → 0.001 cm/s，水位不再下沉；完整五段通过（226 分钟）</td></tr>
+<tr><td>12</td><td class="mono">10-19</td><td>复审第一步：调试开关数值化、12 个裁剪/兜底计数器、体素角点静默改接的计数、张力分支反解修正</td><td>旧版 <code>LIQ_NO_EXPAND=0</code> 让 Newton ×5.8；静水 2200 步兜底全 0</td></tr>
+<tr><td>13</td><td class="mono">10-19</td><td>新验收试验：固定 1 mm 薄板分隔两室，活塞只插一侧</td><td>改前：14 粒穿过固定板，另一侧速度中位 ×5、最大 ×300</td></tr>
+<tr class="hl"><td>14</td><td class="mono">10-19 → 10-20</td><td>CPIC 式兼容性屏蔽：粒子只和自己这一侧的网格节点耦合；消融矩阵淘汰三个错误方案</td><td>穿板 0；静水对照 0.66 → 0.44 mm/s；烧瓶残差 0.125 → 0.156 mm/s，无 J 漂移</td></tr>
+<tr><td>15</td><td class="mono">10-20</td><td>液→固反力导出（壁面场约束反力、ghost 反力），支撑力预算</td><td>barrier + WFC + ghost = 水重，误差 ±0.5 %；floor_gravity 多算 2.1 % 水重</td></tr>
+<tr><td>16</td><td class="mono">10-20</td><td>滴管：运动学泵隔离试验、腔压泵模式、薄壳胶头资产</td><td>运动学泵丢液 66/86 且零滴出；腔压泵吸液 33 粒，提升时仍脱离（未完成）</td></tr>
 </tbody></table></div>
 
 <h2 id="why"><span class="step-no">1</span>起点：为什么要把水放进引擎<span class="date">10-04 → 10-06</span></h2>
@@ -881,12 +888,98 @@ k = 20 时这个阈值约 3.4 m/s²，10° 倾斜的晃动照常发生。</p>
 </div>
 
 
+
+<h2 id="reaudit"><span class="step-no">12</span>复审第一步：可追溯的入口<span class="date">10-19</span></h2>
+<p>10-18 的根因复核得出一个结论：现有代码还没有从根本上解决静水漂移和真实滴管耦合，并给出了五步顺序（可追溯入口 → 传输与界面体积 → 固体映射 → 滴管 → 标定）。
+10-19 起在本机 RTX 4090 上按这个顺序改代码。先确认本机能复现：固定烧瓶 11 s 静水，用 10-14 的完整环境（壁面场约束 + 幽灵罚项）得到速度中位 0.1252 mm/s，与当时记录的 0.1252 一致；不带这两项时是 2.53 mm/s，差 20 倍。<b>以前的所有静水数字都依赖这两项，引擎默认并不开</b>。</p>
+<p>第一步修的都是“看不见”的东西：</p>
+<ul>
+<li><b>调试开关写成 0 也生效。</b>五个接触 Hessian 的调试旁路用“变量是否存在”判断，<code>LIQ_NO_EXPAND=0</code> 会静默省掉粒子接触 Hessian 的展开。实测同一场景 Newton 次数 866 → 5066；改成按数值解析后 865 / 873。</li>
+<li><b>裁剪与兜底计数。</b>J 裁剪、非有限值回退、域边界夹取、推开夹取、重锚定裁剪各加计数器，经 <code>get_liquid_stats()</code> 导出，静水与分隔试验的汇总里逐步累加。静水基线 2200 步全部为 0：它不依赖任何兜底。后来加屏蔽后，计数器立刻暴露出每步上万次 J 裁剪，成了定位问题的主要线索。</li>
+<li><b>体素角点无槽位时被静默改接到 0 号槽位</b>（任意远处节点的位移会进入单元变形梯度）。以前这条路径碰不到，屏蔽后会触发；加了计数并改为固定 ghost 节点。</li>
+<li><b>张力分支的参考 J 反解</b>用了压缩分支的刚度，<code>k_cell_finalize</code> 改为与沉积一致的两段式反解（只影响 <code>LIQ_TENSION&gt;0</code>）。</li>
+</ul>
+
+<h2 id="divider"><span class="step-no">13</span>薄板分隔试验：把串扰和穿板量出来<span class="date">10-19</span></h2>
+<p>传输层的核心问题是：一块比网格还薄的固壁，两侧的水共享同一批网格节点（1 mm 板、5 mm 网格时 27 节点模板里有 12 个是共享的）。为了量化它，新写了一个验收试验：固定盒子中间一块 1 mm 固定薄板分成 A、B 两室，各装 4 cm 水；一个运动学活塞只插进 A 室。板是固定体，B 室物理上不可能有任何响应，它的任何动静都是数值串扰。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>改前</th><th class="num">穿板粒子</th><th class="num">B 室速度中位 mm/s</th><th class="num">B 室 p90</th><th class="num">B 室最大</th></tr></thead>
+<tbody>
+<tr><td>无活塞对照</td><td class="num">0</td><td class="num">0.66</td><td class="num">1.45</td><td class="num">3.2</td></tr>
+<tr><td>温和活塞（0.02 m/s，插 1.5 cm）</td><td class="num">0</td><td class="num">0.79</td><td class="num">1.83</td><td class="num">7.0</td></tr>
+<tr><td>暴烈活塞（0.1 m/s，插 3 cm）</td><td class="num"><b>14</b></td><td class="num">3.49</td><td class="num">12.6</td><td class="num">1049</td></tr>
+<tr><td>暴烈活塞，关闭粒子推开</td><td class="num">3</td><td class="num">6.36</td><td class="num">22.6</td><td class="num">978</td></tr>
+</tbody></table></div>
+<p>暴烈活塞下 14 粒穿过了一块密封的固定板；关闭粒子推开后降到 3，说明“推开”把板两侧相距 2 mm 的粒子互相推过了板，但它不是串扰的主因。温和活塞是更干净的尺度：B 室 p90 比对照高 26 %，最大值高 2.2 倍。</p>
+
+<h2 id="cpic"><span class="step-no">14</span>兼容性屏蔽：三个错误方案和一个可用方案<span class="date">10-19 → 10-20</span></h2>
+<p>做法来自 CPIC：每个粒子找最近的固体三角形，模板里落在壁面平面另一侧的节点视为不兼容，权重重新归一；同一个掩码用于质量/动量沉积、速度回插、位置嵌入、接触链式法则和 CCD 方向，所以这些算子彼此一致。被所有粒子都判为不兼容的“墙内”节点没有质量，成为固定 ghost，让被切割的体素保留完整单元。
+质量/动量沉积改成直接写 27 节点，和原来“粒子 → 格心 → 角点”两段式在代数上完全等价（推导过），所以内部不受影响。</p>
+<p>难的是贴壁粒子的仿射速度（它决定跟踪 J 的更新）。前两版都错了，而且错得一样：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>方案</th><th>贴壁粒子的速度梯度怎么算</th><th class="num">静水对照终态 J 均值</th><th>结果</th></tr></thead>
+<tbody>
+<tr><td>v1</td><td>对兼容节点做加权线性回归</td><td class="num">1.078</td><td class="tag no">J 单向棘轮上涨</td></tr>
+<tr><td>v2</td><td>原算子，被屏蔽节点代入“壁面法向 + 流体切向”的 ghost 速度</td><td class="num">1.069</td><td class="tag no">同样棘轮</td></tr>
+<tr class="hl"><td>S2</td><td>原算子，被屏蔽节点用它的实际速度（固定 ghost 即 0）</td><td class="num">1.008</td><td class="tag ok">干净</td></tr>
+</tbody></table></div>
+<p>棘轮的机制：贴壁粒子的兼容节点集在法向很薄，任何对梯度的“补全”都把法向导数的噪声放大，而基线本构在 J&gt;1 没有张力、裁剪又不对称，J 只被压回不被拉回。
+五个开关的消融矩阵（固定 ghost、屏蔽沉积、梯度代入、仅速度屏蔽、幽灵罚项）把来源锁定在梯度代入上；屏蔽沉积、固定 ghost、速度屏蔽本身都干净；幽灵罚项仍然必需（关掉后两种方案都出现 8–11 mm/s 的稳态环流）。
+读码又找到两条跨板的耦合路径并修掉：幽灵罚项把薄板两侧的两个切割单元配成了一对（法向相反的切割单元现在不配对）；粒子推开对板两侧的粒子也生效（一方在另一方壁面平面之后的对子不再推）。
+“格心沉积也屏蔽”试过，直接塌陷（烧瓶残差 0.16 → 172 mm/s）：墙内的幻影体素正是当前方案里壁面的压力反作用，删不得。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>S2 + 对子过滤</th><th class="num">穿板</th><th class="num">B 室中位</th><th class="num">B 室 p90</th><th class="num">B 室最大</th><th class="num">J 均值</th></tr></thead>
+<tbody>
+<tr><td>无活塞对照（改前 0.66 / 1.45 / 3.2）</td><td class="num">0</td><td class="num">0.44</td><td class="num">1.32</td><td class="num">3.3</td><td class="num">1.007</td></tr>
+<tr><td>温和活塞，板在格点面上（改前 0.79 / 1.83 / 7.0）</td><td class="num">0</td><td class="num">0.69</td><td class="num">4.08</td><td class="num">16.3</td><td class="num">1.020</td></tr>
+<tr><td>温和活塞，板偏离格点面 2.3 mm（改前 0.82 / 2.06 / 9.4）</td><td class="num">0</td><td class="num">0.56</td><td class="num">2.37</td><td class="num">9.0</td><td class="num">1.012</td></tr>
+<tr><td>固定烧瓶 11 s 静水（改前中位 0.125，J 0.999）</td><td class="num">—</td><td class="num" colspan="3">中位 0.156，p90 0.40，Newton 更少</td><td class="num">1.005</td></tr>
+</tbody></table></div>
+<p>穿板归零，静水对照比改前还静，中位串扰消失；但活塞下 B 室的 p90 和最大值仍高于对照，收紧求解器容差只降 20 %，不是容差伪像。剩下的路径是“混合切割单元”：板不在格点面上时，一个体素两侧都是流体节点，共用一个体积状态。下一步（2b）把这种单元按侧拆成两个子单元，对侧角点用随固体位移的 ghost。屏蔽目前默认关闭（<code>LIQ_CPIC=1</code> 开启），基线不受影响。</p>
+
+<h2 id="budget"><span class="step-no">15</span>支撑力预算：三条力路径闭合<span class="date">10-20</span></h2>
+<p>验收矩阵要求“总支撑力等于水重”，但引擎的接触力查询只含粒子障碍项，不含壁面场约束。新加了两个导出：壁面场约束对固体顶点的反力，和体素压力对固定 ghost 的合力。固定烧瓶 11 s 终态，水重 1.166 N：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>配置</th><th class="num">粒子障碍项</th><th class="num">壁面场约束</th><th class="num">ghost</th><th class="num">合计 / 水重</th></tr></thead>
+<tbody>
+<tr><td>改前，floor_gravity = 1</td><td class="num">−1.185</td><td class="num">−0.006</td><td class="num">—</td><td class="num">1.021</td></tr>
+<tr><td>改前，floor_gravity = 0</td><td class="num">−1.164</td><td class="num">−0.001</td><td class="num">—</td><td class="num">0.999</td></tr>
+<tr><td>屏蔽 S2，floor_gravity = 1</td><td class="num">−1.074</td><td class="num">−0.006</td><td class="num">−0.090</td><td class="num">1.004</td></tr>
+<tr><td>屏蔽 S2，floor_gravity = 0</td><td class="num">−1.062</td><td class="num">−0.006</td><td class="num">−0.093</td><td class="num">0.995</td></tr>
+</tbody></table></div>
+<p>三条路径加起来与水重闭合到 ±0.5 %。两个副产品：质量下限节点也被称重（<code>floor_gravity=1</code>）让容器多承受 2.1 % 不存在的水重，而关掉它静水残差不变，物理基线应改为 0；屏蔽下约 8 % 的载荷落在固定 ghost 上，不会传给容器顶点，2b 的“ghost 随固体位移”会把它归还给固体。</p>
+
+<h2 id="pump"><span class="step-no">16</span>滴管：运动学泵的隔离试验与腔压泵<span class="date">10-20</span></h2>
+<p>先回答“滴管滴液完成了吗”。第四步的滴管泵按阶段指定吸入、持液、滴出，在统一求解之外直接搬运粒子，没有压力闭环。把它从成片里单独拿出来跑（杯子、运动学空心滴管、同样的水）：吸进 86 粒，提升时掉到 76，平移时掉到 20，滴液阶段 5 个脉冲一粒没滴出，求解器每步 2–20 s 并 43 次报 line-search 失败。成片里“送到 14 粒”依赖的是成片配置下的偶然成功。更根本的是，胶头资产是实心橡胶，根本没有可变的气腔体积，所以当时只能用搬运代替。</p>
+<p>物理替代方案：唯一输入是气腔体积 V<sub>cav</sub>（胶头腔 + 孔），液柱由等温气压 p = p<sub>0</sub>V<sub>0</sub>/V<sub>air</sub> 驱动，V<sub>air</sub> = V<sub>cav</sub> − 孔内液体体积；气体弹簧对液柱平均轴向速度做一维隐式更新（任意步长稳定）；管尖没有液封时气体自由进出（V<sub>0</sub> 复位）。配套做了薄壳胶头资产（壁厚 1.5 mm，腔 8.3 ml，10442 四面体），日后由夹爪捏压直接给出 V<sub>cav</sub>。数量级：捏 1 % 约 1 kPa，正好等于满孔液柱的重量，所以真实滴液需要很轻的捏压，这是物理结论不是调参。</p>
+<p>隔离试验（先捏 8 % 入水、松开吸液、持、提、移、脉冲滴液）目前还没通过：吸力能到 −4 kPa，但孔内只进了 10–33 粒（孔容 180），单个粒子被踢到孔顶，提升时液柱脱离管尖。两个原因已经定位：被吸的液柱在表压意义下处于张力，基线本构在 J&gt;1 无刚度会“空化”，必须用对称本构（真实水到 −100 kPa 才空化）；入口粒子的动量经共享节点被杯内静水稀释。对称本构把吸液从 14 粒提到 33 粒，稀释问题要改成节点级的压力边界。</p>
+
+<h3 id="changes">改动清单（10-19 → 10-20，均在引擎开发分支，未发布）</h3>
+<div class="tblwrap"><table>
+<thead><tr><th>位置</th><th>改动</th><th>开关 / 默认</th><th>验证</th></tr></thead>
+<tbody>
+<tr><td><code>liquid_system.cu</code> 调试旁路</td><td>五个调试开关改为按数值解析</td><td>—</td><td>门控检查 4 组运行</td></tr>
+<tr><td><code>liquid_system.cu/.cuh</code>、<code>sim_engine</code>、绑定</td><td>12 个裁剪 / 兜底计数器，<code>get_liquid_stats()</code> 新增 <code>fb_*</code> 键；<code>m8_hydrostatic.py</code> / <code>m9_divider.py</code> 逐步累加</td><td>常开</td><td>静水 2200 步全 0</td></tr>
+<tr><td><code>k_cell_finalize</code></td><td>J&gt;1 分支用 κ·tension_ratio 反解</td><td>仅 <code>LIQ_TENSION&gt;0</code></td><td>代数检查</td></tr>
+<tr><td><code>k_vox_data</code></td><td>无槽位角点改接 0 号槽位的静默回退加计数</td><td>常开</td><td>屏蔽下为 0</td></tr>
+<tr><td><code>wall_geometry</code> / <code>wfc_points</code></td><td>最近壁点查询提前到 P2G 之前（独立掩码半径），节点绑定后移；壁点位置与 near 标志新存</td><td>WFC 或 CPIC 开时</td><td>静水不变</td></tr>
+<tr><td><code>k_build_mask</code>、<code>k_p2g_nodes</code>、<code>k_node_flag</code></td><td>27 位兼容掩码；屏蔽后直接 27 节点沉积；无质量的被引用节点成为固定 ghost</td><td><code>LIQ_CPIC</code>（默认 0）、<code>LIQ_CPIC_P2G</code>、<code>LIQ_CPIC_GHOST</code></td><td>消融 S1/S3/S4</td></tr>
+<tr><td><code>k_g2p</code>、位置嵌入、链式法则、CCD 方向五个核</td><td>统一使用重归一的掩码权重；梯度对被屏蔽节点用实际速度</td><td><code>LIQ_CPIC_C</code> 默认 0（代入方案被否决）</td><td>消融 S2</td></tr>
+<tr><td><code>k_gp_flag</code>、<code>k_neighbors</code></td><td>法向相反的切割单元不配幽灵罚项对；壁面平面之后的粒子对不推开</td><td>仅 CPIC 开时</td><td>对照裁剪 718 → 0</td></tr>
+<tr><td><code>k_p2g</code></td><td>格心沉积屏蔽（可选）</td><td><code>LIQ_CPIC_CELL</code> 默认 0，<b>已否决</b></td><td>烧瓶塌陷</td></tr>
+<tr><td><code>get_liquid_wall_forces</code>、<code>get_liquid_ghost_reaction</code></td><td>液 → 固反力导出（WFC、ghost）</td><td>常开</td><td>预算闭合 ±0.5 %</td></tr>
+<tr><td><code>set_liquid_pump_chamber</code>、<code>get_liquid_pump_state</code></td><td>腔压泵模式（气腔体积为唯一输入）</td><td>调用即生效</td><td>隔离试验未通过</td></tr>
+<tr><td><code>lab_assets.build_dropper_shell</code></td><td>薄壳胶头资产，含腔面与腔体积</td><td>—</td><td>CPU 检查</td></tr>
+<tr><td><code>examples/liquid/m9_divider.py</code>、<code>m5b_dropper_chamber.py</code></td><td>新验收试验：薄板分隔、腔压滴管</td><td>—</td><td>本页数据来源</td></tr>
+</tbody></table></div>
+
 <h2 id="status">现状与下一步</h2>
 <ul>
 <li><b>已完成并验证</b>：液体与固体在同一 Newton 里双向隐式耦合；精确提速与 6 处修复；静止水的根因；应急版固壁和三处演示层修正；根本修正（壁面场约束 + 法向拉伸罚项）；静止处理（随速度切换的幽灵罚项 + 求解内的静止拖曳）和试管瞄准修正。</li>
 <li><b>最终演示</b>：根本修正 + 静止处理，所有器皿都加约束（包括试管），用原文的跟踪 J，226 分钟跑完五段全部通过；静止的水约 0.001 cm/s（第十步 0.03，应急版 0.13），水位不再下沉。</li>
 <li><b>还没解决</b>：静止拖曳对很慢的流动相当于一个弱屈服（k = 20 时，约 3.4 m/s² 以下的驱动会被拖慢，而不是被挡住）；细试管里的水倒出得偏晚、偏急；滴管泵按位置搬运，送液量受水的状态影响；两侧都有水的薄壁（插在烧瓶里的滴管玻璃管）需要一个单元承载两块互不连通的流体，要用虚拟节点或界面积分；
 修好以后计划回到原文的跟踪 J 加对称能量，去掉 J 重锚定、无张力状态方程和粒子推开这些补丁；滴管泵从“按位置搬运”换成管口的压力或速度条件。</li>
+<li><b>复审（10-19 → 10-20）</b>：可追溯入口、薄板分隔试验、兼容性屏蔽（S2 版）、支撑力预算、腔压泵与薄壳胶头都已落地并有实验；<b>仍未完成</b>：混合切割单元的按侧拆分与 ghost 随固体位移（2b）、滴管的节点级压力边界与胶头气腔能量、壁面场约束的 body 排除与多环境过滤。屏蔽和腔压泵都还不是默认行为。</li>
 </ul>
 
 <h2 id="refs">参考文献</h2>
