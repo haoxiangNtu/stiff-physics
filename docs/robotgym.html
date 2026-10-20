@@ -16,6 +16,7 @@ figure { margin: 0; }
 .fig-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; margin: 1.2rem 0 1.5rem; }
 .fig-grid .fig { margin: 0; }
 @media (max-width: 768px) { .fig-grid { grid-template-columns: 1fr; } }
+.date { color: var(--sub); font-size: .82rem; font-weight: 400; margin-left: .4rem; }
 .step-no { display: inline-block; min-width: 2.1em; padding: 0 .45em; margin-right: .45em; border-radius: .4rem;
   background: color-mix(in srgb, var(--primary) 14%, var(--surface)); color: var(--primary);
   font-size: .8em; text-align: center; vertical-align: .12em; }
@@ -50,7 +51,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 视频为路径追踪成片，USD 为时间采样的几何（刚体变换 + 变形体顶点 + 液体粒子）。</div>
 
 <div class="toc"><b>目录</b>
-<a href="#overview">一览</a><a href="#sheet">1 床单对折</a><a href="#bottle">2 捏瘪水瓶</a><a href="#sponge">3 海绵吸水拧水</a>
+<a href="#overview">一览</a><a href="#sheet">1 床单对折</a><a href="#bottle">2 捏瘪水瓶</a><a href="#sponge">3 海绵吸水拧水</a><a href="#round2">改进轮次 10-20</a>
 <a href="#traps">数值陷阱</a><a href="#repro">怎样复现</a>
 </div>
 
@@ -131,6 +132,54 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）合拢到 32
 <tr><td>38.0</td><td>放回盆里后</td><td>78</td><td>246</td><td>16.8</td></tr>
 </tbody></table></div>
 <p>一次完整运行（39 s，7800 步，2.4 万个水粒子）在一张 A800 上用时 150 分钟。USD（刚体变换 + 海绵顶点 + 水粒子，976 帧）约 290 MB，文件较大，暂未随页面提供（整理后以 GitHub Release 发布）。</p>
+
+<h2 id="round2">改进轮次（10-20）：网格加密、更深的捏合、水的表面渲染<span class="date">10-20</span></h2>
+<p><b>起因。</b>上一轮交付后复查：床单（25 mm 网格、膜 3×10<sup>5</sup> / 弯曲 3×10<sup>4</sup>）对折时满是单元尺度的碎褶；水瓶只凹 15.8 mm、镜头被夹爪挡住、
+水画成一根不透明的蓝色颗粒柱。这一轮在八卡 A800 节点上并行扫描床单与水瓶的参数，同时把渲染链路换成和滴管演示一样的水面重建。</p>
+<p><b>环境。</b>八卡节点重建：conda 环境按保存的 yml 重建，引擎用本机编译的 sm_80 二进制（附带 urdfdom 3.0 / tinyxml 库），1 s 烧瓶静水的数字与本机逐位一致后才开始扫描；每卡一个运行，床单 24–38 分钟、水瓶约 1 小时。</p>
+
+<h3>床单：网格 10 mm、膜 10<sup>5</sup> / 弯曲 10<sup>5</sup></h3>
+<div class="tblwrap"><table>
+<thead><tr><th>方案</th><th>网格</th><th>膜 / 弯曲 (Pa)</th><th>dt</th><th>捏取（布到指尖，抬起时）</th><th>近半压在远半上</th><th>用时</th></tr></thead>
+<tbody>
+<tr><td>A</td><td>25 mm（1025 顶点）</td><td>1e5 / 1e5</td><td>10 ms</td><td>右手丢失（107 → 190 mm）</td><td class="num">30 %</td><td class="num">24 min</td></tr>
+<tr><td><b>B</b></td><td>10 mm（6161 顶点）</td><td>1e5 / 1e5</td><td>10 ms</td><td>两手都稳（1.9 / 1.1 mm）</td><td class="num">63 %</td><td class="num">38 min</td></tr>
+<tr><td>C</td><td>10 mm</td><td>1e5 / 3e5</td><td>10 ms</td><td>右手丢失（77 → 189 mm）</td><td class="num">36 %</td><td class="num">34 min</td></tr>
+<tr><td><b>D</b></td><td>15 mm（2788 顶点）</td><td>1e5 / 1e5</td><td>5 ms</td><td>两手都稳（5.2 / 4.9 mm）</td><td class="num">93 %</td><td class="num">65 min</td></tr>
+<tr><td>E</td><td>10 mm</td><td>1e5 / 1e5，板面摩擦 0.9</td><td>10 ms</td><td colspan="3"><span class="tag run">排队</span></td></tr>
+</tbody></table></div>
+<p>两条结论。（1）弯曲模量到 3×10<sup>5</sup> 以后，1 mm 指缝的捏取就不可靠：垂下的布边不再服帖地折进指缝，右手在抬起时把布丢了（25 mm 网格在 10<sup>5</sup> 下也丢）；
+10 mm 网格 + 10<sup>5</sup> / 10<sup>5</sup> 两手全程稳在 2 mm 内。（2）"近半压在远半上"从 96 % 降到 63 % 不是对折失败，而是<b>远半被拖动了</b>：抬起和翻越时整张床单被拉向近侧
+（远半中心 z 0.505 → 0.400），上一版放下时近半靠摩擦把远半带回去（0.37 → 0.49），这一版只带回到 0.42，于是近半有一段伸出远半之外。
+下一个运行把板面摩擦从 0.5 提到 0.9 看能否压住这段滑移。画面上 10 mm 版是大而圆滑的褶，碎褶没有了：</p>
+<div class="fig-grid">
+<figure class="fig"><img src="../media/robotgym_sheet25_laydown.png" alt="25 mm 网格放下阶段"><figcaption><b>上一版（25 mm，弯曲 3×10<sup>4</sup>）</b>放下阶段：单元尺度的尖褶。</figcaption></figure>
+<figure class="fig"><img src="../media/robotgym_sheet10_laydown.png" alt="10 mm 网格放下阶段"><figcaption><b>这一版（10 mm，弯曲 10<sup>5</sup>）</b>同一阶段：厘米级的圆褶。预览帧 32 spp。</figcaption></figure>
+</div>
+
+<h3>水瓶：壳 3 mm、间隙 18–20 mm、屈服 0.1 rad —— 先查清了一次"水越来越少"</h3>
+<p>四个运行（3 mm 壳 4300 顶点 × {间隙 20 mm 屈服 0.1、E 1.5 GPa 厚 0.25 mm、屈服 0.2}，5 mm 壳间隙 18 mm）同时启动。第一个到达捏合阶段的 5 mm 壳 / 18 mm 运行：
+两指合拢时瓶身凹 <b>26.3 mm</b>（上一版 15.8），3 mm 壳 / 20 mm 凹 22.7 mm，松开后分别留 25.9 / 21.9 mm。但同一批录制里<b>水面在持续下降</b>：静置 1 s 时 100 mm（上一版 121），
+之后每秒再降约 5 mm，捏合前只剩 59 mm；粒子分布显示底层 2 cm 的粒子间距从 2.5 mm 压到 1.75 mm（J ≈ 0.34），近两千个粒子跑到了瓶底面以下——水柱在自重下压实并穿过瓶底。</p>
+<p>先排除引擎回归：本机用三个二进制（今天 / 10-19 / 10-18）各跑 1.5 s 同一场景，水位逐位一致（1 s 0.099–0.100）。再对照上一版交付的运行日志，差别就出来了：上一版开着
+<b>壁面场约束</b>（格点级的壁面边界条件）、<b>幽灵罚项</b>和<b>静止拖曳</b>，这一轮的扫描脚本没有带这些环境变量，三项全关。本机加回这些开关再跑：1 s 水位 0.121，1.48 s 仍是 0.121，与上一版完全一致。
+这正是液体页第十步记录的现象——IPC 的障碍只作用在粒子上，没有格点级的壁面条件时，格点穿过瓶底、粒子跟着下沉。四个水瓶运行作废；海绵的三个换位运行同样缺这组开关，已停掉重启。</p>
+<p>重启的水瓶运行同时按新要求把水装满些：装水 451 ml（种子与壳的间隙从 3 mm 减到 1.5 mm），瓶内 195 mm 以下容积 492 ml；按 5 mm 壳录制的截面积积分，18 mm 间隙的捏合排开 150 ml，
+所以应有约 110 ml 从瓶口挤出来。液体域扩到瓶子周围 ±20 cm、高 45 cm，让喷出的水留在网格里。<span class="tag run">运行中</span></p>
+
+<h3>渲染：透明壳、玻璃杯、重建的水面</h3>
+<p>水不再画成粒子云：按滴管演示的做法重建水面（粒子并成球 → 形态学闭合 → 有符号距离 → 高斯平滑 → marching cubes；体素 0.8 mm、闭合 3、σ 3 体素、r<sub>p</sub> 0.6 / 稀疏处 1.2），
+盆里静止的水再按前一帧的速度抹平（σ 4、体素 1 mm，海绵场景粒子间距 3 mm）。PET 瓶壳用零厚度的薄介质（折射率 1.57，略带蓝），杯子用玻璃；
+水瓶的机位换到夹爪对面偏上，凹坑朝向镜头。下面是同一帧（上一版录制，松开后）新旧渲染的对比：</p>
+<div class="fig-grid">
+<figure class="fig"><img src="../media/robotgym_bottle_render_before.png" alt="旧渲染"><figcaption><b>旧</b>：粒子云、不透明壳、夹爪挡住瓶身。</figcaption></figure>
+<figure class="fig"><img src="../media/robotgym_bottle_render_after.png" alt="新渲染"><figcaption><b>新</b>：透明 PET 壳里能看到水面和水体；预览帧 24 spp，正式渲染 128–256 spp。</figcaption></figure>
+</div>
+
+<h3>海绵：换位再拧</h3>
+<p>上一轮查明每次拧出 5–9 ml 的上限来自 20 mm 指垫只压到 100 mm 海绵的 1/5。这一轮给脚本加了 <code>--regrasp</code>：每次拧水前松开、沿海绵长边移到另一段再捏
+（三段 −30 / 0 / +30 mm 各拧一次 24 / 18 / 12 mm；三段都 24 mm；四段 ±36 / ±12 mm 拧 24 / 18 / 18 / 12 mm）。三个运行在节点上进行（每个约 2.5 小时，第一轮因缺壁面场约束等开关作废，已用与 full23 相同的环境重启），目标是逼近原站的 33.5 ml。
+<span class="tag run">运行中</span></p>
 
 <h2 id="traps">数值陷阱（都用实验确认过）</h2>
 <ul>
