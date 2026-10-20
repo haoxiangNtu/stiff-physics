@@ -60,7 +60,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <thead><tr><th>任务</th><th>原站的物理</th><th>我们的物理</th><th>需要新增的部分</th><th>状态</th></tr></thead>
 <tbody>
 <tr><td>床单对折（双 FR3）</td><td>VBD 布料 + MuJoCo 刚体</td><td>IPC 三角壳布料（拉伸 / 弯曲），URDF 关节驱动的 FR3 ×2，摩擦捏取</td><td>无</td><td><span class="tag ok">已复现 · 近半 93% 叠到远半</span></td></tr>
-<tr><td>PET 瓶捏瘪</td><td>0.3 mm 塑料壳 + 屈服，PBF 水</td><td>0.3 mm IPC 薄壳（PET 模量）+ 二面角铰链塑性，引擎 MPM 水与壳双向耦合</td><td>壳塑性铰链</td><td><span class="tag ok">已复现 · 凹 15.8 mm，松开留 14.0 mm，不洒</span></td></tr>
+<tr><td>PET 瓶捏瘪</td><td>0.3 mm 塑料壳 + 屈服，PBF 水</td><td>0.3 mm IPC 薄壳（PET 模量）+ 二面角铰链塑性，引擎 MPM 水与壳双向耦合</td><td>壳塑性铰链</td><td><span class="tag ok">已复现 · 凹 22.3 mm，松开留 19.8，溢出 22 ml mm，不洒</span></td></tr>
 <tr><td>海绵吸水拧水</td><td>VBD 海绵（实验性）+ PBF 水</td><td>FEM 四面体海绵 + 引擎 MPM 水，多孔耦合（吸入 / 保水 / 挤出）</td><td>多孔耦合</td><td><span class="tag ok">已复现 · 三次拧水共 16.8 ml（原站 33.5 ml）</span></td></tr>
 </tbody></table></div>
 
@@ -88,28 +88,32 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 USD（刚体变换 + 布料顶点，568 帧，19.6 MB）：<a class="dl" href="../media/bedsheet_fold.usdc">bedsheet_fold.usdc</a></p>
 
 <h2 id="bottle"><span class="step-no">2</span>捏瘪水瓶</h2>
-<p><b>场景。</b>一只 PET 瓶（半径 32 mm、高 200 mm、壁厚 0.3 mm，旋转体网格 5 mm 边长，1527 顶点）立在桌上，装水 400 ml（2.6 万粒子，静置后水面约 12 cm）。
-FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）合拢到 32 mm，保持 1.5 s，再张开退回。全程 15 s，时间步 5 ms。</p>
+<p><b>场景。</b>一只 PET 瓶（半径 32 mm、高 200 mm、壁厚 0.3 mm，旋转体网格 3 mm 边长，4300 顶点）立在桌上，装水 451 ml（2.9 万粒子，静置后水面 137 mm，肩部以下只剩约 40 ml 空气）。
+FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s 合拢到 20 mm，保持 1.5 s，再张开退回。全程 15 s，时间步 5 ms。
+另有一版<b>快捏</b>：两指 0.8 s 合到 18 mm、装水 467 ml，看水从瓶口喷出来（见下）。</p>
 <p><b>做法。</b>瓶壁是零厚度的 IPC 三角壳，膜刚度按 PET 取（E = 2.5 GPa、t = 0.3 mm），弯曲用二面角铰链模型（D = E t³ / 12(1−ν²)）。
 为了让凹痕留下来，我们给铰链加了一个<b>塑性角</b>：每条边记一个永久偏转角 θ<sub>p</sub>，弯曲能用 θ − θ<sub>rest</sub> − θ<sub>p</sub>；
-每步结束后，超过屈服角 0.2 rad 的部分全部变成永久的（比例 1.0）。瓶里的水是引擎内的 MPM Lite 水，粒子是 IPC 接触点，壳推水、水顶壳在同一次 Newton 里完成。</p>
+每步结束后，超过屈服角 0.2 rad 的部分全部变成永久的（比例 1.0）。瓶里的水是引擎内的 MPM Lite 水，粒子是 IPC 接触点，壳推水、水顶壳在同一次 Newton 里完成；
+水的壁面场约束、幽灵罚项和静止拖曳（液体页第十、十一步）全程开着——这一轮曾因扫描脚本漏掉这组开关而让水柱压实、穿过瓶底，见下文"改进轮次"。</p>
 <p><b>与原站的差异。</b>原站的壳用的是“真实刚度与屈服”，液体是 PBF；我们的屈服是铰链级的（弯曲塑性），膜本身保持弹性，PET 的膜屈服没有建模。
-瓶子是开口的，水不会密封加压；原站视频里瓶子被捏得更深，我们的捏合深度由夹爪目标间隙决定。</p>
+瓶子是开口的，水不会密封加压；捏合深度由夹爪目标间隙决定。</p>
 <figure class="fig">
 <video src="../media/robotgym_bottle.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>捏瘪水瓶</b> — 两指合到 32 mm 时瓶身凹进 15.8 mm；松开后凹痕留下 14.0 mm（弹性回弹只有 1.8 mm），水没有洒出，瓶子始终立着（倾斜 &lt; 2.5 mm）。</figcaption>
+<figcaption><b>慢捏</b> — 两指合到 20 mm 时瓶身凹进 22.3 mm，水面从 137 mm 升到肩部（162 mm），22 ml 从瓶口溢出落到桌上；松开后凹痕留下 19.8 mm（弹性回弹 2.5 mm），瓶子始终立着（倾斜 ≤ 2.5 mm）。</figcaption>
 </figure>
 <div class="tblwrap"><table>
-<thead><tr><th>阶段</th><th class="num">时间 (s)</th><th class="num">指间距 (mm)</th><th class="num">瓶身最小半径 (mm)</th><th class="num">凹痕 (mm)</th><th class="num">水面高度 (mm)</th></tr></thead>
+<thead><tr><th>阶段</th><th class="num">时间 (s)</th><th class="num">指间距 (mm)</th><th class="num">瓶身最小半径 (mm)</th><th class="num">凹痕 (mm)</th><th class="num">水面高度 (mm)</th><th class="num">瓶外的水 (ml)</th></tr></thead>
 <tbody>
-<tr><td>静置</td><td class="num">1.5</td><td class="num">78</td><td class="num">31.9</td><td class="num">0.1</td><td class="num">122</td></tr>
-<tr><td>捏合</td><td class="num">8.0</td><td class="num">32</td><td class="num">16.2</td><td class="num">15.8</td><td class="num">134</td></tr>
-<tr><td>保持</td><td class="num">9.0</td><td class="num">32</td><td class="num">16.2</td><td class="num">15.8</td><td class="num">134</td></tr>
-<tr><td>松开</td><td class="num">11.0</td><td class="num">78</td><td class="num">18.0</td><td class="num">14.0</td><td class="num">128</td></tr>
-<tr><td>结束</td><td class="num">15.0</td><td class="num">78</td><td class="num">18.0</td><td class="num">14.0</td><td class="num">127</td></tr>
+<tr><td>静置</td><td class="num">1.0</td><td class="num">78</td><td class="num">31.8</td><td class="num">0.2</td><td class="num">137</td><td class="num">0</td></tr>
+<tr><td>捏合到位</td><td class="num">8.0</td><td class="num">20</td><td class="num">9.7</td><td class="num">22.3</td><td class="num">162</td><td class="num">22.0</td></tr>
+<tr><td>保持</td><td class="num">9.0</td><td class="num">20</td><td class="num">9.7</td><td class="num">22.3</td><td class="num">161</td><td class="num">22.1</td></tr>
+<tr><td>松开</td><td class="num">11.0</td><td class="num">78</td><td class="num">12.2</td><td class="num">19.8</td><td class="num">145</td><td class="num">19.3</td></tr>
+<tr><td>结束</td><td class="num">15.0</td><td class="num">78</td><td class="num">12.2</td><td class="num">19.8</td><td class="num">142</td><td class="num">23.1</td></tr>
 </tbody></table></div>
-<p>凹痕按瓶身中部一圈顶点到该圈中心的最小距离算（静止半径 32 mm）。捏合时水面升高 12 mm（被挤占的体积），松开后回落。
-一次完整运行在一张 A800 上用时 14 分钟（3000 步）。USD（刚体变换 + 壳顶点 + 2.6 万个水粒子，376 帧）约 120 MB，文件较大，暂未随页面提供（整理后以 GitHub Release 发布）。</p>
+<p>凹痕按瓶身中部一圈顶点到该圈中心的最小距离算（静止半径 32 mm）；"瓶外的水"按壳外或高于瓶口的粒子计（每粒 0.0156 ml）。
+挤出的水比按截面积估的少得多：有水顶着时瓶身不再凹成深坑，而是整体压成椭圆（最大半径 41 mm），净排开体积只有几十 ml，先填掉 40 ml 空气，剩下的才溢出——真实的瓶子也是这样。
+一次完整运行在一张 A800 上用时 106 分钟（3000 步）。USD（刚体变换 + 壳顶点 + 2.9 万个水粒子，376 帧）约 130 MB，暂未随页面提供（整理后以 GitHub Release 发布）。</p>
+<p class="fast-placeholder"></p>
 
 <h2 id="sponge"><span class="step-no">3</span>海绵吸水拧水</h2>
 <p><b>场景。</b>一块 6 × 3.5 × 10 cm 的开孔海绵（FEM 四面体 720 个，E = 50 kPa，ν = 0.35，密度 120 kg/m³，孔隙率 0.85）泡在 28 × 14 cm、水深 5.5 cm 的水盆里；FR3 自上而下、手指沿盆的长边抓住它（指垫合到 44 mm，海绵压扁 27 %），泡 2 s 后提出水面（多余的水滴回盆里），移到杯子上方，分三次把手指合到 24 / 18 / 12 mm 拧水，每次保持 2 s，再放回盆里。判据和原站一样：杯子里收到多少水。</p>
@@ -173,7 +177,7 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）合拢到 32
 水瓶的机位换到夹爪对面偏上，凹坑朝向镜头。下面是同一帧（上一版录制，松开后）新旧渲染的对比：</p>
 <div class="fig-grid">
 <figure class="fig"><img src="../media/robotgym_bottle_render_before.png" alt="旧渲染"><figcaption><b>旧</b>：粒子云、不透明壳、夹爪挡住瓶身。</figcaption></figure>
-<figure class="fig"><img src="../media/robotgym_bottle_render_after.png" alt="新渲染"><figcaption><b>新</b>：透明 PET 壳里能看到水面和水体；预览帧 24 spp，正式渲染 128–256 spp。</figcaption></figure>
+<figure class="fig"><img src="../media/robotgym_bottle_slow_squeeze.png" alt="新渲染"><figcaption><b>新</b>（慢捏交付版，捏合到位的一帧，128 spp）：透明 PET 壳里能看到水面和水体，溢出的水落在桌上。</figcaption></figure>
 </div>
 
 <h3>海绵：换位再拧</h3>
