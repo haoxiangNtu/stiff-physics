@@ -60,7 +60,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <thead><tr><th>任务</th><th>原站的物理</th><th>我们的物理</th><th>需要新增的部分</th><th>状态</th></tr></thead>
 <tbody>
 <tr><td>床单对折（双 FR3）</td><td>VBD 布料 + MuJoCo 刚体</td><td>IPC 三角壳布料（拉伸 / 弯曲），URDF 关节驱动的 FR3 ×2，摩擦捏取</td><td>无</td><td><span class="tag ok">已复现 · 近半 75% 叠到远半（棉布刚度）</span></td></tr>
-<tr><td>PET 瓶捏瘪</td><td>0.3 mm 塑料壳 + 屈服，PBF 水</td><td>0.3 mm IPC 薄壳（PET 模量）+ 二面角铰链塑性，引擎 MPM 水与壳双向耦合</td><td>壳塑性铰链</td><td><span class="tag ok">已复现 · 凹 22.3 mm，松开留 19.8，溢出 22 ml mm，不洒</span></td></tr>
+<tr><td>PET 瓶捏瘪</td><td>0.3 mm 塑料壳 + 屈服，PBF 水</td><td>0.3 mm IPC 薄壳（PET 模量）+ 二面角铰链塑性，引擎 MPM 水与壳双向耦合</td><td>壳塑性铰链</td><td><span class="tag ok">已复现 · 凹 22.3 mm，松开留 19.8，溢出 14 ml mm，不洒</span></td></tr>
 <tr><td>海绵吸水拧水</td><td>VBD 海绵（实验性）+ PBF 水</td><td>FEM 四面体海绵 + 引擎 MPM 水，多孔耦合（吸入 / 保水 / 挤出）</td><td>多孔耦合</td><td><span class="tag ok">已复现 · 三次拧水共 16.8 ml（原站 33.5 ml）</span></td></tr>
 </tbody></table></div>
 
@@ -99,23 +99,24 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 瓶子是开口的，水不会密封加压；捏合深度由夹爪目标间隙决定。</p>
 <figure class="fig">
 <video src="../media/robotgym_bottle.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>慢捏</b> — 两指合到 20 mm 时瓶身凹进 22.3 mm，水面从 137 mm 升到肩部（162 mm），22 ml 从瓶口溢出落到桌上；松开后凹痕留下 19.8 mm（弹性回弹 2.5 mm），瓶子始终立着（倾斜 ≤ 2.5 mm）。</figcaption>
+<figcaption><b>慢捏</b> — 两指合到 20 mm 时瓶身凹进 22.3 mm，水面从 137 mm 升到肩部（162 mm），约 14 ml 从瓶口溢出落到桌上；松开后凹痕留下 19.8 mm（弹性回弹 2.5 mm），瓶子始终立着（倾斜 ≤ 2.5 mm）。</figcaption>
 </figure>
 <div class="tblwrap"><table>
-<thead><tr><th>阶段</th><th class="num">时间 (s)</th><th class="num">指间距 (mm)</th><th class="num">瓶身最小半径 (mm)</th><th class="num">凹痕 (mm)</th><th class="num">水面高度 (mm)</th><th class="num">瓶外的水 (ml)</th></tr></thead>
+<thead><tr><th>阶段</th><th class="num">时间 (s)</th><th class="num">指间距 (mm)</th><th class="num">瓶身最小半径 (mm)</th><th class="num">凹痕 (mm)</th><th class="num">水面高度 (mm)</th><th class="num">桌上的水 (ml)</th></tr></thead>
 <tbody>
 <tr><td>静置</td><td class="num">1.0</td><td class="num">78</td><td class="num">31.8</td><td class="num">0.2</td><td class="num">137</td><td class="num">0</td></tr>
-<tr><td>捏合到位</td><td class="num">8.0</td><td class="num">20</td><td class="num">9.7</td><td class="num">22.3</td><td class="num">162</td><td class="num">22.0</td></tr>
-<tr><td>保持</td><td class="num">9.0</td><td class="num">20</td><td class="num">9.7</td><td class="num">22.3</td><td class="num">161</td><td class="num">22.1</td></tr>
-<tr><td>松开</td><td class="num">11.0</td><td class="num">78</td><td class="num">12.2</td><td class="num">19.8</td><td class="num">145</td><td class="num">19.3</td></tr>
-<tr><td>结束</td><td class="num">15.0</td><td class="num">78</td><td class="num">12.2</td><td class="num">19.8</td><td class="num">142</td><td class="num">23.1</td></tr>
+<tr><td>捏合到位</td><td class="num">8.0</td><td class="num">20</td><td class="num">9.7</td><td class="num">22.3</td><td class="num">162</td><td class="num">11</td></tr>
+<tr><td>保持</td><td class="num">9.0</td><td class="num">20</td><td class="num">9.7</td><td class="num">22.3</td><td class="num">161</td><td class="num">11</td></tr>
+<tr><td>松开</td><td class="num">11.0</td><td class="num">78</td><td class="num">12.2</td><td class="num">19.8</td><td class="num">145</td><td class="num">12</td></tr>
+<tr><td>结束</td><td class="num">15.0</td><td class="num">78</td><td class="num">12.2</td><td class="num">19.8</td><td class="num">142</td><td class="num">14</td></tr>
 </tbody></table></div>
-<p>凹痕按瓶身中部一圈顶点到该圈中心的最小距离算（静止半径 32 mm）；"瓶外的水"按壳外或高于瓶口的粒子计（每粒 0.0156 ml）。
+<p>凹痕按瓶身中部一圈顶点到该圈中心的最小距离算（静止半径 32 mm）；"桌上的水"按落到桌面的粒子计（每粒 0.0156 ml；按变形后的壳面判断，留在瓶壁外面的不到 1.5 ml）。
 挤出的水比按截面积估的少得多：有水顶着时瓶身不再凹成深坑，而是整体压成椭圆（最大半径 41 mm），净排开体积只有几十 ml，先填掉 40 ml 空气，剩下的才溢出——真实的瓶子也是这样。
 一次完整运行在一张 A800 上用时 106 分钟（3000 步）。USD（刚体变换 + 壳顶点 + 2.9 万个水粒子，376 帧）约 130 MB，暂未随页面提供（整理后以 GitHub Release 发布）。</p>
+<div class="note warn"><b>已知问题（修订中）</b> 落到桌上的水是一层只有一个粒子厚的"单层"，粒子之间没有表面张力，所以像二维气体一样摊成散落的水珠并持续缓慢外扩（溅落 5 s 后边缘仍以约 7 mm/s 移动），真实的水会靠表面张力聚成一滩停住。正在用隔离试验比较表面张力与地面摩擦的处理，确定后两版水瓶会重跑。</div>
 <h3 id="bottle-fast">快捏：水从瓶口冲出来</h3>
-<p>同一只 3 mm 壳的瓶子装到 467 ml（肩部以下只剩约 25 ml 空气），两指在 <b>0.8 s</b> 内合到 18 mm。水面先冲进瓶颈，随后约 0.25 s 内有 38 ml 从瓶口涌出，
-最高到瓶口上方 3.4 cm、横向散开 3.5 cm，落回桌面形成一圈水花；结束时瓶外共 41 ml（慢捏 23 ml）。瓶身凹 22.8 mm，松开后留 19.6 mm。
+<p>同一只 3 mm 壳的瓶子装到 467 ml（肩部以下只剩约 25 ml 空气），两指在 <b>0.8 s</b> 内合到 18 mm。水面先冲进瓶颈，随后约 0.25 s 内有 20 多毫升从瓶口涌出（空中最多 21 ml），
+最高到瓶口上方 3.4 cm、横向散开 3.5 cm，落回桌面形成一圈水花；结束时桌上共 28 ml（慢捏 14 ml），留在瓶壁外面的不到 1 ml。瓶身凹 22.8 mm，松开后留 19.6 mm。
 瓶颈有 25 mm 宽、净排开的体积只有几十 ml，所以是一股短促的涌出而不是细高的水柱；要喷得更高需要更小的瓶口或更深的捏合。</p>
 <div class="fig-grid">
 <figure class="fig"><video src="../media/robotgym_bottle_fast.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><b>快捏</b> — 全程 13.3 s（时间步 5 ms，一张 A800 上 118 分钟）。</figcaption></figure>
