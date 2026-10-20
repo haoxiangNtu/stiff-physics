@@ -41,16 +41,16 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <div class="crumb"><a href="../">首页</a> / 技术详解 / 晾衣间：两只 WujiHand 把衬衫挂上衣架</div>
 <div class="kicker">Dexterous hands · Cloth · Teleop recording</div>
 <h1>晾衣间：两只 WujiHand 把衬衫挂上衣架</h1>
-<p class="lead">这是 6 月在 v0.6.2 发布分支上做的灵巧手布料示例：一个洗衣间场景（水盆、晾衣架、滚筒洗衣机、衣架），一件 831 顶点的衬衫落在盆里，
-两只 WujiHand（每只 20 个驱动指关节）用遥操作界面把衣架穿进衬衫、双手抓住、松开一只手、把衣服往外抻平。动作先在交互界面里录成一段段"take"，
-再从存档的状态开始按顺序回放并逐帧截图。衬衫与手指之间只有接触和摩擦，没有附着约束。这一页把它和床单对折放在一起，对照两处布料的材料与碰撞参数。</p>
+<p class="lead">这是 6 月在 v0.6.2 发布分支上做的灵巧手布料示例：一个洗衣间场景（水盆、晾衣架、滚筒洗衣机、衣架），一件衬衫落在盆里，
+两只 WujiHand（每只 20 个驱动指关节）用遥操作界面把它从盆里抓起、把衣架穿进去、提起来挂到晾衣架上——完整的一轮"晾衣服"。动作先在交互界面里录成一段段"take"，
+回放时把整个场景逐帧导出成 OBJ 序列，再离线渲染成片。衬衫与手指之间只有接触和摩擦，没有附着约束。这一页把它和床单对折放在一起，对照两处布料的材料与碰撞参数。</p>
 
 <div class="note warn"><b>代码状态</b>
 示例在引擎的 <span class="mono">example/wujihand-cloth</span> 分支（基于 v0.6.2，<span class="mono">examples/wujihand/case_wujihand_washing_room.py</span>，
-交互界面 + 录制 / 回放 / 逐帧渲染脚本）。视频是引擎视口的截图序列（不是路径追踪）；每段的全场景 OBJ 序列已保存，可以后续用离线渲染器重新出片。</div>
+交互界面 + 录制 / 回放 / 逐帧渲染脚本）。成片由回放导出的全场景 OBJ 序列离线渲染（贴图与灯光在渲染端加）；篮子抓玩具那段目前是引擎视口的截图视频，其 3165 帧的 OBJ 序列已保存，可同样离线出片。</div>
 
 <div class="toc"><b>目录</b>
-<a href="#scene">场景与动作</a><a href="#params">布料与碰撞参数</a><a href="#compare">与床单对折的对照</a><a href="#repro">怎样复现</a>
+<a href="#scene">场景与动作</a><a href="#basket">篮子里抓软玩具</a><a href="#params">布料与碰撞参数</a><a href="#compare">与床单对折的对照</a><a href="#repro">怎样复现</a>
 </div>
 
 <h2 id="scene">场景与动作</h2>
@@ -58,16 +58,19 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 衬衫是 IPC 三角壳布料（<span class="mono">shirt_831v.obj</span>，831 顶点 / 1596 三角形，平铺 0.65 × 0.65 m，边长约 2 cm），开始时落进盆里。
 两只 WujiHand（左右手各一只）从 URDF/USD 载入：手掌和指节是关节连接的刚体，碰撞体取每个连杆的凸包并抽稀到每只手约 1000 顶点（粗一点的 300 顶点衬衫被测出会让手指在快动作时"散开" 16 mm——大而稀疏的三角形把手与布的接触弄得病态，全局求解的条件数变差，手的关节每步收敛不了；831 顶点或更细的衬衫下手保持刚性，0.1 mm）。
 手的根部是"动画体"：界面上的位置 / 转角滑块变成根连杆的目标位姿，由电机项拉着走；20 个指关节按预设的抓握角度在 1 s 内合拢。</p>
-<p><b>动作。</b>从一个存档状态（衬衫已在盆里静止、两手就位）开始，回放四段录制好的 take，段间停 50 步：</p>
-<div class="fig-grid">
-<figure class="fig"><video src="../media/washroom_01_insert_hanger.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><b>1 · 把衣架穿进衣服</b></figcaption></figure>
-<figure class="fig"><video src="../media/washroom_02_grasp_both.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><b>2 · 双手抓住衣服和衣架</b></figcaption></figure>
-<figure class="fig"><video src="../media/washroom_03_release_right.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><b>3 · 右手松开、从衣架里退出来</b></figcaption></figure>
-<figure class="fig"><video src="../media/washroom_04_stretch_over.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><b>4 · 沿衣服向外抻平</b></figcaption></figure>
-</div>
+<p><b>动作。</b>从衬衫在盆里静止、两手就位的存档状态开始，按录制好的 take 顺序回放：双手伸进盆里抓住衬衫 → 把衣架穿进衬衫 → 提起来 → 挂到晾衣架的横杆上 → 松手。
+全程只有接触与摩擦：衣架是可动的刚体，衬衫靠手指的夹持与摩擦被带起，挂上横杆后靠自重垂下。</p>
 <figure class="fig">
-<video src="../media/washroom_overall.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>完整序列</b> — 四段连播（9 s，1280 × 720 视口截图，时间步 20 ms，全 Newton）。</figcaption>
+<video src="../media/washroom_full_round.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>完整一轮：抓起 → 穿衣架 → 提起 → 挂到晾衣架</b> — 25 s 成片（时间步 20 ms，全 Newton；回放导出 OBJ 序列后离线渲染）。</figcaption>
+</figure>
+
+<h2 id="basket">篮子里抓软玩具</h2>
+<p>同一只 WujiHand 的另一轮完整录制：一个塑料周转箱里放着一只软的兔子玩偶（四面体 FEM，1869 顶点，E = 10<sup>5</sup> Pa），手从上方伸进去，五指合拢把兔子抓住、提出箱子、放到箱沿外。
+兔子是整体可变形的软体，手指抓住时局部压扁、提起时在指间变形但不滑脱；箱子是按 USD 载入的刚体。整段录制 145 s 的控制（时间步 20 ms），回放导出 3165 帧全场景 OBJ。</p>
+<figure class="fig">
+<video src="../media/basket_grasp.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>抓兔子出箱</b> — 引擎视口截图视频（63 s）；手的连杆为凸包碰撞体，兔子为四面体软体，接触为 IPC 障碍 + 摩擦。</figcaption>
 </figure>
 
 <h2 id="params">布料与碰撞参数</h2>

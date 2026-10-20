@@ -424,13 +424,13 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <div class="section-intro">
     <div class="kicker kicker--data">Dexterous hands · Cloth</div>
     <h2>晾衣间：两只 WujiHand 把衬衫挂上衣架</h2>
-    <p class="lead">一个洗衣间场景里，两只 20 关节的 WujiHand 把衣架穿进 831 顶点的衬衫、双手抓住、松开一只手、再把衣服向外抻平；动作用遥操作界面录成 take 回放。
-    衬衫与手指之间只有接触和摩擦。6 月在 v0.6.2 分支上完成，这里补上它的布料与碰撞参数，并与床单对折逐项对照。
+    <p class="lead">一个洗衣间场景里，两只 20 关节的 WujiHand 把衬衫从盆里抓起、穿进衣架、提起来挂到晾衣架上，完整一轮；同一只手还从周转箱里抓出一只软兔子玩偶。动作用遥操作界面录成 take 回放，
+    衬衫、玩偶与手指之间只有接触和摩擦。6 月在 v0.6.2 分支上完成，这里补上它的布料与碰撞参数，并与床单对折逐项对照。
     <a class="more" href="docs/washing_room.html">阅读场景、参数与对照 →</a></p>
   </div>
   <figure class="fig">
-    <video src="media/washroom_overall.mp4" muted loop playsinline controls preload="metadata"></video>
-    <figcaption><b>穿衣架 → 双手抓 → 松右手 → 抻平</b> — 四段录制连播，引擎视口截图（时间步 20 ms，全 Newton）。</figcaption>
+    <video src="media/washroom_full_round.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>抓起 → 穿衣架 → 提起 → 挂到晾衣架</b> — 完整一轮的成片（时间步 20 ms，全 Newton；OBJ 序列离线渲染）。</figcaption>
   </figure>
 </div></section>
 
