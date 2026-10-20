@@ -51,7 +51,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 视频为路径追踪成片，USD 为时间采样的几何（刚体变换 + 变形体顶点 + 液体粒子）。</div>
 
 <div class="toc"><b>目录</b>
-<a href="#overview">一览</a><a href="#sheet">1 床单对折</a><a href="#bottle">2 捏瘪水瓶</a><a href="#bottle-fast">2b 快捏涌出</a><a href="#sponge">3 海绵吸水拧水</a><a href="#round2">改进轮次 10-20</a>
+<a href="#overview">一览</a><a href="#sheet">1 床单对折</a><a href="#bottle">2 捏瘪水瓶</a><a href="#bottle-fast">2b 快捏涌出</a><a href="#sponge">3 海绵吸水拧水</a><a href="#sponge-regrasp">3b 换位再拧</a><a href="#round2">改进轮次 10-20</a>
 <a href="#traps">数值陷阱</a><a href="#repro">怎样复现</a>
 </div>
 
@@ -61,7 +61,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <tbody>
 <tr><td>床单对折（双 FR3）</td><td>VBD 布料 + MuJoCo 刚体</td><td>IPC 三角壳布料（拉伸 / 弯曲），URDF 关节驱动的 FR3 ×2，摩擦捏取</td><td>无</td><td><span class="tag ok">已复现 · 近半 75% 叠到远半（棉布刚度）</span></td></tr>
 <tr><td>PET 瓶捏瘪</td><td>0.3 mm 塑料壳 + 屈服，PBF 水</td><td>0.3 mm IPC 薄壳（PET 模量）+ 二面角铰链塑性，引擎 MPM 水与壳双向耦合</td><td>壳塑性铰链</td><td><span class="tag ok">已复现 · 凹 22.3 mm，松开留 19.8，溢出 14 ml mm，不洒</span></td></tr>
-<tr><td>海绵吸水拧水</td><td>VBD 海绵（实验性）+ PBF 水</td><td>FEM 四面体海绵 + 引擎 MPM 水，多孔耦合（吸入 / 保水 / 挤出）</td><td>多孔耦合</td><td><span class="tag ok">已复现 · 三次拧水共 16.8 ml（原站 33.5 ml）</span></td></tr>
+<tr><td>海绵吸水拧水</td><td>VBD 海绵（实验性）+ PBF 水</td><td>FEM 四面体海绵 + 引擎 MPM 水，多孔耦合（吸入 / 保水 / 挤出）</td><td>多孔耦合</td><td><span class="tag ok">已复现 · 换位四次拧水 29.1 ml（原站 33.5 ml）</span></td></tr>
 </tbody></table></div>
 
 <h2 id="sheet"><span class="step-no">1</span>床单对折</h2>
@@ -146,6 +146,21 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 </tbody></table></div>
 <p>一次完整运行（39 s，7800 步，2.4 万个水粒子）在一张 A800 上用时 150 分钟。USD（刚体变换 + 海绵顶点 + 水粒子，976 帧）约 290 MB，文件较大，暂未随页面提供（整理后以 GitHub Release 发布）。</p>
 
+<h3 id="sponge-regrasp">换位再拧：四个周期收到 29.1 ml</h3>
+<p>上一轮查明每次拧出 5–9 ml 的上限来自 20 mm 指垫只压到 100 mm 海绵的 1/5：被压的那一段放完水，其余部分的水不会流过来。这一轮给脚本加了 <code>--regrasp</code>：每拧一次就把海绵放回盆里重新泡饱，
+换一段（沿长边 −36 / −12 / +12 / +36 mm）再捏起来拧。四个周期（间隙 24 / 18 / 18 / 12 mm）杯里依次到 10.9、19.6、27.8、29.1 ml——前三段各收 8–9 ml，第四段只多 1.3 ml（12 mm 的深捏对已压过的海绵帮助不大）。
+全程 94.5 s（18 900 步）在一张 A800 上 394 分钟。原站 33.5 ml。</p>
+<div class="tblwrap"><table><thead><tr><th>周期</th><th>抓取段 (mm)</th><th>拧到 (mm)</th><th class="num">拧后杯中 (ml)</th><th class="num">本次收到 (ml)</th></tr></thead><tbody>
+<tr><td>1</td><td>−36</td><td>24</td><td class="num">10.9</td><td class="num">10.9</td></tr>
+<tr><td>2</td><td>−12</td><td>18</td><td class="num">19.6</td><td class="num">8.7</td></tr>
+<tr><td>3</td><td>+12</td><td>18</td><td class="num">27.8</td><td class="num">8.2</td></tr>
+<tr><td>4</td><td>+36</td><td>12</td><td class="num">29.1</td><td class="num">1.3</td></tr>
+</tbody></table></div>
+<figure class="fig">
+<video src="../media/robotgym_sponge_regrasp.mp4" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>换位四次拧水</b> — 每个周期：放回盆里泡饱 → 换一段捏起 → 到杯子上方拧 → 保持 → 松开；杯中最终 29.1 ml。视频截到第四次拧完（88 s）：最后一次放回时海绵落在了盆沿外，是放回位置没有按抓取段偏移补偿，下一轮修。</figcaption>
+</figure>
+
 <h2 id="round2">改进轮次（10-20）：网格加密、更深的捏合、水的表面渲染<span class="date">10-20</span></h2>
 <p><b>起因。</b>上一轮交付后复查：床单（25 mm 网格、膜 3×10<sup>5</sup> / 弯曲 3×10<sup>4</sup>）对折时满是单元尺度的碎褶；水瓶只凹 15.8 mm、镜头被夹爪挡住、
 水画成一根不透明的蓝色颗粒柱。这一轮在八卡 A800 节点上并行扫描床单与水瓶的参数，同时把渲染链路换成和滴管演示一样的水面重建。</p>
@@ -193,8 +208,7 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 
 <h3>海绵：换位再拧</h3>
 <p>上一轮查明每次拧出 5–9 ml 的上限来自 20 mm 指垫只压到 100 mm 海绵的 1/5。这一轮给脚本加了 <code>--regrasp</code>：每次拧水前松开、沿海绵长边移到另一段再捏
-（三段 −30 / 0 / +30 mm 各拧一次 24 / 18 / 12 mm；三段都 24 mm；四段 ±36 / ±12 mm 拧 24 / 18 / 18 / 12 mm）。三个运行在节点上进行（每个约 2.5 小时，第一轮因缺壁面场约束等开关作废，已用与 full23 相同的环境重启），目标是逼近原站的 33.5 ml。
-<span class="tag run">运行中</span></p>
+（三段 −30 / 0 / +30 mm 各拧一次 24 / 18 / 12 mm；三段都 24 mm；四段 ±36 / ±12 mm 拧 24 / 18 / 18 / 12 mm）。三个运行在节点上进行（第一轮因缺壁面场约束等开关作废，第二轮因粒子间距与交付版不同（6 mm）太慢作废，第三轮与 full23 同环境、同 8 mm 粒子）。四个周期的那组收到 <b>29.1 ml</b>（见第 3b 节）；两组三周期的仍在跑。</p>
 
 <h2 id="traps">数值陷阱（都用实验确认过）</h2>
 <ul>
