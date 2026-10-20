@@ -51,41 +51,43 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 视频为路径追踪成片，USD 为时间采样的几何（刚体变换 + 变形体顶点 + 液体粒子）。</div>
 
 <div class="toc"><b>目录</b>
-<a href="#overview">一览</a><a href="#sheet">1 床单对折</a><a href="#bottle">2 捏瘪水瓶</a><a href="#bottle-fast">2b 快捏涌出</a><a href="#sponge">3 海绵吸水拧水</a><a href="#sponge-regrasp">3b 换位再拧</a><a href="#round2">改进轮次 10-20</a>
-<a href="#traps">数值陷阱</a><a href="#repro">怎样复现</a>
+<a href="#overview">一览</a><a href="#sheet">1 床单对折</a><a href="#bottle">2 捏瘪水瓶</a><a href="#bottle-fast">2b 快捏涌出</a><a href="#sponge">3 海绵吸水拧水</a><a href="#sponge-regrasp">3b 换位再拧</a><a href="#round2">改进轮次 10-20</a><a href="#round3">改进轮次 10-21</a>
+<a href="#traps">数值陷阱</a><a href="#downloads">下载 USD</a><a href="#repro">怎样复现</a>
 </div>
 
 <h2 id="overview">一览</h2>
 <div class="tblwrap"><table>
 <thead><tr><th>任务</th><th>原站的物理</th><th>我们的物理</th><th>需要新增的部分</th><th>状态</th></tr></thead>
 <tbody>
-<tr><td>床单对折（双 FR3）</td><td>VBD 布料 + MuJoCo 刚体</td><td>IPC 三角壳布料（拉伸 / 弯曲），URDF 关节驱动的 FR3 ×2，摩擦捏取</td><td>无</td><td><span class="tag ok">已复现 · 近半 75% 叠到远半（棉布刚度）</span></td></tr>
-<tr><td>PET 瓶捏瘪</td><td>0.3 mm 塑料壳 + 屈服，PBF 水</td><td>0.3 mm IPC 薄壳（PET 模量）+ 二面角铰链塑性，引擎 MPM 水与壳双向耦合</td><td>壳塑性铰链</td><td><span class="tag ok">已复现 · 凹 22.3 mm，松开留 19.8，溢出 14 ml mm，不洒</span></td></tr>
-<tr><td>海绵吸水拧水</td><td>VBD 海绵（实验性）+ PBF 水</td><td>FEM 四面体海绵 + 引擎 MPM 水，多孔耦合（吸入 / 保水 / 挤出）</td><td>多孔耦合</td><td><span class="tag ok">已复现 · 换位四次拧水 29.1 ml（原站 33.5 ml）</span></td></tr>
+<tr><td>床单对折（双 FR3）</td><td>VBD 布料 + MuJoCo 刚体</td><td>IPC 三角壳布料（拉伸 / 弯曲），URDF 关节驱动的 FR3 ×2，摩擦捏取</td><td>无</td><td><span class="tag ok">已复现 · 松手后 0.6 s 落平，近半 67% 叠到远半（棉布刚度）</span></td></tr>
+<tr><td>PET 瓶捏瘪</td><td>0.3 mm 塑料壳 + 屈服，PBF 水</td><td>0.3 mm IPC 薄壳（PET 模量）+ 二面角铰链塑性，引擎 MPM 水与壳双向耦合</td><td>壳塑性铰链</td><td><span class="tag ok">已复现 · 凹 21.8 mm，松开留 18.8 mm；慢捏溢出 5 ml、快捏涌出 24 ml，落到桌上的水停住、不再蠕动</span></td></tr>
+<tr><td>海绵吸水拧水</td><td>VBD 海绵（实验性）+ PBF 水</td><td>FEM 四面体海绵 + 引擎 MPM 水，多孔耦合（吸入 / 保水 / 挤出）</td><td>多孔耦合</td><td><span class="tag part">换位三次拧水 27.8 ml（原站 33.5 ml）· 第四周期修正后重跑中</span></td></tr>
 </tbody></table></div>
 
 <h2 id="sheet"><span class="step-no">1</span>床单对折</h2>
 <p><b>场景。</b>1.0 × 0.6 m 的床单（三角壳，15 mm 网格，2788 顶点）铺在一块薄板上，前后各悬出 10 cm。两台 FR3 分别从左右两侧沿板边伸进来，
-张开的手指跨在垂下的布边两侧，捏住、抬起、越过板面放到对面，松开——床单被对折。全程只有接触与摩擦，没有把布“粘”在手指上的约束。</p>
+在离布角 4 cm 处把张开的手指跨在垂下的布边两侧，捏住、抬起、越过板面放到对面，松开、竖直抬手、退开——床单被对折。全程只有接触与摩擦，没有把布“粘”在手指上的约束。</p>
 <p><b>做法。</b>手指是 URDF 里的标准 Franka 手指（棱柱关节位置驱动），布料是 IPC 三角壳：膜模量 10<sup>5</sup> Pa、弯曲模量 3×10<sup>4</sup> Pa（厚 1 mm，弯曲刚度 1.6×10<sup>−6</sup> N·m，接近棉布），面密度 0.2 kg/m²。
 逆运动学在 CPU 上逐帧求解（阻尼最小二乘，全程位置误差 0.2 mm），关节目标交给引擎的转动关节驱动。捏取用 2 mm 的障碍距离、1 mm 的指垫间隙（每侧 d̂/4），
 捏住后先把布边向外拉到手掌完全离开薄板的投影，再竖直抬起、越过薄板放到对面。</p>
 <p><b>与原站的差异。</b>原站是 VBD 布料，捏取靠的是同一类接触。我们的床单网格更粗（15 mm），时间步 5 ms；对折的轨迹是手写的分段最小加加速度轨迹，不是学出来的策略。</p>
 <figure class="fig">
 <video src="../media/robotgym_sheet.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>床单对折</b> — 22.7 s 的动作（时间步 5 ms，一张 A800 上 57 分钟）：两臂捏住、外拉、抬起、越过、放下、松开；结束时近半边 75% 的面积压在远半边上（更硬的 10<sup>5</sup> 版 93%，但翻折处偏硬，见改进轮次）。</figcaption>
+<figcaption><b>床单对折</b> — 24 s 的动作（时间步 5 ms，一张 A800 上 43 分钟）：两臂捏住、外拉、抬起、越过、放到板面上方 6 cm、松开、竖直抬手、退开；18.0 s 开爪，0.6 s 内布就落平在下层上。结束时近半边 67% 的面积压在远半边上，其余是越过远端垂下去的布边（见<a href="#round3">改进轮次 10-21</a>）。</figcaption>
 </figure>
 <div class="tblwrap"><table>
 <thead><tr><th>阶段</th><th class="num">时间 (s)</th><th class="num">指垫间隙 (mm)</th><th class="num">布边最高点 (m)</th><th class="num">布边到指尖 (mm)</th></tr></thead>
 <tbody>
-<tr><td>捏住</td><td class="num">7.0</td><td class="num">1.0</td><td class="num">0.305</td><td class="num">5.8</td></tr>
-<tr><td>外拉</td><td class="num">9.0</td><td class="num">1.0</td><td class="num">0.304</td><td class="num">5.8</td></tr>
-<tr><td>抬起</td><td class="num">12.0</td><td class="num">1.0</td><td class="num">0.490</td><td class="num">5.8</td></tr>
-<tr><td>放下</td><td class="num">16.0</td><td class="num">1.0</td><td class="num">0.422</td><td class="num">5.8</td></tr>
-<tr><td>松开后</td><td class="num">21.2</td><td class="num">60.0</td><td class="num">0.377</td><td class="num">88.1</td></tr>
+<tr><td>捏住</td><td class="num">7.0</td><td class="num">1.0</td><td class="num">0.305</td><td class="num">7.1</td></tr>
+<tr><td>外拉</td><td class="num">9.0</td><td class="num">1.0</td><td class="num">0.305</td><td class="num">7.1</td></tr>
+<tr><td>抬起</td><td class="num">12.0</td><td class="num">1.0</td><td class="num">0.469</td><td class="num">7.1</td></tr>
+<tr><td>放下</td><td class="num">16.0</td><td class="num">1.0</td><td class="num">0.418</td><td class="num">7.1</td></tr>
+<tr><td>开爪</td><td class="num">18.0</td><td class="num">1.0</td><td class="num">0.379</td><td class="num">7.1</td></tr>
+<tr><td>松开 1 s 后（手未动）</td><td class="num">19.0</td><td class="num">60.0</td><td class="num">0.317</td><td class="num">50–56</td></tr>
+<tr><td>结束</td><td class="num">24.0</td><td class="num">60.0</td><td class="num">0.317</td><td class="num">148–154</td></tr>
 </tbody></table></div>
-<p>"布边到指尖"是布料顶点到指尖中心的最小距离：捏住期间一直在 5–6 mm（15 mm 的网格里就是"布在指垫之间"），松开后才拉开。
-USD（刚体变换 + 布料顶点，568 帧，19.6 MB）：<a class="dl" href="../media/bedsheet_fold.usdc">bedsheet_fold.usdc</a></p>
+<p>"布边到指尖"是布料顶点到指尖中心的最小距离：捏住期间一直是 7 mm（15 mm 的网格里就是"布在指垫之间"）；开爪后手还没动，布就自己落下、离开指尖 5 cm。
+USD（刚体变换 + 布料顶点，601 帧，21 MB）：<a class="dl" href="../media/bedsheet_fold.usdc">bedsheet_fold.usdc</a></p>
 
 <h2 id="bottle"><span class="step-no">2</span>捏瘪水瓶</h2>
 <p><b>场景。</b>一只 PET 瓶（半径 32 mm、高 200 mm、壁厚 0.3 mm，旋转体网格 3 mm 边长，4300 顶点）立在桌上，装水 451 ml（2.9 万粒子，静置后水面 137 mm，肩部以下只剩约 40 ml 空气）。
@@ -94,32 +96,33 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 <p><b>做法。</b>瓶壁是零厚度的 IPC 三角壳，膜刚度按 PET 取（E = 2.5 GPa、t = 0.3 mm），弯曲用二面角铰链模型（D = E t³ / 12(1−ν²)）。
 为了让凹痕留下来，我们给铰链加了一个<b>塑性角</b>：每条边记一个永久偏转角 θ<sub>p</sub>，弯曲能用 θ − θ<sub>rest</sub> − θ<sub>p</sub>；
 每步结束后，超过屈服角 0.2 rad 的部分全部变成永久的（比例 1.0）。瓶里的水是引擎内的 MPM Lite 水，粒子是 IPC 接触点，壳推水、水顶壳在同一次 Newton 里完成；
-水的壁面场约束、幽灵罚项和静止拖曳（液体页第十、十一步）全程开着——这一轮曾因扫描脚本漏掉这组开关而让水柱压实、穿过瓶底，见下文"改进轮次"。</p>
+水的壁面场约束、幽灵罚项和静止拖曳（液体页第十、十一步）全程开着——这一轮曾因扫描脚本漏掉这组开关而让水柱压实、穿过瓶底，见下文"改进轮次"。溢出到桌上的水另开了引擎的显式表面张力（只作用在薄层与自由面上的粒子，贴壁粒子除外）和水对桌面的摩擦，让它聚成一滩停住（见<a href="#round3">改进轮次 10-21</a>）。</p>
 <p><b>与原站的差异。</b>原站的壳用的是“真实刚度与屈服”，液体是 PBF；我们的屈服是铰链级的（弯曲塑性），膜本身保持弹性，PET 的膜屈服没有建模。
 瓶子是开口的，水不会密封加压；捏合深度由夹爪目标间隙决定。</p>
 <figure class="fig">
 <video src="../media/robotgym_bottle.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>慢捏</b> — 两指合到 20 mm 时瓶身凹进 22.3 mm，水面从 137 mm 升到肩部（162 mm），约 14 ml 从瓶口溢出落到桌上；松开后凹痕留下 19.8 mm（弹性回弹 2.5 mm），瓶子始终立着（倾斜 ≤ 2.5 mm）。</figcaption>
+<figcaption><b>慢捏</b> — 两指合到 20 mm 时瓶身凹进 21.8 mm，水面从 136 mm 升过肩部到 166 mm，约 5 ml 从瓶口溢出、顺着瓶身流下，在桌上凝成几颗停住的水珠；松开后凹痕留下 18.8 mm（弹性回弹 3 mm），瓶子始终立着（倾斜 ≤ 3 mm）。</figcaption>
 </figure>
 <div class="tblwrap"><table>
 <thead><tr><th>阶段</th><th class="num">时间 (s)</th><th class="num">指间距 (mm)</th><th class="num">瓶身最小半径 (mm)</th><th class="num">凹痕 (mm)</th><th class="num">水面高度 (mm)</th><th class="num">桌上的水 (ml)</th></tr></thead>
 <tbody>
-<tr><td>静置</td><td class="num">1.0</td><td class="num">78</td><td class="num">31.8</td><td class="num">0.2</td><td class="num">137</td><td class="num">0</td></tr>
-<tr><td>捏合到位</td><td class="num">8.0</td><td class="num">20</td><td class="num">9.7</td><td class="num">22.3</td><td class="num">162</td><td class="num">11</td></tr>
-<tr><td>保持</td><td class="num">9.0</td><td class="num">20</td><td class="num">9.7</td><td class="num">22.3</td><td class="num">161</td><td class="num">11</td></tr>
-<tr><td>松开</td><td class="num">11.0</td><td class="num">78</td><td class="num">12.2</td><td class="num">19.8</td><td class="num">145</td><td class="num">12</td></tr>
-<tr><td>结束</td><td class="num">15.0</td><td class="num">78</td><td class="num">12.2</td><td class="num">19.8</td><td class="num">142</td><td class="num">14</td></tr>
+<tr><td>静置</td><td class="num">1.0</td><td class="num">78</td><td class="num">31.9</td><td class="num">0.1</td><td class="num">136</td><td class="num">0</td></tr>
+<tr><td>捏合到位</td><td class="num">7.0</td><td class="num">20</td><td class="num">10.2</td><td class="num">21.8</td><td class="num">166</td><td class="num">0.3</td></tr>
+<tr><td>保持</td><td class="num">9.0</td><td class="num">20</td><td class="num">10.2</td><td class="num">21.8</td><td class="num">158</td><td class="num">3.6</td></tr>
+<tr><td>松开</td><td class="num">11.0</td><td class="num">78</td><td class="num">13.2</td><td class="num">18.8</td><td class="num">142</td><td class="num">4.3</td></tr>
+<tr><td>结束</td><td class="num">15.0</td><td class="num">78</td><td class="num">13.2</td><td class="num">18.8</td><td class="num">138</td><td class="num">4.6</td></tr>
 </tbody></table></div>
-<p>凹痕按瓶身中部一圈顶点到该圈中心的最小距离算（静止半径 32 mm）；"桌上的水"按落到桌面的粒子计（每粒 0.0156 ml；按变形后的壳面判断，留在瓶壁外面的不到 1.5 ml）。
+<p>凹痕按瓶身中部一圈顶点到该圈中心的最小距离算（静止半径 32 mm）；"桌上的水"按变形后的壳面判断、落到桌面的粒子计（每粒 0.0156 ml）；结束时留在瓶外壁上的不到 0.3 ml，而且还在往下滑。
 挤出的水比按截面积估的少得多：有水顶着时瓶身不再凹成深坑，而是整体压成椭圆（最大半径 41 mm），净排开体积只有几十 ml，先填掉 40 ml 空气，剩下的才溢出——真实的瓶子也是这样。
-一次完整运行在一张 A800 上用时 106 分钟（3000 步）。USD（刚体变换 + 壳顶点 + 2.9 万个水粒子，376 帧）约 130 MB，暂未随页面提供（整理后以 GitHub Release 发布）。</p>
-<div class="note warn"><b>已知问题（修订中）</b> 落到桌上的水是一层只有一个粒子厚的"单层"，粒子之间没有表面张力，所以像二维气体一样摊成散落的水珠并持续缓慢外扩（溅落 5 s 后边缘仍以约 7 mm/s 移动），真实的水会靠表面张力聚成一滩停住。隔离试验（30 ml 水落到桌面）比较了壁面处理、表面张力和地面摩擦：壁面处理与此无关；引擎的显式表面张力 γ=1 配合水对桌面摩擦 1.0 能把这 30 ml 收成半径 4.5 cm 的一滩并基本停住（无张力时摊到 26 cm），代价是每步慢 2.5 倍（γ=2 慢 40 倍，不可用）。两版水瓶正在按这组参数重跑，完成后替换本页视频。</div>
+这一版比上一版少溢出（5 ml，上一版 14 ml）：表面张力让瓶口冒出的水保持成团，松开时有一部分退回瓶里。一次完整运行在一张 A800 上用时 160 分钟（3000 步；表面张力让每步慢约 1.5 倍）。USD 见文末<a href="#downloads">下载</a>。</p>
+<div class="note"><b>桌上的水不再蠕动（10-21）</b> 上一版落到桌上的水是一层只有一个粒子厚的"单层"，粒子之间没有表面张力，像二维气体一样摊成散落的水珠并持续外扩（快捏版 13 s 时外缘还在以约 10 mm/s 移动，90% 的水所在半径从 14 cm 扩到 19 cm）。
+现在两版都重跑了：引擎的显式表面张力（γ = 0.5）只作用在 SPH 密度低于 0.6 ρ<sub>0</sub> 的薄层 / 自由面粒子上，并排除贴着壳壁的粒子，另给水对桌面 1.0 的摩擦。快捏版落下的水 1 s 内收成一滩，90% 半径稳定在 11 cm（中位半径从 8.2 收到 6.8 cm），末段外缘移动 1.5 mm/s；瓶里的水没有被压缩（粒子 6 近邻间距 2.73–2.75 mm，上一版 2.76）。做法和中间被推翻的两版见<a href="#round3">改进轮次 10-21</a>。</div>
 <h3 id="bottle-fast">快捏：水从瓶口冲出来</h3>
-<p>同一只 3 mm 壳的瓶子装到 467 ml（肩部以下只剩约 25 ml 空气），两指在 <b>0.8 s</b> 内合到 18 mm。水面先冲进瓶颈，随后约 0.25 s 内有 20 多毫升从瓶口涌出（空中最多 21 ml），
-最高到瓶口上方 3.4 cm、横向散开 3.5 cm，落回桌面形成一圈水花；结束时桌上共 28 ml（慢捏 14 ml），留在瓶壁外面的不到 1 ml。瓶身凹 22.8 mm，松开后留 19.6 mm。
+<p>同一只 3 mm 壳的瓶子装到 466 ml（肩部以下只剩约 25 ml 空气），两指在 <b>0.8 s</b> 内合到 18 mm。水面先冲进瓶颈，随后约 0.25 s 内有 20 多毫升从瓶口涌出（瓶口上方最多约 26 ml），
+最高到瓶口上方 3.2 cm、横向散开 3.3 cm，落回桌面后在 1 s 内收成一滩；结束时桌上共 23 ml（慢捏 5 ml），留在瓶壁外面的不到 1 ml。瓶身凹 23.1 mm，松开后留 21.0 mm。
 瓶颈有 25 mm 宽、净排开的体积只有几十 ml，所以是一股短促的涌出而不是细高的水柱；要喷得更高需要更小的瓶口或更深的捏合。</p>
 <div class="fig-grid">
-<figure class="fig"><video src="../media/robotgym_bottle_fast.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><b>快捏</b> — 全程 13.3 s（时间步 5 ms，一张 A800 上 118 分钟）。</figcaption></figure>
+<figure class="fig"><video src="../media/robotgym_bottle_fast.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><b>快捏</b> — 全程 13.3 s（时间步 5 ms，一张 A800 上 164 分钟）。</figcaption></figure>
 <figure class="fig"><video src="../media/robotgym_bottle_fast_burst.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><b>涌出的 1.6 s 慢放</b>（6.2–7.8 s，4 倍慢）。</figcaption></figure>
 </div>
 
@@ -144,21 +147,27 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 <tr><td>28.5</td><td>松开 3</td><td>44</td><td>117</td><td>16.5</td></tr>
 <tr><td>38.0</td><td>放回盆里后</td><td>78</td><td>246</td><td>16.8</td></tr>
 </tbody></table></div>
-<p>一次完整运行（39 s，7800 步，2.4 万个水粒子）在一张 A800 上用时 150 分钟。USD（刚体变换 + 海绵顶点 + 水粒子，976 帧）约 290 MB，文件较大，暂未随页面提供（整理后以 GitHub Release 发布）。</p>
+<p>一次完整运行（39 s，7800 步，2.4 万个水粒子）在一张 A800 上用时 150 分钟。USD 见文末<a href="#downloads">下载</a>。</p>
 
-<h3 id="sponge-regrasp">换位再拧：四个周期收到 29.1 ml</h3>
-<p>上一轮查明每次拧出 5–9 ml 的上限来自 20 mm 指垫只压到 100 mm 海绵的 1/5：被压的那一段放完水，其余部分的水不会流过来。这一轮给脚本加了 <code>--regrasp</code>：每拧一次就把海绵放回盆里重新泡饱，
-换一段（沿长边 −36 / −12 / +12 / +36 mm）再捏起来拧。四个周期（间隙 24 / 18 / 18 / 12 mm）杯里依次到 10.9、19.6、27.8、29.1 ml——前三段各收 8–9 ml，第四段只多 1.3 ml（12 mm 的深捏对已压过的海绵帮助不大）。
-全程 94.5 s（18 900 步）在一张 A800 上 394 分钟。原站 33.5 ml。对照：三段换位、拧 24 / 18 / 12 mm 的三周期版收到 23.6 ml，三周期都拧 24 mm 的版本 21.2 ml——多一个周期比把最后一次捏得更深更有用。</p>
-<div class="tblwrap"><table><thead><tr><th>周期</th><th>抓取段 (mm)</th><th>拧到 (mm)</th><th class="num">拧后杯中 (ml)</th><th class="num">本次收到 (ml)</th></tr></thead><tbody>
-<tr><td>1</td><td>−36</td><td>24</td><td class="num">10.9</td><td class="num">10.9</td></tr>
-<tr><td>2</td><td>−12</td><td>18</td><td class="num">19.6</td><td class="num">8.7</td></tr>
-<tr><td>3</td><td>+12</td><td>18</td><td class="num">27.8</td><td class="num">8.2</td></tr>
-<tr><td>4</td><td>+36</td><td>12</td><td class="num">29.1</td><td class="num">1.3</td></tr>
+<h3 id="sponge-regrasp">换位再拧：前三个周期收到 27.8 ml（第四周期修正后重跑中）</h3>
+<p>上一轮查明每次拧出 5–9 ml 的上限来自 20 mm 指垫只压到 100 mm 海绵的 1/5。这一轮给脚本加了 <code>--regrasp</code>：每拧一次就把海绵放回盆里重新泡饱，再沿长边换一段捏起来拧；
+计划的四段是 −36 / −12 / +12 / +36 mm，拧到 24 / 18 / 18 / 12 mm。杯里依次到 10.9、19.6、27.8 ml，第四个周期后 29.1 ml。</p>
+<p><b>复查发现第四周期是失败的。</b>重渲染时按录制里海绵的实际位置复算了每次抓在哪：脚本的第一次抓取落在海绵中心（首抓没有加偏移），抬起时手却按偏移平移了 36 mm，
+放回后海绵整体偏了 34 mm；之后每次都按"海绵还在原位"去抓，实际抓在离中心 +2、+27、<b>+51 mm</b> 处。海绵半长 50 mm，第四次的指垫正好落在海绵末端，
+拧水一开始（80.5 s）海绵就从指尖滑出、掉到杯子和盆之间的桌上，第四周期多出的 1.3 ml 是掉落时滴的水。上一版据此写的"12 mm 的深捏帮助不大""多一个周期比捏得更深更有用"都不成立，已撤回；
+两组三周期的对照（23.6 / 21.2 ml）有同样的问题——第三次都抓在离中心约 50 mm 的末端，其中拧 12 mm 的那组在第三次拧水时同样掉了出去。另一方面，前两个周期捏的其实都是中间那一段，
+第二次仍收到 8.7 ml，说明每次的增量主要来自<b>放回盆里重新泡饱</b>，不是换到没捏过的那一段。</p>
+<p><b>修正。</b>脚本改成闭环换位：每次重新抓取前读出海绵的实际中心，把这一周期的移动、下探、抓取、浸泡和抬起位姿一起平移；第一次抓取就带上偏移；搬到杯子上方时让海绵中心对准杯心，
+挤出的水都落在杯里。两组正在节点上重跑：四段 −30 / −10 / +10 / +30 mm；对照组四次都捏中间同一段，用来检验"重新泡饱才是增量来源"。完成后替换本节的数字和视频。</p>
+<div class="tblwrap"><table><thead><tr><th>周期</th><th>计划抓取段 (mm)</th><th>实际抓取段 (mm)</th><th>拧到 (mm)</th><th class="num">拧后杯中 (ml)</th><th class="num">本次收到 (ml)</th></tr></thead><tbody>
+<tr><td>1</td><td>−36</td><td>0</td><td>24</td><td class="num">10.9</td><td class="num">10.9</td></tr>
+<tr><td>2</td><td>−12</td><td>+2</td><td>18</td><td class="num">19.6</td><td class="num">8.7</td></tr>
+<tr><td>3</td><td>+12</td><td>+27</td><td>18</td><td class="num">27.8</td><td class="num">8.2</td></tr>
+<tr><td>4</td><td>+36</td><td>+51（海绵末端）</td><td>12</td><td class="num">29.1</td><td class="num">1.3（海绵滑落）</td></tr>
 </tbody></table></div>
 <figure class="fig">
 <video src="../media/robotgym_sponge_regrasp.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>换位四次拧水</b> — 每个周期：放回盆里泡饱 → 换一段捏起 → 到杯子上方拧 → 保持 → 松开；杯中最终 29.1 ml。视频截到第四次拧完（88 s）：最后一次放回时海绵落在了盆沿外，是放回位置没有按抓取段偏移补偿，下一轮修。</figcaption>
+<figcaption><b>换位三次拧水</b> — 每个周期：放回盆里泡饱 → 换一段捏起 → 到杯子上方拧 → 保持 → 松开；视频截到第三周期放回为止（69 s），杯中 27.8 ml。全程 94.5 s（18 900 步）在一张 A800 上 394 分钟。</figcaption>
 </figure>
 
 <h2 id="round2">改进轮次（10-20）：网格加密、更深的捏合、水的表面渲染<span class="date">10-20</span></h2>
@@ -208,7 +217,54 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 
 <h3>海绵：换位再拧</h3>
 <p>上一轮查明每次拧出 5–9 ml 的上限来自 20 mm 指垫只压到 100 mm 海绵的 1/5。这一轮给脚本加了 <code>--regrasp</code>：每次拧水前松开、沿海绵长边移到另一段再捏
-（三段 −30 / 0 / +30 mm 各拧一次 24 / 18 / 12 mm；三段都 24 mm；四段 ±36 / ±12 mm 拧 24 / 18 / 18 / 12 mm）。三个运行在节点上进行（第一轮因缺壁面场约束等开关作废，第二轮因粒子间距与交付版不同（6 mm）太慢作废，第三轮与 full23 同环境、同 8 mm 粒子）。四个周期的那组收到 <b>29.1 ml</b>（见第 3b 节）；两组三周期的分别 23.6 / 21.2 ml。</p>
+（三段 −30 / 0 / +30 mm 各拧一次 24 / 18 / 12 mm；三段都 24 mm；四段 ±36 / ±12 mm 拧 24 / 18 / 18 / 12 mm）。三个运行在节点上进行（第一轮因缺壁面场约束等开关作废，第二轮因粒子间距与交付版不同（6 mm）太慢作废，第三轮与 full23 同环境、同 8 mm 粒子）。结果见第 3b 节：这三个运行的抓取位置都偏离了计划（开环换位），10-21 复查后改成闭环重跑。</p>
+
+<h2 id="round3">改进轮次（10-21）：床单松手后为什么悬停、桌上的水、海绵的换位与渲染<span class="date">10-21</span></h2>
+<p><b>起因。</b>复查上一轮交付时看到四个问题：床单在 19 s 左右夹爪已经张开，布却在空中停了好几秒；水瓶洒到桌上的水一直在慢慢蠕动；海绵场景的水明显不如水瓶渲染得好；
+接水的盆和杯子不对称、角上多出一块。逐个查下来，前两个是轨迹和液体模型的问题，后两个是渲染的问题；重渲海绵时又发现了换位抓取的错误（见第 3b 节）。</p>
+
+<h3>床单：腕部压在板边上，求解器卡住，松开的布跟着“冻住”</h3>
+<p><b>现象。</b>录制里看得很清楚：19 s 左右指垫已经张开到 60 mm，布离指尖却只有 1–2 cm，而且一整秒速度为零；手抬起时它才一下子弹开（1.9–2.4 m/s）。把求解器的 Newton 迭代按 0.5 s 统计，
+17–20 s 每一步都打满上限——上限设 60 是 60，设 200 也是 200。每一步都不收敛，说明不是布料参数的问题，而是有东西卡住了。</p>
+<p><b>原因。</b>按录制里每个刚体的实际位置复算后找到的：为了从下方跨住垂下的布边，手指朝上斜 25°，所以腕部（第 7 连杆）在指尖下方约 9 cm；捏点离布角 10 cm 时，腕部正好悬在板的侧边（x = 0.5 m）正上方。
+轨迹只按指尖规划，"放下"阶段把指尖降到板面上方 6 cm 时，命令轨迹实际要把腕部压进板里约 1 cm。腕部顶在固定的板边上，手掌停在比命令高 4 cm 的位置、被扭了 3.2°；
+关节是软约束，关节角照样"跟上了"（录制里误差 0.0°），所以只看关节角发现不了。顶住固定物体的那一步本身不可行，全局线搜索只能走极小的步长，于是整个场景——包括已经松开、本该自由下落的布——都几乎不动：
+这就是"松手后悬停"。上一版的结尾（放到板远端边上方 3.5 cm）是同一种卡死，另外还有指垫压在远端边上。上一轮试过把结尾改成"放下—松开—竖直抬手"，在同一个位置照样卡住，可见问题不在结尾的动作，而在腕部的位置。</p>
+<p><b>修法：改轨迹，不改参数。</b>捏点从离布角 10 cm 挪到 4 cm（x = ±0.46 m），腕部改从板的侧面外经过；运动学检查全程各连杆离板 ≥ 15 mm（手掌到板侧面 14.8 mm、腕部 41 mm）。人叠床单本来也是捏着角。重跑结果：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>指标</th><th>捏点离角 10 cm（上一版）</th><th>捏点离角 4 cm（本版）</th></tr></thead>
+<tbody>
+<tr><td>放下—抬手阶段（17–20 s）的 Newton 迭代</td><td>每步打满上限（60 / 200）</td><td>18–47 次/步</td></tr>
+<tr><td>放下时手的高度</td><td>比命令高 4 cm（腕部顶在板边上）</td><td>到位</td></tr>
+<tr><td>开爪后布落到下层上</td><td>约 2.5 s，手抬起后才弹开</td><td>0.6 s</td></tr>
+<tr><td>近半压在远半上</td><td>75%</td><td>67%</td></tr>
+<tr><td>整段用时（A800）</td><td>53–57 分钟</td><td>43 分钟</td></tr>
+</tbody></table></div>
+<p>叠合比例低了一些，是因为整张床单在抬起时被拖向近侧约 10 cm（远端的垂边被拉上了板面），捏点放在 z = 0.54 m 时布边越过了远端、垂下去 9 cm。把放下位置后移到 z = 0.50 / 0.48 m 的两版正在重跑，若叠得更整齐再替换视频。</p>
+
+<h3>桌上的水：只对薄层加表面张力，且不碰贴壁的水</h3>
+<p>落到桌上的水只有一个粒子厚，MPM 的压力管不住它，粒子之间又没有内聚力，于是像二维气体一样越摊越开。先用隔离试验（30 ml 水泼到桌上）筛了做法，再在两版水瓶上全程验证。
+引擎里已有的显式表面张力（相邻粒子之间的 Akinci 式内聚力）能把水洼收住，但直接打开会把瓶里的整柱水压实；问题出在“作用在谁身上”：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>做法（慢捏，15 s）</th><th class="num">瓶内水位 (mm)</th><th class="num">瓶内粒子间距 (mm)</th><th>桌上的水</th></tr></thead>
+<tbody>
+<tr><td>上一版：无表面张力</td><td class="num">142</td><td class="num">2.77</td><td>90% 半径 131 → 162 mm，持续外扩</td></tr>
+<tr><td>只加水对桌面的摩擦 1.0</td><td class="num">140</td><td class="num">2.77</td><td>只小一成，快捏版 138 → 183 mm，末段仍 14 mm/s</td></tr>
+<tr><td>表面张力全开（γ = 1 / 0.5）</td><td class="num">70 / 80</td><td class="num">2.30 / 2.51</td><td>水柱被压实、水位一路下降，作废</td></tr>
+<tr><td>只作用在薄层上（SPH 密度 &lt; 0.75 ρ<sub>0</sub>）</td><td class="num">98</td><td class="num">2.54</td><td>仍然压实：贴壁粒子有一半邻域在壁外，密度天然偏低，被当成“薄层”，整圈壁层被向内拉</td></tr>
+<tr><td><b>薄层（&lt; 0.6 ρ<sub>0</sub>）+ 排除贴壁粒子 + 桌面摩擦 1.0</b></td><td class="num">139</td><td class="num">2.75</td><td>快捏版 1 s 内收成一滩，90% 半径稳定在 110–116 mm，末段外缘 1.5 mm/s</td></tr>
+</tbody></table></div>
+<p>引擎改动见<a href="liquid.html#thinst">液体页第十九步</a>。“贴壁粒子”用上一步壁面场约束标出的近壁粒子；它们不受内聚力，薄层和自由面上的水照常互相拉住。代价是每步慢约 1.5 倍（水瓶一次运行 160 分钟）。挂在瓶外壁上的水在结束时只有 0.2–0.5 ml，并且还在往下滑。
+附带的变化：慢捏溢出的水从 14 ml 变成 5 ml——表面张力让瓶口冒出的水保持成团，松开时一部分退回瓶里。</p>
+
+<h3>渲染：之前的视频都没有去噪；盆和杯子改成干净的一体件</h3>
+<p>海绵视频里盆底那层“砂纸感”的颗粒，是水面下只能经折射照亮的盆底上的焦散噪声。查下来，渲染器的去噪器从来没有真正运行过：它依赖的线程库需要比系统更新的 C++ 运行库，
+加载失败被静默吞掉；即使加载成功，主相机用的高斯像素滤波也会让噪声在像素间相关，去噪器把它原样当成纹理保留。改为显式加载新版运行库、去噪时用盒式像素滤波之后，同样的 128 spp
+得到干净的清水、弯月面和涟漪。本页的床单、水瓶视频和第 3b 节的海绵视频已按这条链路重渲。</p>
+<p>盆和杯子在物理里是五块相互嵌入 4 mm 的盒子（底 + 四壁，避免共面接触的数值问题），之前各自着色，角上就露出了接缝和色块；现在渲染时合成一个开口的空心盒（外壳 + 内腔 + 沿口），
+左右对称、没有内部面。杯子另按 3 mm 的玻璃壁画（物理里是 15 mm 厚的盒子；隔着 15 mm 的玻璃，杯底会折射成一团像皱褶的亮斑，看起来像一包水），杯底以下的物理底板画成白色的底座。
+杯里收到的水只有 3–4 mm 深，比 8 mm 的液体网格还薄，在模拟里是一层松散的单层粒子，直接重建会成为一个比实际深三四倍的“水垫”；渲染时把杯中静止的那部分按粒子数换算成体积，
+画成同样体积的平水层（下落和流动的水照常重建）。这只影响画面，所有毫升数都按粒子计数。两段海绵视频正在按这个杯子画法重渲，完成后替换（第 3b 节当前的视频已去噪、器皿已合并，杯子还是厚玻璃的旧画法）。</p>
 
 <h2 id="traps">数值陷阱（都用实验确认过）</h2>
 <ul>
@@ -221,8 +277,24 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 
 <li><b>低泊松比的 stable neo-Hookean 会被捏成零体积。</b>海绵第一次拧水时（指垫从 32 mm 合到 26 mm）整块 FEM 在不到 1 s 内塌成 1 mm 厚的薄片，100 ml 水一次全倒进杯子。引擎编译的是不带 log 项的 stable neo-Hookean（Ψ = ½u(I₂−3) + ½r(J−1−u/r)²，u = 4μ/3，r = λ + 5μ/6）：完全塌缩与静止态的能量差是 ½(λ − μ/2)，ν &lt; 1/6 时为负——静止只是局部极小，ν = 0.1 下压到 50 % 就不再存在任何稳定状态。按 F = diag(a, b, b) 扫能量面：ν = 0.35 压到 26 mm 仍只掉体积、几乎不侧鼓（b ≈ 1.0），ν = 0.45 侧鼓 30–50 %。泡沫真正想要的是 ARAP 那类没有体积项的能量。</li>
 <li><b>拧不出水，不是「阀门」的错。</b>最初三次拧水只收到 4–7 ml（原站 33.5 ml），先后换了放水系数的形状、降低达西阻力都没用；把录制离线重算每个粒子看到的饱和度才看清三件事：① ν = 0.35 的四面体被捏时鼓而不缩，「孔隙率 × 当前体积」的容量几乎不变，指垫下方 s 只到 1.0，没有一粒水被放开——改成随最短棱伸长比塌缩的开孔泡沫容量后，第一次拧水从 2 ml 变成 8 ml；② 海绵吸走约 180 ml 后盆里水位降了 5 mm，被捏高的海绵上面三分之一根本没泡到水——水深从 4 cm 改到 5.5 cm；③ 20 mm 宽的指垫只压到 10 cm 长海绵的五分之一：三次拧水放出的 9.7 / 2.8 / 4.1 ml 基本就是指垫正下方那 15 ml 左右的水，邻区的水被锁在物质点上不会流过来。把海绵缩短到 6 cm 和 5 cm 再跑（指垫下的水占三分之一到一半）每次也只放出 5–6 ml——被压扁的区域由指垫脚印决定，而不是海绵多大。这就是和原站 33.5 ml 剩下的差距：两指尖捏一块厨房海绵，在这个模型里一次只能挤出指垫下面的水。</li>
+<li><b>关节角“到位”不等于手到位，腕部可能比指尖更低。</b>床单的手指朝上斜 25°，腕部（第 7 连杆）在指尖下方约 9 cm；轨迹按指尖规划时没有检查腕部，放下阶段把腕部压进了板的侧边。关节是软约束，驱动角度照样跟上（录制里关节误差 0.0°），实际手掌却比命令高 4 cm、被扭 3.2°——只看关节角会被骗过。新轨迹上求解器之前先用 <span class="mono">check_bedsheet_clearance.py</span> 做一遍运动学间隙检查：用录制里的连杆网格按逆运动学解出的关节角摆位，算各连杆到固定板的最小距离（对旧轨迹它报出 −10 mm，与实测一致）。</li>
+<li><b>开环换位会累积漂移。</b>按“物体还在原处”算的重新抓取，每放回一次就带上几毫米到几厘米的误差；海绵的第四次抓取因此落在末端、拧水时滑落。抓取前读一次物体的实际位置即可。</li>
+<li><b>显式表面张力不能作用在贴壁的水上。</b>贴壁粒子的 SPH 密度天然偏低（半个邻域在壁外），按密度门控会把它们当成薄层，整圈壁层被向内拉、把整柱水压实；要用壁面场标出的近壁粒子把它们排除。</li>
 <li><b>Franka 手指只有 58 mm 长。</b>225 mm 高的瓶子不能从上往下抓，只能侧抓：底座后移 30 cm、手下俯 40°，逆运动学全程误差 0.2 mm。</li>
 </ul>
+
+<h2 id="downloads">下载：USD 动画</h2>
+<p>每个视频对应的 USD 动画（Y 轴向上、单位米、每秒 25 个时间码）：机器人连杆和器皿是静态网格 + 变换动画，床单 / 瓶壳 / 海绵是顶点动画，水是 Points（每个粒子一个点）。
+可用 usdview、Houdini、Blender（4.x 的 USD 导入）或 Omniverse 打开。超过 100 MB 的文件放在仓库的 <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-2026-10">GitHub Release</a> 里（不是软件版本）。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>动画</th><th class="num">时长</th><th class="num">帧数</th><th class="num">大小</th><th>下载</th></tr></thead>
+<tbody>
+<tr><td>床单对折（第 1 节）</td><td class="num">24.0 s</td><td class="num">601</td><td class="num">21 MB</td><td><a class="dl" href="../media/bedsheet_fold.usdc">bedsheet_fold.usdc</a></td></tr>
+<tr><td>捏瘪水瓶 · 慢捏（第 2 节）</td><td class="num">15.0 s</td><td class="num">376</td><td class="num">150 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_slow.usdc">robotgym_bottle_slow.usdc</a></td></tr>
+<tr><td>捏瘪水瓶 · 快捏（第 2b 节）</td><td class="num">13.3 s</td><td class="num">333</td><td class="num">137 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_fast.usdc">robotgym_bottle_fast.usdc</a></td></tr>
+<tr><td>海绵吸水拧水 · 三次拧水（第 3 节）</td><td class="num">39.0 s</td><td class="num">976</td><td class="num">289 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_sponge_3wrings.usdc">robotgym_sponge_3wrings.usdc</a></td></tr>
+<tr><td>海绵换位再拧（第 3b 节）</td><td colspan="4">闭环换位重跑完成后补上</td></tr>
+</tbody></table></div>
 
 <h2 id="repro">怎样复现</h2>
 <p>三个脚本都在 <span class="mono">examples/robotgym/</span>，共用 <span class="mono">common.py</span>（FR3 加载与关节映射、细分盒子、布料 / FEM 加载、录制）。

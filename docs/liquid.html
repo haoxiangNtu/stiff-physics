@@ -83,7 +83,7 @@ svg.diagram .m-green { fill: var(--acc-data); } svg.diagram .m-amber { fill: var
 <a href="#demo">4 演示跑通</a><a href="#audit">5 审计与提速</a><a href="#symptom">6 静止的水在动</a>
 <a href="#hypotheses">7 排除假设</a><a href="#root">8 根因</a><a href="#stopgap">9 应急版固壁</a>
 <a href="#fix">10 根本修正</a><a href="#rest">11 让静水静下来</a>
-<a href="#reaudit">12 复审：可追溯</a><a href="#divider">13 薄板试验</a><a href="#cpic">14 兼容性屏蔽</a><a href="#budget">15 支撑力预算</a><a href="#pump">16 滴管</a><a href="#split">17 混合切割单元</a><a href="#twofield">18 每侧槽位</a><a href="#changes">改动清单</a><a href="#status">现状</a><a href="#refs">参考文献</a>
+<a href="#reaudit">12 复审：可追溯</a><a href="#divider">13 薄板试验</a><a href="#cpic">14 兼容性屏蔽</a><a href="#budget">15 支撑力预算</a><a href="#pump">16 滴管</a><a href="#split">17 混合切割单元</a><a href="#twofield">18 每侧槽位</a><a href="#thinst">19 薄层张力</a><a href="#changes">改动清单</a><a href="#status">现状</a><a href="#refs">参考文献</a>
 </div>
 
 <h2 id="overview">全程一览</h2>
@@ -975,7 +975,16 @@ k = 20 时这个阈值约 3.4 m/s²，10° 倾斜的晃动照常发生。</p>
 第一次打补丁时两处锚点错位（节点槽位写入的 ghost 分支、vside 包装函数）和漏掉的幽灵罚项步长已修。
 快速静水检查仍然发散（A 侧中位 24.6 mm/s、最大 839 mm/s；B 侧 56 mm/s），"两侧节点 0 个"的打印是第 0 步的陈旧值。<b>暂停</b>：三个操作任务的复现优先（见 robotgym 页的改进轮次），之后回来用收敛态探针逐轮定位。</p>
 
-<h3 id="changes">改动清单（10-19 → 10-20，均在引擎开发分支，未发布）</h3>
+<h2 id="thinst"><span class="step-no">19</span>薄层表面张力：只拉自由面上的水，不拉贴壁的水<span class="date">10-20 → 10-21</span></h2>
+<p>水瓶被捏出来的水落到桌上只有一个粒子厚：压力管不住这么薄的一层，粒子之间又没有内聚力，于是一直在摊开、蠕动。隔离试验 m10（30 ml 水贴着一块竖板泼到桌上）比较了几种做法：
+只加水对桌面的摩擦（1.0），水洼照样外扩（6 s 内 90% 的水所在半径 108 → 140 mm）；引擎已有的显式表面张力（相邻粒子之间的 Akinci 式内聚力 + 曲率项）γ = 1 能把水收成半径 4.5 cm 的一滩，
+但每步慢 2.5 倍（γ = 2 慢 40 倍）。更要紧的是，放进水瓶全程跑 15 s 后发现它对整柱水也在起作用：瓶里的水被压实（粒子 6 近邻间距 2.81 → 2.30 mm，水位 138 → 70 mm）。</p>
+<p>新增门控 <code>LIQ_ST_THIN</code>：<code>k_st_apply</code> 只对 SPH 密度低于 st_thin·ρ<sub>0</sub> 的粒子——薄层、自由面、水珠——施加内聚力。第一版（0.75）在 m10 的水池里看不出问题，
+放进水瓶仍然压实（水位 → 98 mm）：贴壁粒子有一半邻域在壁外，密度天然偏低，被当成"薄层"，整圈壁层被向内拉。第二版再排除上一步壁面场约束标出的近壁粒子（<code>d_wp_near</code>）：
+m10 里 6 s 后水洼的 90% 半径 122 → 116 mm 并稳定，外缘移动 1.3 mm/s，池内间距 2.80 mm（无张力 2.70，没有压缩），每步慢 1.6 倍。两版水瓶全程验证：瓶内水位和粒子间距与无张力时相同，
+快捏落下的水 1 s 内收成一滩、末段外缘 1.5 mm/s（数字见 <a href="robotgym.html#round3">robotgym 页的改进轮次 10-21</a>）。默认 0，不开时行为不变。</p>
+
+<h3 id="changes">改动清单（10-19 → 10-21，均在引擎开发分支，未发布）</h3>
 <div class="tblwrap"><table>
 <thead><tr><th>位置</th><th>改动</th><th>开关 / 默认</th><th>验证</th></tr></thead>
 <tbody>
@@ -991,6 +1000,8 @@ k = 20 时这个阈值约 3.4 m/s²，10° 倾斜的晃动照常发生。</p>
 <tr><td><code>get_liquid_wall_forces</code>、<code>get_liquid_ghost_reaction</code></td><td>液 → 固反力导出（WFC、ghost）</td><td>常开</td><td>预算闭合 ±0.5 %</td></tr>
 <tr><td><code>set_liquid_pump_chamber</code>、<code>get_liquid_pump_state</code></td><td>腔压泵模式（气腔体积为唯一输入）</td><td>调用即生效</td><td>隔离试验未通过</td></tr>
 <tr><td><code>lab_assets.build_dropper_shell</code></td><td>薄壳胶头资产，含腔面与腔体积</td><td>—</td><td>CPU 检查</td></tr>
+<tr><td><code>k_st_apply</code>（显式表面张力）</td><td>薄层门控：只作用在 SPH 密度 &lt; st_thin·ρ<sub>0</sub> 的粒子上，并排除上一步的近壁粒子</td><td><code>LIQ_ST_THIN</code>（默认 0 = 不变）</td><td>m10 隔离试验 + 两版水瓶（第 19 步）</td></tr>
+<tr><td><code>examples/liquid/m10_spill.py</code></td><td>新验收试验：泼到桌上的水（水洼半径、蠕动速度、池内压缩）</td><td>—</td><td>第 19 步数据来源</td></tr>
 <tr><td><code>examples/liquid/m9_divider.py</code>、<code>m5b_dropper_chamber.py</code></td><td>新验收试验：薄板分隔、腔压滴管</td><td>—</td><td>本页数据来源</td></tr>
 <tr><td><code>k_side_nabs / k_cell_axis / k_elem_plan / k_vox_build / k_mark_used / k_orphan_ghost</code>，`k_p2g` 第二套沉积</td><td>按侧拆元 + 私有固定 ghost + 孤儿规则（第 17 步）</td><td><code>LIQ_CPIC_SPLIT</code> 默认 0，<b>已否决</b></td><td>静水平静但验收不过</td></tr>
 <tr><td>探针 <code>LIQ_HYDRO_PROBE</code></td><td>新增粒子掩码、角点投票、第二套体积、ghost 角点、槽位表的导出</td><td>按需</td><td>第 17 步定位依据</td></tr>
