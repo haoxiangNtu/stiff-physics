@@ -59,35 +59,36 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <div class="tblwrap"><table>
 <thead><tr><th>任务</th><th>原站的物理</th><th>我们的物理</th><th>需要新增的部分</th><th>状态</th></tr></thead>
 <tbody>
-<tr><td>床单对折（双 FR3）</td><td>VBD 布料 + MuJoCo 刚体</td><td>IPC 三角壳布料（拉伸 / 弯曲），URDF 关节驱动的 FR3 ×2，摩擦捏取</td><td>无</td><td><span class="tag ok">已复现 · 松手后 0.6 s 落平，近半 67% 叠到远半（棉布刚度）</span></td></tr>
+<tr><td>床单对折（双 FR3）</td><td>VBD 布料 + MuJoCo 刚体</td><td>IPC 三角壳布料（拉伸 / 弯曲），URDF 关节驱动的 FR3 ×2，摩擦捏取</td><td>无</td><td><span class="tag ok">已复现 · 松手后不再悬停，近半 100% 叠到远半（棉布刚度）</span></td></tr>
 <tr><td>PET 瓶捏瘪</td><td>0.3 mm 塑料壳 + 屈服，PBF 水</td><td>0.3 mm IPC 薄壳（PET 模量）+ 二面角铰链塑性，引擎 MPM 水与壳双向耦合</td><td>壳塑性铰链</td><td><span class="tag ok">已复现 · 凹 21.8 mm，松开留 18.8 mm；慢捏溢出 5 ml、快捏涌出 24 ml，落到桌上的水停住、不再蠕动</span></td></tr>
 <tr><td>海绵吸水拧水</td><td>VBD 海绵（实验性）+ PBF 水</td><td>FEM 四面体海绵 + 引擎 MPM 水，多孔耦合（吸入 / 保水 / 挤出）</td><td>多孔耦合</td><td><span class="tag part">换位三次拧水 27.8 ml（原站 33.5 ml）· 第四周期修正后重跑中</span></td></tr>
 </tbody></table></div>
 
 <h2 id="sheet"><span class="step-no">1</span>床单对折</h2>
 <p><b>场景。</b>1.0 × 0.6 m 的床单（三角壳，15 mm 网格，2788 顶点）铺在一块薄板上，前后各悬出 10 cm。两台 FR3 分别从左右两侧沿板边伸进来，
-在离布角 4 cm 处把张开的手指跨在垂下的布边两侧，捏住、抬起、越过板面放到对面，松开、竖直抬手、退开——床单被对折。全程只有接触与摩擦，没有把布“粘”在手指上的约束。</p>
+在离布角 4 cm 处把张开的手指跨在垂下的布边两侧，捏住、抬起、越过板面，把布边竖直放到对面，松开、竖直抬手、退开——床单被对折。全程只有接触与摩擦，没有把布“粘”在手指上的约束。</p>
 <p><b>做法。</b>手指是 URDF 里的标准 Franka 手指（棱柱关节位置驱动），布料是 IPC 三角壳：膜模量 10<sup>5</sup> Pa、弯曲模量 3×10<sup>4</sup> Pa（厚 1 mm，弯曲刚度 1.6×10<sup>−6</sup> N·m，接近棉布），面密度 0.2 kg/m²。
 逆运动学在 CPU 上逐帧求解（阻尼最小二乘，全程位置误差 0.2 mm），关节目标交给引擎的转动关节驱动。捏取用 2 mm 的障碍距离、1 mm 的指垫间隙（每侧 d̂/4），
 捏住后先把布边向外拉到手掌完全离开薄板的投影，再竖直抬起、越过薄板放到对面。</p>
 <p><b>与原站的差异。</b>原站是 VBD 布料，捏取靠的是同一类接触。我们的床单网格更粗（15 mm），时间步 5 ms；对折的轨迹是手写的分段最小加加速度轨迹，不是学出来的策略。</p>
 <figure class="fig">
 <video src="../media/robotgym_sheet.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>床单对折</b> — 24 s 的动作（时间步 5 ms，一张 A800 上 43 分钟）：两臂捏住、外拉、抬起、越过、放到板面上方 6 cm、松开、竖直抬手、退开；18.0 s 开爪，0.6 s 内布就落平在下层上。结束时近半边 67% 的面积压在远半边上，其余是越过远端垂下去的布边（见<a href="#round3">改进轮次 10-21</a>）。</figcaption>
+<figcaption><b>床单对折</b> — 24 s 的动作（时间步 5 ms，一张 A800 上 44 分钟）：两臂捏住、外拉、抬起、越过，把布边竖直放到下层上（指尖离板面 6 cm），18.0 s 开爪、竖直抬手、退开。结束时近半边 100% 压在远半边上，靠近手指的两个布角在放下时起了皱（见<a href="#round3">改进轮次 10-21</a>）。</figcaption>
 </figure>
 <div class="tblwrap"><table>
 <thead><tr><th>阶段</th><th class="num">时间 (s)</th><th class="num">指垫间隙 (mm)</th><th class="num">布边最高点 (m)</th><th class="num">布边到指尖 (mm)</th></tr></thead>
 <tbody>
-<tr><td>捏住</td><td class="num">7.0</td><td class="num">1.0</td><td class="num">0.305</td><td class="num">7.1</td></tr>
-<tr><td>外拉</td><td class="num">9.0</td><td class="num">1.0</td><td class="num">0.305</td><td class="num">7.1</td></tr>
-<tr><td>抬起</td><td class="num">12.0</td><td class="num">1.0</td><td class="num">0.469</td><td class="num">7.1</td></tr>
-<tr><td>放下</td><td class="num">16.0</td><td class="num">1.0</td><td class="num">0.418</td><td class="num">7.1</td></tr>
-<tr><td>开爪</td><td class="num">18.0</td><td class="num">1.0</td><td class="num">0.379</td><td class="num">7.1</td></tr>
-<tr><td>松开 1 s 后（手未动）</td><td class="num">19.0</td><td class="num">60.0</td><td class="num">0.317</td><td class="num">50–56</td></tr>
-<tr><td>结束</td><td class="num">24.0</td><td class="num">60.0</td><td class="num">0.317</td><td class="num">148–154</td></tr>
+<tr><td>捏住</td><td class="num">7.0</td><td class="num">1.0</td><td class="num">0.305</td><td class="num">7.2</td></tr>
+<tr><td>外拉</td><td class="num">9.0</td><td class="num">1.0</td><td class="num">0.305</td><td class="num">7.2</td></tr>
+<tr><td>抬起</td><td class="num">12.0</td><td class="num">1.0</td><td class="num">0.469</td><td class="num">7.2</td></tr>
+<tr><td>放下</td><td class="num">16.0</td><td class="num">1.0</td><td class="num">0.418</td><td class="num">7.2</td></tr>
+<tr><td>开爪</td><td class="num">18.0</td><td class="num">1.0</td><td class="num">0.380</td><td class="num">7.2</td></tr>
+<tr><td>松开 1 s 后（手未动）</td><td class="num">19.0</td><td class="num">60.0</td><td class="num">0.375</td><td class="num">19–49</td></tr>
+<tr><td>抬手后</td><td class="num">20.5</td><td class="num">60.0</td><td class="num">0.353</td><td class="num">105–116</td></tr>
+<tr><td>结束</td><td class="num">24.0</td><td class="num">60.0</td><td class="num">0.353</td><td class="num">147–149</td></tr>
 </tbody></table></div>
-<p>"布边到指尖"是布料顶点到指尖中心的最小距离：捏住期间一直是 7 mm（15 mm 的网格里就是"布在指垫之间"）；开爪后手还没动，布就自己落下、离开指尖 5 cm。
-USD（刚体变换 + 布料顶点，601 帧，21 MB）：<a class="dl" href="../media/bedsheet_fold.usdc">bedsheet_fold.usdc</a></p>
+<p>"布边到指尖"是布料顶点到指尖中心的最小距离：捏住期间一直是 7 mm（15 mm 的网格里就是"布在指垫之间"）。布边是被放到下层上的，不是从空中丢下：开爪后靠在张开的手指上的一小段布角，
+在手抬起时倒下；结束时"布边最高点"0.353 m 就是这两处起皱的布角（高出板面约 5 cm，已经静止）。USD（刚体变换 + 布料顶点，601 帧，20 MB）：<a class="dl" href="../media/bedsheet_fold.usdc">bedsheet_fold.usdc</a></p>
 
 <h2 id="bottle"><span class="step-no">2</span>捏瘪水瓶</h2>
 <p><b>场景。</b>一只 PET 瓶（半径 32 mm、高 200 mm、壁厚 0.3 mm，旋转体网格 3 mm 边长，4300 顶点）立在桌上，装水 451 ml（2.9 万粒子，静置后水面 137 mm，肩部以下只剩约 40 ml 空气）。
@@ -232,15 +233,16 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 这就是"松手后悬停"。上一版的结尾（放到板远端边上方 3.5 cm）是同一种卡死，另外还有指垫压在远端边上。上一轮试过把结尾改成"放下—松开—竖直抬手"，在同一个位置照样卡住，可见问题不在结尾的动作，而在腕部的位置。</p>
 <p><b>修法：改轨迹，不改参数。</b>捏点从离布角 10 cm 挪到 4 cm（x = ±0.46 m），腕部改从板的侧面外经过；运动学检查全程各连杆离板 ≥ 15 mm（手掌到板侧面 14.8 mm、腕部 41 mm）。人叠床单本来也是捏着角。重跑结果：</p>
 <div class="tblwrap"><table>
-<thead><tr><th>指标</th><th>捏点离角 10 cm（上一版）</th><th>捏点离角 4 cm（本版）</th></tr></thead>
+<thead><tr><th>指标</th><th>捏点离角 10 cm（上一版）</th><th>离角 4 cm，放在 z = 0.54 m</th><th>离角 4 cm，竖直放在 z = 0.50 m（交付）</th></tr></thead>
 <tbody>
-<tr><td>放下—抬手阶段（17–20 s）的 Newton 迭代</td><td>每步打满上限（60 / 200）</td><td>18–47 次/步</td></tr>
-<tr><td>放下时手的高度</td><td>比命令高 4 cm（腕部顶在板边上）</td><td>到位</td></tr>
-<tr><td>开爪后布落到下层上</td><td>约 2.5 s，手抬起后才弹开</td><td>0.6 s</td></tr>
-<tr><td>近半压在远半上</td><td>75%</td><td>67%</td></tr>
-<tr><td>整段用时（A800）</td><td>53–57 分钟</td><td>43 分钟</td></tr>
+<tr><td>放下—抬手阶段（17–20 s）的 Newton 迭代</td><td>每步打满上限（60 / 200）</td><td>18–47 次/步</td><td>8–38 次/步</td></tr>
+<tr><td>放下时手的高度</td><td>比命令高 4 cm（腕部顶在板边上）</td><td>到位</td><td>到位</td></tr>
+<tr><td>松开后的布</td><td>约 2.5 s 后手抬起才弹开</td><td>0.6 s 内落平</td><td>布边已放在下层上；靠在手指上的布角在抬手时倒下</td></tr>
+<tr><td>近半压在远半上</td><td>75%</td><td>67%（布边越过远端垂下）</td><td>100%（靠手的两个布角起皱）</td></tr>
+<tr><td>整段用时（A800）</td><td>53–57 分钟</td><td>43 分钟</td><td>44 分钟</td></tr>
 </tbody></table></div>
-<p>叠合比例低了一些，是因为整张床单在抬起时被拖向近侧约 10 cm（远端的垂边被拉上了板面），捏点放在 z = 0.54 m 时布边越过了远端、垂下去 9 cm。把放下位置后移到 z = 0.50 / 0.48 m 的两版正在重跑，若叠得更整齐再替换视频。</p>
+<p>第一版（放在 z = 0.54 m）松手后布 0.6 s 就落平，但只叠了 67%：整张床单在抬起时被拖向近侧约 10 cm（远端的垂边被拉上了板面），布边越过了远端、垂下去 9 cm。
+第二版把放下位置后移到 z = 0.50 m、改成竖直放下：布边落在远半上，叠合 100%；靠近手指的两个布角在放下时起了皱（静止后高出板面约 5 cm）。再往后（0.48 m）同样 100%，但布角皱得更厉害。交付版用 z = 0.50 m 这一版。</p>
 
 <h3>桌上的水：只对薄层加表面张力，且不碰贴壁的水</h3>
 <p>落到桌上的水只有一个粒子厚，MPM 的压力管不住它，粒子之间又没有内聚力，于是像二维气体一样越摊越开。先用隔离试验（30 ml 水泼到桌上）筛了做法，再在两版水瓶上全程验证。
@@ -289,7 +291,7 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 <div class="tblwrap"><table>
 <thead><tr><th>动画</th><th class="num">时长</th><th class="num">帧数</th><th class="num">大小</th><th>下载</th></tr></thead>
 <tbody>
-<tr><td>床单对折（第 1 节）</td><td class="num">24.0 s</td><td class="num">601</td><td class="num">21 MB</td><td><a class="dl" href="../media/bedsheet_fold.usdc">bedsheet_fold.usdc</a></td></tr>
+<tr><td>床单对折（第 1 节）</td><td class="num">24.0 s</td><td class="num">601</td><td class="num">20 MB</td><td><a class="dl" href="../media/bedsheet_fold.usdc">bedsheet_fold.usdc</a></td></tr>
 <tr><td>捏瘪水瓶 · 慢捏（第 2 节）</td><td class="num">15.0 s</td><td class="num">376</td><td class="num">150 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_slow.usdc">robotgym_bottle_slow.usdc</a></td></tr>
 <tr><td>捏瘪水瓶 · 快捏（第 2b 节）</td><td class="num">13.3 s</td><td class="num">333</td><td class="num">137 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_fast.usdc">robotgym_bottle_fast.usdc</a></td></tr>
 <tr><td>海绵吸水拧水 · 三次拧水（第 3 节）</td><td class="num">39.0 s</td><td class="num">976</td><td class="num">289 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_sponge_3wrings.usdc">robotgym_sponge_3wrings.usdc</a></td></tr>
