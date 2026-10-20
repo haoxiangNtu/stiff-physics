@@ -59,33 +59,33 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <div class="tblwrap"><table>
 <thead><tr><th>任务</th><th>原站的物理</th><th>我们的物理</th><th>需要新增的部分</th><th>状态</th></tr></thead>
 <tbody>
-<tr><td>床单对折（双 FR3）</td><td>VBD 布料 + MuJoCo 刚体</td><td>IPC 三角壳布料（拉伸 / 弯曲），URDF 关节驱动的 FR3 ×2，摩擦捏取</td><td>无</td><td><span class="tag ok">已复现 · 近半 96% 叠到远半</span></td></tr>
+<tr><td>床单对折（双 FR3）</td><td>VBD 布料 + MuJoCo 刚体</td><td>IPC 三角壳布料（拉伸 / 弯曲），URDF 关节驱动的 FR3 ×2，摩擦捏取</td><td>无</td><td><span class="tag ok">已复现 · 近半 93% 叠到远半</span></td></tr>
 <tr><td>PET 瓶捏瘪</td><td>0.3 mm 塑料壳 + 屈服，PBF 水</td><td>0.3 mm IPC 薄壳（PET 模量）+ 二面角铰链塑性，引擎 MPM 水与壳双向耦合</td><td>壳塑性铰链</td><td><span class="tag ok">已复现 · 凹 15.8 mm，松开留 14.0 mm，不洒</span></td></tr>
 <tr><td>海绵吸水拧水</td><td>VBD 海绵（实验性）+ PBF 水</td><td>FEM 四面体海绵 + 引擎 MPM 水，多孔耦合（吸入 / 保水 / 挤出）</td><td>多孔耦合</td><td><span class="tag ok">已复现 · 三次拧水共 16.8 ml（原站 33.5 ml）</span></td></tr>
 </tbody></table></div>
 
 <h2 id="sheet"><span class="step-no">1</span>床单对折</h2>
-<p><b>场景。</b>1.0 × 0.6 m 的床单（三角壳，25 mm 网格，1025 顶点）铺在一块薄板上，前后各悬出 10 cm。两台 FR3 分别从左右两侧沿板边伸进来，
+<p><b>场景。</b>1.0 × 0.6 m 的床单（三角壳，15 mm 网格，2788 顶点）铺在一块薄板上，前后各悬出 10 cm。两台 FR3 分别从左右两侧沿板边伸进来，
 张开的手指跨在垂下的布边两侧，捏住、抬起、越过板面放到对面，松开——床单被对折。全程只有接触与摩擦，没有把布“粘”在手指上的约束。</p>
-<p><b>做法。</b>手指是 URDF 里的标准 Franka 手指（棱柱关节位置驱动），布料是 IPC 三角壳：膜模量 3×10<sup>5</sup> Pa、弯曲模量 3×10<sup>4</sup> Pa（厚 1 mm），面密度 0.2 kg/m²。
+<p><b>做法。</b>手指是 URDF 里的标准 Franka 手指（棱柱关节位置驱动），布料是 IPC 三角壳：膜模量 10<sup>5</sup> Pa、弯曲模量 10<sup>5</sup> Pa（厚 1 mm），面密度 0.2 kg/m²。
 逆运动学在 CPU 上逐帧求解（阻尼最小二乘，全程位置误差 0.2 mm），关节目标交给引擎的转动关节驱动。捏取用 2 mm 的障碍距离、1 mm 的指垫间隙（每侧 d̂/4），
 捏住后先把布边向外拉到手掌完全离开薄板的投影，再竖直抬起、越过薄板放到对面。</p>
-<p><b>与原站的差异。</b>原站是 VBD 布料，捏取靠的是同一类接触。我们的床单网格更粗（25 mm），时间步 5 ms；对折的轨迹是手写的分段最小加加速度轨迹，不是学出来的策略。</p>
+<p><b>与原站的差异。</b>原站是 VBD 布料，捏取靠的是同一类接触。我们的床单网格更粗（15 mm），时间步 5 ms；对折的轨迹是手写的分段最小加加速度轨迹，不是学出来的策略。</p>
 <figure class="fig">
 <video src="../media/robotgym_sheet.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>床单对折</b> — 22.7 s 的动作（时间步 10 ms，一张 A800 上 24 分钟）：两臂捏住、外拉、抬起、越过、放下、松开；结束时近半边 96% 的面积压在远半边上。</figcaption>
+<figcaption><b>床单对折</b> — 22.7 s 的动作（时间步 5 ms，一张 A800 上 65 分钟）：两臂捏住、外拉、抬起、越过、放下、松开；结束时近半边 93% 的面积压在远半边上。</figcaption>
 </figure>
 <div class="tblwrap"><table>
 <thead><tr><th>阶段</th><th class="num">时间 (s)</th><th class="num">指垫间隙 (mm)</th><th class="num">布边最高点 (m)</th><th class="num">布边到指尖 (mm)</th></tr></thead>
 <tbody>
-<tr><td>捏住</td><td class="num">7.0</td><td class="num">1.0</td><td class="num">0.305</td><td class="num">7.9</td></tr>
-<tr><td>外拉</td><td class="num">9.0</td><td class="num">1.0</td><td class="num">0.307</td><td class="num">8.0</td></tr>
-<tr><td>抬起</td><td class="num">12.0</td><td class="num">1.0</td><td class="num">0.491</td><td class="num">8.2</td></tr>
-<tr><td>放下</td><td class="num">16.0</td><td class="num">1.0</td><td class="num">0.426</td><td class="num">15.5</td></tr>
-<tr><td>松开后</td><td class="num">21.2</td><td class="num">60.0</td><td class="num">0.414</td><td class="num">81.7</td></tr>
+<tr><td>捏住</td><td class="num">7.0</td><td class="num">1.0</td><td class="num">0.305</td><td class="num">5.2</td></tr>
+<tr><td>外拉</td><td class="num">9.0</td><td class="num">1.0</td><td class="num">0.305</td><td class="num">5.2</td></tr>
+<tr><td>抬起</td><td class="num">12.0</td><td class="num">1.0</td><td class="num">0.475</td><td class="num">5.2</td></tr>
+<tr><td>放下</td><td class="num">16.0</td><td class="num">1.0</td><td class="num">0.421</td><td class="num">5.2</td></tr>
+<tr><td>松开后</td><td class="num">21.2</td><td class="num">60.0</td><td class="num">0.372</td><td class="num">106.1</td></tr>
 </tbody></table></div>
-<p>"布边到指尖"是布料顶点到指尖中心的最小距离：捏住期间一直在 8 mm 左右（25 mm 的网格里就是"布在指垫之间"），松开后才拉开。
-USD（刚体变换 + 布料顶点，568 帧，8.5 MB）：<a class="dl" href="../media/bedsheet_fold.usdc">bedsheet_fold.usdc</a></p>
+<p>"布边到指尖"是布料顶点到指尖中心的最小距离：捏住期间一直在 5 mm 左右（15 mm 的网格里就是"布在指垫之间"），松开后才拉开。
+USD（刚体变换 + 布料顶点，568 帧，19.6 MB）：<a class="dl" href="../media/bedsheet_fold.usdc">bedsheet_fold.usdc</a></p>
 
 <h2 id="bottle"><span class="step-no">2</span>捏瘪水瓶</h2>
 <p><b>场景。</b>一只 PET 瓶（半径 32 mm、高 200 mm、壁厚 0.3 mm，旋转体网格 5 mm 边长，1527 顶点）立在桌上，装水 400 ml（2.6 万粒子，静置后水面约 12 cm）。
@@ -146,15 +146,15 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）合拢到 32
 <tr><td><b>B</b></td><td>10 mm（6161 顶点）</td><td>1e5 / 1e5</td><td>10 ms</td><td>两手都稳（1.9 / 1.1 mm）</td><td class="num">63 %</td><td class="num">38 min</td></tr>
 <tr><td>C</td><td>10 mm</td><td>1e5 / 3e5</td><td>10 ms</td><td>右手丢失（77 → 189 mm）</td><td class="num">36 %</td><td class="num">34 min</td></tr>
 <tr><td><b>D</b></td><td>15 mm（2788 顶点）</td><td>1e5 / 1e5</td><td>5 ms</td><td>两手都稳（5.2 / 4.9 mm）</td><td class="num">93 %</td><td class="num">65 min</td></tr>
-<tr><td>E</td><td>10 mm</td><td>1e5 / 1e5，板面摩擦 0.9</td><td>10 ms</td><td colspan="3"><span class="tag run">排队</span></td></tr>
+<tr><td>E</td><td>10 mm</td><td>1e5 / 1e5，板面摩擦 0.9</td><td>10 ms</td><td>两手都稳（4.3 / 4.6 mm）</td><td class="num">52 %</td><td class="num">37 min</td></tr>
 </tbody></table></div>
 <p>两条结论。（1）弯曲模量到 3×10<sup>5</sup> 以后，1 mm 指缝的捏取就不可靠：垂下的布边不再服帖地折进指缝，右手在抬起时把布丢了（25 mm 网格在 10<sup>5</sup> 下也丢）；
 10 mm 网格 + 10<sup>5</sup> / 10<sup>5</sup> 两手全程稳在 2 mm 内。（2）"近半压在远半上"从 96 % 降到 63 % 不是对折失败，而是<b>远半被拖动了</b>：抬起和翻越时整张床单被拉向近侧
 （远半中心 z 0.505 → 0.400），上一版放下时近半靠摩擦把远半带回去（0.37 → 0.49），这一版只带回到 0.42，于是近半有一段伸出远半之外。
-下一个运行把板面摩擦从 0.5 提到 0.9 看能否压住这段滑移。画面上 10 mm 版是大而圆滑的褶，碎褶没有了：</p>
+把板面摩擦从 0.5 提到 0.9（方案 E）没有压住这段滑移（52 %），说明拖动发生在布与板脱离接触的抬起阶段，摩擦不是杠杆；15 mm 网格配 5 ms 时间步（方案 D）两手都稳、93 % 叠合，是目前指标最好的。画面上 10 mm 与 15 mm 版都是大而圆滑的褶，碎褶没有了；交付版换成方案 D（上面第 1 节的视频、表格和 USD 已更新）：</p>
 <div class="fig-grid">
 <figure class="fig"><img src="../media/robotgym_sheet25_laydown.png" alt="25 mm 网格放下阶段"><figcaption><b>上一版（25 mm，弯曲 3×10<sup>4</sup>）</b>放下阶段：单元尺度的尖褶。</figcaption></figure>
-<figure class="fig"><img src="../media/robotgym_sheet10_laydown.png" alt="10 mm 网格放下阶段"><figcaption><b>这一版（10 mm，弯曲 10<sup>5</sup>）</b>同一阶段：厘米级的圆褶。预览帧 32 spp。</figcaption></figure>
+<figure class="fig"><img src="../media/robotgym_sheet15_laydown.png" alt="15 mm 网格放下阶段"><figcaption><b>这一版（方案 D：15 mm，弯曲 10<sup>5</sup>，dt 5 ms）</b>同一阶段：厘米级的圆褶（正式渲染 128 spp）。</figcaption></figure>
 </div>
 
 <h3>水瓶：壳 3 mm、间隙 18–20 mm、屈服 0.1 rad —— 先查清了一次"水越来越少"</h3>
