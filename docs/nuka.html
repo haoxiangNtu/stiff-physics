@@ -81,7 +81,7 @@ MLS-MPM 是显式积分（演示里 7680 Hz），弹塑性用 Hencky J2 加线�
 <div class="tblwrap"><table>
 <thead><tr><th>Nuka 演示</th><th>它的设置</th><th>我们的做法</th><th>需要新增</th><th>状态</th></tr></thead>
 <tbody>
-<tr><td>兔子落水</td><td>120 mm 刚体斯坦福兔（0.41 kg）从 150 mm 高落入 36 × 28 cm 玻璃水箱、水深 18 cm；Tait 水，网格 6 mm、粒子 2.5 mm（67 万粒子）；录 1.5 s，2 倍慢放</td><td>ABD 刚体兔 + 引擎液体双向耦合；另加一版软体（FEM）兔子落水</td><td>无（粒子用到 26 万）</td><td><span class="tag ok">已复现 · 刚体 + 软体两版</span></td></tr>
+<tr><td>兔子落水</td><td>120 mm 刚体斯坦福兔（0.41 kg）从 150 mm 高落入 36 × 28 cm 玻璃水箱、水深 18 cm；Tait 水，网格 6 mm、粒子 2.5 mm（67 万粒子）；录 1.5 s，2 倍慢放</td><td>ABD 刚体兔 + 引擎液体双向耦合；另加一版软体（FEM）兔子落水</td><td>无（已按原站分辨率跑：网格 6 mm、粒子 3 mm，63.4 万粒子）</td><td><span class="tag ok">已复现 · 刚体 + 软体两版</span></td></tr>
 <tr><td>果冻球落地</td><td>半径 100 mm 的 MLS-MPM 弹性球，E 30 kPa，从 50 mm 落下</td><td>FEM 四面体球</td><td>无</td><td><span class="tag ok">已复现</span></td></tr>
 <tr><td>弹塑性压缩</td><td>80 × 80 × 100 mm 试件在两块平板间轻压（恢复误差 0.065 %）、重压（残留 33.1 %）；E 50 kPa，ν 0.30，屈服 12 kPa，硬化 3 kPa</td><td>FEM 试件 + 两块 ABD 平板，复现同一加载历史并对照这两个数</td><td>已新增：<span class="mono">set_fem_plasticity</span></td><td><span class="tag ok">已复现 · 0.063 % / 37.7 %</span></td></tr>
 <tr><td>兔子砸弹塑性垫</td><td>2.5 kg 兔子从 180 mm 落到 240 × 200 × 60 mm 的垫上，同一材料加 80 Pa·s 粘性，实时播放</td><td>ABD 兔 + 塑性 FEM 垫</td><td>已新增：<span class="mono">set_fem_plasticity</span></td><td><span class="tag ok">已复现 · 凹 30 mm</span></td></tr>
@@ -98,10 +98,10 @@ MLS-MPM 是显式积分（演示里 7680 Hz），弹塑性用 Hencky J2 加线�
 <h2 id="results">5 · 已复现的演示</h2>
 <p>每个演示都在一张 A800 上几分钟跑完，录制 → USD → Mitsuba 路径追踪，播放速度与原站一致（兔子落水为 2 倍慢放）。数值见图注；坑在本节末尾。</p>
 <div class="fig-grid">
-<figure class="fig"><video src="../media/nuka_bunny_water.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>兔子落水（刚体）</b> — 130 mm、0.36 kg 的刚体兔从水面上 150 mm 落入 36 × 28 cm、水深 18 cm 的玻璃缸，引擎 MPM 水 26 万粒子（4 mm），2.5 s 用时 5.6 分钟；兔子 0.5 s 内沉到缸底。</figcaption></figure>
-<figure class="fig"><video src="../media/nuka_bunny_water_soft.mp4" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>兔子落水（软体）</b> — 同一场景换成 9 千个四面体的 FEM 兔子（E 50 kPa），IPC 接触下与水双向耦合；原站的 MLS-MPM 接触做不到这一点。</figcaption></figure>
+<figure class="fig"><video src="../media/nuka_bunny_water.mp4?v=1022" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>兔子落水（刚体）</b> — 与原站同分辨率：网格 6 mm、粒子间距 3 mm，引擎 MPM 水 63.4 万粒子（原站 2.5 mm、67 万）；36 × 28 cm 玻璃缸、水深 18 cm。105 mm 高、224 g 的刚体兔（密度 1.2）从水面上 150 mm 落下，约 0.6 s 沉到缸底，只有 6 个粒子溅出缸外；2.5 s 用时 15.6 分钟（一张 A800），2 倍慢放。</figcaption></figure>
+<figure class="fig"><video src="../media/nuka_bunny_water_soft.mp4?v=1022" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>兔子落水（软体）</b> — 同一场景、同样 63.4 万粒子，换成 9221 个四面体的 FEM 兔子（E 50 kPa、ν 0.35），IPC 接触下与水双向耦合，原站的 MLS-MPM 接触做不到这一点；2.5 s 用时 21.1 分钟。</figcaption></figure>
 <figure class="fig"><video src="../media/nuka_jelly_ball.mp4" muted loop playsinline controls preload="metadata"></video>
 <figcaption><b>果冻球落地</b> — 半径 100 mm、E 30 kPa 的 FEM 球（6000 四面体）从 50 mm 落下，弹两下后静止，压扁 8 %；5 s 用时 0.3 分钟。</figcaption></figure>
 <figure class="fig"><video src="../media/nuka_bunny_pad.mp4" muted loop playsinline controls preload="metadata"></video>
@@ -152,6 +152,7 @@ G1（29 自由度 + 两只 Dex3 手）：同一管线换成 G1 Moves 的 Shuffle
 <li><b>2026-10-19</b> — 页面创建：robotgym 三个任务完成；Nuka 演示目录与可行性评估完成；下一步从兔子落水和果冻球开始。</li>
 <li><b>2026-10-19 晚</b> — 七个材料与耦合类演示复现（兔子落水刚体 / 软体、果冻球、弹塑性压缩、兔子砸垫、FR3 捏试件、Go2 披布）；引擎新增四面体体积塑性；压缩试验的两个验收数对上。剩下 G1 叠衬衫和策略类。</li>
 <li><b>2026-10-19 夜</b> — 策略类：Go2 公开行走策略 sim2sim 通过（0.50 m/s）；G1 Shuffle 舞蹈 ONNX 策略 sim2sim 通过；Nuka 自训的后空翻 / 倒立不可迁移；多环境吞吐测到 64 个 Go2；「快重刚体穿透」经探针与逐帧复查确认为误判并撤回；G1 + Dex3 模型导入，叠衬衫场景在调。渲染改为 URDF 的可视网格。</li>
+<li><b>2026-10-22</b> — 兔子落水按原站分辨率重跑（网格 6 mm、粒子 3 mm，63.4 万粒子），刚体 / 软体两版重新渲染：水面改用和 robotgym 水瓶相同的各向异性重建，玻璃缸画成一体、棱面平直的玻璃（合并后的网格若共享顶点，平均法线会把直角边磨圆，折射发糊）。G1 叠衬衫恢复调试：侧向抓取已经能捏住、提起、翻过去，成品还不平整，正在扫松手角度。</li>
 </ul>
 </article>
 
