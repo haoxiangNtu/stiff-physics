@@ -51,7 +51,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 视频为路径追踪成片，USD 为时间采样的几何（刚体变换 + 变形体顶点 + 液体粒子）。</div>
 
 <div class="toc"><b>目录</b>
-<a href="#overview">一览</a><a href="#sheet">1 床单对折</a><a href="#bottle">2 捏瘪水瓶</a><a href="#bottle-fast">2b 快捏涌出</a><a href="#sponge">3 海绵吸水拧水</a><a href="#sponge-regrasp">3b 换位再拧</a><a href="#round2">改进轮次 10-20</a><a href="#round3">改进轮次 10-21</a>
+<a href="#overview">一览</a><a href="#sheet">1 床单对折</a><a href="#bottle">2 捏瘪水瓶</a><a href="#bottle-fast">2b 快捏涌出</a><a href="#sponge">3 海绵吸水拧水</a><a href="#sponge-regrasp">3b 换位再拧</a><a href="#tactile">4 触觉版</a><a href="#round2">改进轮次 10-20</a><a href="#round3">改进轮次 10-21</a>
 <a href="#traps">数值陷阱</a><a href="#downloads">下载 USD</a><a href="#repro">怎样复现</a>
 </div>
 
@@ -62,6 +62,9 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <tr><td>床单对折（双 FR3）</td><td>VBD 布料 + MuJoCo 刚体</td><td>IPC 三角壳布料（拉伸 / 弯曲），URDF 关节驱动的 FR3 ×2，摩擦捏取</td><td>无</td><td><span class="tag ok">已复现 · 松手后不再悬停，近半 100% 叠到远半（棉布刚度）</span></td></tr>
 <tr><td>PET 瓶捏瘪</td><td>0.3 mm 塑料壳 + 屈服，PBF 水</td><td>0.3 mm IPC 薄壳（PET 模量）+ 二面角铰链塑性，引擎 MPM 水与壳双向耦合</td><td>壳塑性铰链</td><td><span class="tag ok">已复现 · 凹 21.8 mm，松开留 19.3 mm；慢捏溢出约 5 ml、快捏涌出约 25 ml，落到桌上的水聚成水珠停住</span></td></tr>
 <tr><td>海绵吸水拧水</td><td>VBD 海绵（实验性）+ PBF 水</td><td>FEM 四面体海绵 + 引擎 MPM 水，多孔耦合（吸入 / 保水 / 挤出）</td><td>多孔耦合</td><td><span class="tag ok">已复现 · 三次拧水 16.8 ml；放回盆里重新泡饱、四次拧水 34.8–39.2 ml（原站 33.5 ml）</span></td></tr>
+<!-- tactile-overview:begin -->
+<tr><td>五个任务 · 触觉版</td><td>—</td><td>每根手指一块 VBTS 凝胶垫（FEM），与场景在同一个 IPC 求解；输出压入深度图、切向位移场、法向力</td><td>凝胶自身接触开关；MAS 下逐顶点接触力的顺序</td><td><span class="tag run">进行中 · 已完成 2 / 5：捏瘪水瓶 · 慢捏、捏瘪水瓶 · 快捏</span></td></tr>
+<!-- tactile-overview:end -->
 </tbody></table></div>
 
 <h2 id="sheet"><span class="step-no">1</span>床单对折</h2>
@@ -171,6 +174,40 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 <figure class="fig"><video src="../media/robotgym_sponge_regrasp_center.mp4?v=1021b" muted loop playsinline controls preload="metadata"></video><figcaption><b>对照：四次都捏中间</b> — 同样的流程，杯中 39.2 ml。</figcaption></figure>
 </div>
 
+<!-- tactile:begin -->
+<h2 id="tactile"><span class="step-no">4</span>带触觉的版本：手指内侧换上凝胶触觉垫<span class="date">10-21</span></h2>
+<p>同样五个任务再各跑一遍，这次 FR3 每根手指的内侧多一块视触觉（VBTS）凝胶垫：15.9 × 14.0 × 2.5 mm 的四面体 FEM 凝胶（E = 0.5 MPa，ν = 0.4），
+背面钉在指面上，和布、瓶壳、海绵、水在<b>同一个 IPC 求解</b>里接触。垫子被压进去多深、表面被往哪边拖，都是求解出来的凝胶变形，不是事后从几何里估算的；
+凝胶本身的软度也反过来作用在被抓的物体上。传感器模型和<a href="modalities.html#vbts">实验台触觉演示</a>是同一套，每块垫子每帧给出三样读数：</p>
+<ul>
+<li><b>压入深度图</b>（视频右侧的颜色）：凝胶背后一台正交深度相机，200 × 176 像素、0.079 mm/像素，看接触面相对静止形状被压进去多少（<a href="outputs.html#cat-geo">Depth</a>）；</li>
+<li><b>切向位移场</b>（箭头）：接触面上每一点沿表面方向被拖动了多少，相当于凝胶表面标记点的位移，能看出剪切的方向和大小（<a href="outputs.html#cat-geo">Mesh3DFlow</a> 的切向分量）；</li>
+<li><b>法向力</b>（下方曲线）：作用在凝胶上的接触力沿垫子法向的合力。</li>
+</ul>
+<p>为了让抓取几何和原版一致，手指的合拢目标整体后退一个垫子厚度（每侧 2.5 mm），垫面之间的间隙等于原版指面之间的间隙；其余设置（材料、时间步、轨迹、液体参数）与原版相同。
+下表是夹持阶段的读数和任务结果；切向位移相对第一帧，箭头按图中标注的倍数放大。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>任务（触觉版）</th><th class="num">夹持时每块垫子的法向力</th><th class="num">最大压入</th><th class="num">最大切向位移</th><th>任务结果（对照原版）</th></tr></thead>
+<tbody>
+<tr><td>床单对折 · 触觉版</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td><span class="tag run">运行中 · 预计今晚完成</span></td></tr>
+<tr><td><a href="#tactile-bottle-slow">捏瘪水瓶 · 慢捏 · 触觉版</a></td><td class="num">左 27.9 N · 右 29.7 N</td><td class="num">1.43 / 1.31 mm</td><td class="num">1.44 / 1.78 mm</td><td>瓶身凹 21.6 mm、松开留 18.9 mm（原版 21.8 / 19.3）；约 2 ml 冒到瓶口上方 1.4 cm 后退回瓶里，没有落到桌上（原版约 5 ml 溢出）</td></tr>
+<tr><td><a href="#tactile-bottle-fast">捏瘪水瓶 · 快捏 · 触觉版</a></td><td class="num">左 35.6 N · 右 35.0 N</td><td class="num">1.37 / 1.44 mm</td><td class="num">1.69 / 2.43 mm</td><td>瓶身凹 22.1 mm、松开留 18.8 mm（原版 22.8 / 19.4）；冒出瓶口的水峰值 15 ml、最后桌上 9 ml，约为原版（31 / 21 ml）的一半，见下文</td></tr>
+<tr><td>海绵三次拧水 · 触觉版</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td><span class="tag run">运行中 · 预计明天凌晨完成</span></td></tr>
+<tr><td>海绵换位再拧 · 触觉版</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td><span class="tag run">运行中 · 预计明天上午完成</span></td></tr>
+</tbody></table></div>
+<h3 id="tactile-bottle-slow">捏瘪水瓶 · 慢捏 · 触觉版</h3>
+<p>两指在 6.2 s 碰到瓶身，合拢到 20 mm 时每块垫子 32.6 N，随后回落，保持阶段稳定在 28–30 N。压入集中在每块垫子的边缘一带（深度图里的亮带），最深 1.3–1.4 mm，不是整块均匀压下；凝胶表面的切向位移最大 1.4–1.8 mm。松开后 0.1 s 内读数回零。</p>
+<figure class="fig"><video src="../media/robotgym_bottle_slow_tactile.mp4?v=1021t" muted loop playsinline controls preload="metadata"></video><figcaption><b>慢捏 · 触觉版</b> — 左为路径追踪成片，右为两块指垫的压入深度（颜色）、表面切向位移（箭头）和法向力曲线；全程 15.0 s，一张 A800 上 64 分钟。</figcaption></figure>
+<h3 id="tactile-bottle-fast">捏瘪水瓶 · 快捏 · 触觉版</h3>
+<p>两指在 0.8 s 内合到 18 mm：6.2 s 碰到瓶身，6.76 s 每块垫子 38 N（慢捏 33 N），保持阶段稳定在 35–36 N；压入最深 1.4 mm，凝胶表面的切向位移最大 2.4 mm（慢捏 1.8 mm）。水照样从瓶口涌出、落到桌上聚成水珠，但量只有原版的一半左右。瓶身最窄处是 19.8 mm，原版是 18.4 mm：手指的指令完全一样，两块凝胶却各被压进去 1 mm 多，瓶子少捏了约 1.4 mm。涌出的水大约是排开的体积减去瓶颈里那点空气，所以对捏合深度很敏感——我们的判断是少捏的这 1.4 mm 让涌出量减半；把合拢目标再加深 1.4–2 mm、补偿凝胶压缩量的对照组正在跑，用来验证这一点。</p>
+<figure class="fig"><video src="../media/robotgym_bottle_fast_tactile.mp4?v=1021t" muted loop playsinline controls preload="metadata"></video><figcaption><b>快捏 · 触觉版</b> — 左为路径追踪成片，右为两块指垫的读数；全程 13.3 s，一张 A800 上 139 分钟。</figcaption></figure>
+<div class="note"><b>接入触觉时修掉的两个引擎问题</b>
+(1) 第一版床单的垫子还没碰到布就读出约 5 N、Newton 打满迭代：2.5 mm 厚的凝胶在床单用的 2 mm 障碍距离下，边缘的面互相落进了障碍区。
+用碰撞排除表把垫子对自己排除并不对——排除表的对角线在宽相里的含义是“这个物体和谁都不碰”，结果布直接穿过了垫子（法向力 0、布边没被提起来）。
+新增只关闭同一物体内部接触对的接口之后，垫子在接触前读数为 0，捏住布时每块约 6 N。
+(2) 打开多层加性 Schwarz 预条件器时，引擎会按 METIS 给每个物体的顶点重新编号；位置读数一直换回了输入顺序，逐顶点的接触力读数却没有。
+重排只发生在同一物体内部，所以整块垫子的合力（表里和曲线上的数）不受影响；逐顶点的力分布已经修正。</div>
+<!-- tactile:end -->
 <h2 id="round2">改进轮次（10-20）：网格加密、更深的捏合、水的表面渲染<span class="date">10-20</span></h2>
 <p><b>起因。</b>上一轮交付后复查：床单（25 mm 网格、膜 3×10<sup>5</sup> / 弯曲 3×10<sup>4</sup>）对折时满是单元尺度的碎褶；水瓶只凹 15.8 mm、镜头被夹爪挡住、
 水画成一根不透明的蓝色颗粒柱。这一轮在八卡 A800 节点上并行扫描床单与水瓶的参数，同时把渲染链路换成和滴管演示一样的水面重建。</p>
@@ -338,8 +375,16 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 <tr><td>捏瘪水瓶 · 快捏（第 2b 节）</td><td class="num">13.3 s</td><td class="num">333</td><td class="num">137 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_fast.usdc">robotgym_bottle_fast.usdc</a></td></tr>
 <tr><td>海绵吸水拧水 · 三次拧水（第 3 节）</td><td class="num">39.0 s</td><td class="num">976</td><td class="num">289 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_sponge_3wrings.usdc">robotgym_sponge_3wrings.usdc</a></td></tr>
 <tr><td>海绵换位再拧 · 四次拧水（第 3b 节）</td><td class="num">94.5 s</td><td class="num">2363</td><td class="num">700 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_sponge_regrasp.usdc">robotgym_sponge_regrasp.usdc</a></td></tr>
+<!-- tactile-dl:begin -->
+<tr><td>捏瘪水瓶 · 慢捏 · 触觉版</td><td class="num">15.0 s</td><td class="num">376</td><td class="num">156 MB + 12 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_slow_tactile.usdc">robotgym_bottle_slow_tactile.usdc</a><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_slow_tactile_data.npz">robotgym_bottle_slow_tactile_data.npz</a></td></tr>
+<tr><td>捏瘪水瓶 · 快捏 · 触觉版</td><td class="num">13.3 s</td><td class="num">333</td><td class="num">143 MB + 7 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_fast_tactile.usdc">robotgym_bottle_fast_tactile.usdc</a><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_fast_tactile_data.npz">robotgym_bottle_fast_tactile_data.npz</a></td></tr>
+<!-- tactile-dl:end -->
 </tbody></table></div>
 
+<!-- tactile-dl-note:begin -->
+<p>触觉版的 USD 在 <span class="mono">/World/Deformables/pad_*</span> 下多了每块凝胶垫的网格动画，<span class="mono">/World/Telemetry</span> 下多了每块垫子的法向力、最大压入和最大切向位移三条时间曲线；
+配套的 <span class="mono">*_tactile_data.npz</span> 是每帧每块垫子的完整读数：法向力、压入深度图（200 × 176，uint16）、切向位移场（9 × 8 个采样点）以及各量的说明（文件里的 <span class="mono">readme</span> 字段）。</p>
+<!-- tactile-dl-note:end -->
 <h2 id="repro">怎样复现</h2>
 <p>三个脚本都在 <span class="mono">examples/robotgym/</span>，共用 <span class="mono">common.py</span>（FR3 加载与关节映射、细分盒子、布料 / FEM 加载、录制）。
 每个脚本都有 <span class="mono">--dry</span>（只做逆运动学可达性检查，不启动引擎）和 <span class="mono">--max-time</span>（截断测试）。</p>
