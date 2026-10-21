@@ -51,7 +51,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <tbody>
 <tr><td>robotgym 三个任务</td><td>双臂床单对折（近半 100 % 叠到远半）、PET 瓶捏瘪（慢捏凹 21.8 mm、松开留 19.3 mm，约 5 ml 从瓶口溢出；另有 0.8 s 快捏的涌出版）、海绵吸水拧水（三次拧水 16.8 ml；重新泡饱、四次拧水 34.8–39.2 ml，原站 33.5 ml）；方法、差异与数值陷阱见 <a href="robotgym.html">专页</a></td><td><span class="tag ok">已完成</span></td></tr>
 <tr><td>为此新增的引擎能力</td><td>壳的二面角塑性铰链；水与开孔海绵的多孔耦合（吸入、随材料运动、按饱和度保水 / 放水、泡沫孔容量）；四面体的体积塑性（J2 屈服 + 线性硬化，牛顿步之间做静止形状更新）；液体的隐式表面张力（表面粒子之间的内聚能进 Newton 求解）</td><td><span class="tag ok">已完成 · 未进公开 wheel</span></td></tr>
-<tr><td>Nuka 材料与耦合类演示</td><td>兔子落水（刚体 / 软体）、果冻球、弹塑性三件套、Go2 披布已复现；G1 叠衬衫：G1 + Dex3 手已导入，双臂捏衣摆对折的场景在调（见第 4、5 节）</td><td><span class="tag ok">已复现 7 个 · 见第 5 节</span></td></tr>
+<tr><td>Nuka 材料与耦合类演示</td><td>兔子落水（刚体 / 软体）、果冻球、弹塑性三件套、Go2 披布已复现；G1 叠衬衫做了一折（把垂在桌边的衣摆翻上桌面叠成两层），成品还不平整（见第 4、5 节）</td><td><span class="tag ok">已复现 7 个 + 叠衬衫一折</span></td></tr>
 <tr><td>Nuka 策略与训练类演示</td><td>Go2 行走（公开策略 sim2sim）和 G1 跳舞（外部 ONNX 策略 sim2sim）已在 StiffGIPC 里跑通；Nuka 自己训练的后空翻 / 倒立策略不可迁移；多环境吞吐已测，训练未开始（见第 5、6 节）</td><td><span class="tag ok">sim2sim 2 个 · 训练未做</span></td></tr>
 </tbody></table></div>
 
@@ -87,7 +87,7 @@ MLS-MPM 是显式积分（演示里 7680 Hz），弹塑性用 Hencky J2 加线�
 <tr><td>兔子砸弹塑性垫</td><td>2.5 kg 兔子从 180 mm 落到 240 × 200 × 60 mm 的垫上，同一材料加 80 Pa·s 粘性，实时播放</td><td>ABD 兔 + 塑性 FEM 垫</td><td>已新增：<span class="mono">set_fem_plasticity</span></td><td><span class="tag ok">已复现 · 凹 30 mm</span></td></tr>
 <tr><td>Panda 捏弹塑性试件</td><td>Panda 对 24 × 36 × 28 mm 试件轻捏、松开、重捏、释放；PD 驱动，120 Hz 控制；它自己报告的穿透 4 mm，预算 2 mm</td><td>我们现成的 FR3 捏取场景 + 塑性 FEM 试件；IPC 的穿透为零，可直接对照</td><td>已新增：<span class="mono">set_fem_plasticity</span></td><td><span class="tag ok">已复现 · FR3</span></td></tr>
 <tr><td>Go2 披布</td><td>一块布从站立的 Go2 上方落下披住它（VBD 布料，摩擦系数 1.8）</td><td>IPC 布料 + 站立姿态的 Go2 URDF</td><td>已完成：unitree_ros 模型转为逐连杆凸包</td><td><span class="tag ok">已复现</span></td></tr>
-<tr><td>G1 叠衬衫</td><td>带灵巧手的 Unitree G1 叠一件棉衬衫，25.8 s，脚本动作回放（无公开脚本）</td><td>我们已有的衬衫网格与叠衣轨迹 + G1 与 Dex3 手的 URDF，双臂 IK</td><td>G1 模型、双臂叠衣编排</td><td><span class="tag run">计划 · 后期</span></td></tr>
+<tr><td>G1 叠衬衫</td><td>带灵巧手的 Unitree G1 叠一件棉衬衫，25.8 s，脚本动作回放（无公开脚本）</td><td>平铺的单层 IPC 衬衫（衣摆垂在桌边外）+ G1 与 Dex3 手的 URDF，手臂 IK 走稠密笛卡尔路径，两侧捏取后沿桌边圆弧翻折</td><td>已完成：G1 凸包 URDF、侧向捏取 + 圆弧翻折编排</td><td><span class="tag part">部分复现 · 一折</span></td></tr>
 <tr><td>Go2 行走（sim2sim）</td><td>公开的 48 维观测 / 12 维动作合同，Kp 20、Kd 0.5，策略 50 Hz，物理 5 ms</td><td>浮动基座的 Go2 URDF 在 StiffGIPC 里按同一合同跑公开策略，先看站立与行走</td><td>已完成：浮动基座 URDF、纯力矩关节 + 显式 PD、观测装配</td><td><span class="tag ok">已复现 · 0.50 m/s</span></td></tr>
 <tr><td>Go2 后空翻 / 倒立</td><td>它仓库里的 TorchScript 技能策略经 PD 回放</td><td>同一管线接入它的两个策略（60 维 / 48 维观测合同）</td><td>—</td><td><span class="tag no">已试 · 不可迁移</span></td></tr>
 <tr><td>G1 跳舞</td><td>29 自由度人形，ONNX 策略 50 Hz，物理 5 ms</td><td>同一管线换成 G1（mjlab 训练约定、隐式 PD）</td><td>已完成：G1 凸包 URDF、隐式关节 PD</td><td><span class="tag ok">已复现</span></td></tr>
@@ -96,7 +96,7 @@ MLS-MPM 是显式积分（演示里 7680 Hz），弹塑性用 Hencky J2 加线�
 </tbody></table></div>
 
 <h2 id="results">5 · 已复现的演示</h2>
-<p>每个演示都在一张 A800 上几分钟跑完，录制 → USD → Mitsuba 路径追踪，播放速度与原站一致（兔子落水为 2 倍慢放）。数值见图注；坑在本节末尾。</p>
+<p>每个演示都在一张 A800 上跑完（几分钟到四十分钟），录制 → USD → Mitsuba 路径追踪，播放速度与原站一致（兔子落水为 2 倍慢放）。数值见图注；坑在本节末尾。</p>
 <div class="fig-grid">
 <figure class="fig"><video src="../media/nuka_bunny_water.mp4?v=1022" muted loop playsinline controls preload="metadata"></video>
 <figcaption><b>兔子落水（刚体）</b> — 与原站同分辨率：网格 6 mm、粒子间距 3 mm，引擎 MPM 水 63.4 万粒子（原站 2.5 mm、67 万）；36 × 28 cm 玻璃缸、水深 18 cm。105 mm 高、224 g 的刚体兔（密度 1.2）从水面上 150 mm 落下，约 0.6 s 沉到缸底，只有 6 个粒子溅出缸外；2.5 s 用时 15.6 分钟（一张 A800），2 倍慢放。</figcaption></figure>
@@ -113,6 +113,8 @@ MLS-MPM 是显式积分（演示里 7680 Hz），弹塑性用 Hencky J2 加线�
 </div>
 <figure class="fig"><video src="../media/nuka_go2_drape.mp4" muted loop playsinline controls preload="metadata"></video>
 <figcaption><b>Go2 披布</b> — 0.9 m 见方的 IPC 布料从 0.6 m 高落到站立的 Go2（unitree_ros 模型，逐连杆凸包碰撞）上，贴着背部和四条腿垂下，没有滑落；3.5 s 用时 2.9 分钟。</figcaption></figure>
+<figure class="fig"><video src="../media/nuka_g1_shirt_fold.mp4?v=1022" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>G1 叠衬衫（一折）</b> — 单层 IPC 衬衫平铺在桌上，17 cm 的衣摆垂在桌边外。两只 Dex3 手从衬衫两侧伸进来，拇指在衣摆后、食指在前，捏住衣摆的两个角；先向机器人方向拉出，再沿以桌边为圆心的圆弧把衣摆提起、翻过竖直，在 240° 处松手，让衣摆靠重力落到桌上的那一半上，叠成两层。手臂由 IK 沿稠密的笛卡尔路径驱动，手指是位置驱动的关节，手与布、布与桌的接触和摩擦都在同一个 IPC 求解里。同一条命令跑三次：衣摆那一半有 52–53 % 落到远半边，衣摆离远边还差 7–8 cm，成团的区域占 13–31 %（这里是其中一次）。原站 25.8 s 的演示连续折了几下（先把两侧往里折，再往上折），这里只做了一折；16.1 s 用时 42 分钟（一张 A800）。</figcaption></figure>
 <div class="fig-grid">
 <figure class="fig"><video src="../media/nuka_go2_walk.mp4" muted loop playsinline controls preload="metadata"></video>
 <figcaption><b>Go2 行走（公开策略 sim2sim）</b> — unitree_rl_gym 的 Go2 行走策略（48 维观测 / 12 维动作，Kp 20、Kd 0.5，策略 50 Hz）直接在 StiffGIPC 的浮动基座 Go2 上跑：指令 0.5 m/s，6 s 内平均前进速度 0.50 m/s、走出 3.0 m，机身倾角平均 2.6°、最大 4.4°，未摔；交付版 4 s 走 2.06 m。关节用纯力矩模式加显式 PD，接触交给 IPC。</figcaption></figure>
@@ -128,6 +130,8 @@ MLS-MPM 是显式积分（演示里 7680 Hz），弹塑性用 Hencky J2 加线�
 <li><b>「快而重的刚体会穿透」是误判，已撤回。</b>专门写了探针：自由刚块自由落体撞固定底板，撞击速度 1–8 m/s、质量 1–20 kg、步长 1 / 2 / 5 ms、dhat 0.5 / 2 mm、不同牛顿容差与迭代上限，最小间隙 0.0–0.3 mm，从未穿过；落在 E 50 kPa 的软垫上同样如此。回看弹性垫上的兔子：它是反弹后侧向滚出垫子、再滚下底板一角落到地面，逐帧检查没有任何顶点进入垫子或底板（四面体也无翻转）；压板那次则是「每步瞬移」造成的。真正留下的稳健性问题是：某个顶点恰好贴到地面时（倒立策略乱甩的腿），引擎直接以不变量检查中止，而不是把它推开。</li>
 <li><b>给引擎接策略时踩到的三件事。</b>（1）轻连杆（G1 的手腕）上显式阻尼 Kd·dt/I &gt; 1 会自激，关节速度飙到 100 rad/s：把阻尼改成指向上一步位置的弹簧，与刚度合成一根隐式弹簧 K = Kp + Kd/dt、目标 (Kp·q* + (Kd/dt)·q)/K，就是完全隐式的 PD；（2）位置驱动默认每帧最多走 0.1 rad，这等于把驱动力矩封顶在 K·0.1，必须放开；（3）关节驱动刚度按「导入时的凸包质量」算而不是按 URDF 惯量算，测出的 Kp 只有设定值的 40 %，换成凸包质量后逐关节核对一致。</li>
 <li><b>策略约定要看训练源码，不看数据集附带的播放脚本。</b>G1 舞蹈数据集自带的播放脚本把线速度和角速度的顺序写反、默认关节角写成零；按固定版本的 mjlab 训练任务源码（线速度在前、默认角是屈膝关键帧、动作尺度按每个电机 0.25·力矩上限/刚度、锚点是 torso_link）才跑通。Nuka 自己在它的动力学里训练的后空翻 / 倒立策略带着滤波和分段保持的脚手架，换引擎后不工作，这是预期之内的。</li>
+<li><b>G1 叠衬衫的三个坑。</b>（1）手指朝下去捏垂下的衣摆时，衣摆从上方穿过手掌所在的平面，抬手时布被夹在手掌和拇指之间、缝隙小于两倍势垒距离，牛顿每步顶到迭代上限、所有关节停住，看起来像「手指不合拢」；改成从衬衫两侧伸手、只用拇指和食指捏，手掌始终在布外，就能捏住、提起。（2）脚本在 finalize 之前设置关节每帧的最大步长，这时关节系统还没建，调用被静默忽略，之前的运行实际都在每帧 0.1 rad 的限速下；现在改为通过配置传入。（3）圆弧半径正好等于桌边到捏点的那段布长，衣摆全程绷直，翻折时把桌上的半边向机器人拖了约 3 cm，折痕因此落在桌边以内约 2 cm；给衣摆留松量能消除拖动，但松掉的布堆在折线和手之间，衣摆反而翻不过去（半边到位降到 0–38 %）——绷直的衣摆才是把布带过去的东西。这一点还没解决。</li>
+<li><b>同一条命令，结果不完全一样。</b>引擎在 GPU 上的浮点累加顺序不固定，翻折又落在一个分岔点附近：同一条命令两次运行，衬衫的末态最多相差 3–6 cm，「半边到位」相差约 ±5 个百分点；只差四条桌腿（离手和衬衫都远）的两次运行也一样。所以叠衬衫只报三次重复的范围；桌面摩擦 2 与 4 之间，除了衣摆落点近约 9 mm，没有可分辨的差别。</li>
 </ul>
 
 <h2 id="policy">6 · 策略与训练类演示怎么做</h2>
@@ -152,7 +156,7 @@ G1（29 自由度 + 两只 Dex3 手）：同一管线换成 G1 Moves 的 Shuffle
 <li><b>2026-10-19</b> — 页面创建：robotgym 三个任务完成；Nuka 演示目录与可行性评估完成；下一步从兔子落水和果冻球开始。</li>
 <li><b>2026-10-19 晚</b> — 七个材料与耦合类演示复现（兔子落水刚体 / 软体、果冻球、弹塑性压缩、兔子砸垫、FR3 捏试件、Go2 披布）；引擎新增四面体体积塑性；压缩试验的两个验收数对上。剩下 G1 叠衬衫和策略类。</li>
 <li><b>2026-10-19 夜</b> — 策略类：Go2 公开行走策略 sim2sim 通过（0.50 m/s）；G1 Shuffle 舞蹈 ONNX 策略 sim2sim 通过；Nuka 自训的后空翻 / 倒立不可迁移；多环境吞吐测到 64 个 Go2；「快重刚体穿透」经探针与逐帧复查确认为误判并撤回；G1 + Dex3 模型导入，叠衬衫场景在调。渲染改为 URDF 的可视网格。</li>
-<li><b>2026-10-22</b> — 兔子落水按原站分辨率重跑（网格 6 mm、粒子 3 mm，63.4 万粒子），刚体 / 软体两版重新渲染：水面改用和 robotgym 水瓶相同的各向异性重建，玻璃缸画成一体、棱面平直的玻璃（合并后的网格若共享顶点，平均法线会把直角边磨圆，折射发糊）。G1 叠衬衫恢复调试：侧向抓取已经能捏住、提起、翻过去，成品还不平整，正在扫松手角度。</li>
+<li><b>2026-10-22</b> — 兔子落水按原站分辨率重跑（网格 6 mm、粒子 3 mm，63.4 万粒子），刚体 / 软体两版重新渲染：水面改用和 robotgym 水瓶相同的各向异性重建，玻璃缸画成一体、棱面平直的玻璃（合并后的网格若共享顶点，平均法线会把直角边磨圆，折射发糊）。G1 叠衬衫上线第一折：两侧捏取 + 沿桌边圆弧翻折、240° 松手，三次重复半边到位 52–53 %、成团 13–31 %；重复运行显示同一条命令的末态相差 3–6 cm，所以只报范围。</li>
 </ul>
 </article>
 
