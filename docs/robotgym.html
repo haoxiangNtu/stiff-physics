@@ -192,8 +192,8 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 <tr><td><a href="#tactile-sheet">床单对折 · 触觉版</a></td><td class="num">5.7–6.5 N（四块）</td><td class="num">0.28–0.42 mm</td><td class="num">0.20–0.32 mm</td><td>布边提到 0.465 m，近半 100% 叠到远半（原版 0.43–0.47 m、100%）；深度图受布料网格分辨率限制，见下文</td></tr>
 <tr><td><a href="#tactile-bottle-slow">捏瘪水瓶 · 慢捏 · 触觉版</a></td><td class="num">左 27.9 N · 右 29.7 N</td><td class="num">1.43 / 1.31 mm</td><td class="num">1.44 / 1.78 mm</td><td>瓶身凹 21.6 mm、松开留 18.9 mm（原版 21.8 / 19.3）；约 2 ml 冒到瓶口上方 1.4 cm 后退回瓶里，没有落到桌上（原版约 5 ml 溢出）</td></tr>
 <tr><td><a href="#tactile-bottle-fast">捏瘪水瓶 · 快捏 · 触觉版</a></td><td class="num">左 35.6 N · 右 35.0 N</td><td class="num">1.37 / 1.44 mm</td><td class="num">1.69 / 2.43 mm</td><td>瓶身凹 22.1 mm、松开留 18.8 mm（原版 22.8 / 19.4）；冒出瓶口的水峰值 15 ml、最后桌上 9 ml，约为原版（31 / 21 ml）的一半，见下文</td></tr>
-<tr><td><a href="#tactile-sponge">海绵三次拧水 · 触觉版</a></td><td class="num">搬运约 23 N，拧水最高 61 N</td><td class="num">1.76 / 1.80 mm</td><td class="num">2.90 / 2.81 mm</td><td>杯中 13.8 ml（原版 16.8 ml）：第一次比原版多，后两次少——海绵在两块凝胶垫之间往下滑了 15 mm，见下文</td></tr>
-<tr><td>海绵换位再拧 · 触觉版</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td><span class="tag run">运行中 · 预计 10-22 上午 10 点前后</span></td></tr>
+<tr><td><a href="#tactile-sponge">海绵三次拧水 · 触觉版</a></td><td class="num"><s>搬运约 23 N，拧水最高 61 N</s> 偏高，重跑中</td><td class="num"><s>1.76 / 1.80 mm</s> 重跑中</td><td class="num"><s>2.90 / 2.81 mm</s> 重跑中</td><td>杯中 13.8 ml（原版 16.8 ml）：第一次比原版多，后两次少——每次拧完松开，海绵都在两块凝胶垫之间往下掉一截，见下文；重跑后更新</td></tr>
+<tr><td>海绵换位再拧 · 触觉版</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td><span class="tag run">用修正后的引擎重跑中 · 预计 10-22 晚上</span></td></tr>
 </tbody></table></div>
 <h3 id="tactile-sheet">床单对折 · 触觉版</h3>
 <p>两台 FR3 各用两块垫子在离布角 4 cm 处捏住下垂的布边：6.24 s 合拢，每块垫子 6.3–6.5 N；拉出、抬起、翻过去、放下的整个过程中四块垫子都稳定在 5.7–6.2 N，从捏住到抬到最高（7–12 s）垫子之间始终是同一组布料顶点，没有打滑；18 s 松手后读数回零。布边被提到 0.465 m，近半 100% 叠到远半，与原版相同。</p>
@@ -207,13 +207,14 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 <p>原因用对照组查清了：同样的手指指令，瓶子被挤掉的容积是 105 ml，原版 118 ml。把合拢目标加深到 16.6 / 16.0 mm 再跑两次，16.0 mm 时瓶身凹深已和原版相同（22.9 / 22.8 mm），凹陷的速度也相同，挤掉的容积却仍只有 110 ml——凹得一样深，但垫子压出的凹陷更窄。四次运行里，落到桌上的水和挤掉的容积呈线性关系：每多挤掉 1 ml，桌上多 0.94 ml，挤掉约 95 ml 以下就不会溢出（拟合 r = 0.998，残差都在 0.3 ml 以内）。溢出量是两个大体积之差，所以挤掉的容积少 7–10 %，溢出就少三分之一到一半；本页的触觉版保留与原版相同的手指指令。</p>
 <figure class="fig"><video src="../media/robotgym_bottle_fast_tactile.mp4?v=1021t" muted loop playsinline controls preload="metadata"></video><figcaption><b>快捏 · 触觉版</b> — 左为路径追踪成片，右为两块指垫的读数；全程 13.3 s，一张 A800 上 139 分钟。</figcaption></figure>
 <h3 id="tactile-sponge">海绵三次拧水 · 触觉版</h3>
+<p><b>10-22 更正：本节的数字正在重跑。</b>这一组（以及下面的换位再拧）用的是加入凝胶自接触开关之前的引擎版本。海绵场景的障碍距离是 1 mm，2.5 mm 厚的凝胶自己的面落进了障碍区：凝胶被额外撑硬，凝胶内部的接触力也混进了法向力读数。用修正后的引擎把换位再拧的前 18 s 重跑一遍对照：杯中的水相同（第一次拧出 8.4 ml，两版一样），每块垫子的读数却只有旧版的 0.55–0.75 倍（保持时 12.9 N 对 23.5 N，拧水峰值 17 N 对 31 N），压入反而深 0.5–0.8 mm。下面的力、压入和切向位移都是旧读数；修正后的引擎已在重跑，完成后替换。床单和两个水瓶不受影响：床单本来就在修正后的版本上跑；水瓶的障碍距离是 0.5 mm，凝胶的面碰不到一起（接触前读数为 0，快捏与修正后引擎的对照组在同样的间隙下读数一致）。</p>
 <p>手指在 4.5 s 夹住海绵，泡水时每块垫子约 30 N，提出水面、搬到杯子上方时约 23 N；三次拧水（垫面间隙 24 / 18 / 12 mm）时力升到 61 / 50 / 31 N，压入最深 1.8 mm。杯中最终 13.8 ml（原版 16.8 ml）。按同一口径逐次统计，三次分别拧出 11.7 / 1.8 / 0.3 ml，原版 9.3 / 2.8 / 4.4 ml——第一次反而比原版多，后两次少。</p>
-<p>录制里看得到原因：从第一次到第三次拧水，海绵在两块凝胶垫之间往下滑了 15 mm（原版 6 mm）。第三次捏住的已不是同一块区域，海绵体积只压到 0.90（原版 0.79），拧水力也只有 31 N。触觉读数和下滑一致：凝胶表面的平均切向位移一直朝下，并且一次比一次大（0.03 → 0.1 mm）；表里的最大切向位移（2.9 mm）出现在把海绵放回盆里的时候，拧水时的 0.7–1.5 mm 主要是接触边缘的局部变形。为什么换上凝胶垫后海绵更容易往下滑，还没有查清。</p>
+<p>录制里看得到原因：跟踪垫子中心底下那几个海绵顶点的高度。原版每次拧完、两指松开，海绵都弹回原位，三次松开后都在搬运时高度的 1 mm 以内；触觉版（旧引擎这一组）松开时却往下掉，三次松开后分别比搬运时低 2、9、22 mm，每次掉得比上一次多；修正后的引擎在换位再拧的第一次松开时同样会掉（6 mm，旧版 9 mm）。第三次捏住的已不是同一块区域，海绵体积只压到 0.90（原版 0.79），拧水力也只有 31 N。触觉读数和下滑一致：凝胶表面的平均切向位移一直朝下，并且一次比一次大（0.03 → 0.1 mm）；表里的最大切向位移（2.9 mm）出现在把海绵放回盆里的时候，拧水时的 0.7–1.5 mm 主要是接触边缘的局部变形。摩擦系数（垫子与海绵 1.0，和原版指面相同）和夹持厚度（搬运时海绵在两指间 36.9 mm，原版 37.2 mm）都已排除；为什么换上凝胶垫后松开时会掉，还没有查清。（上一版写的「往下滑了 15 mm，原版 6 mm」是海绵质心在第一次和第三次保持之间的高度差，混进了挤压时海绵本身的变形：原版那 6 mm 松开后就弹回去了，触觉版真正滑掉的比 15 mm 更多。）</p>
 <figure class="fig"><video src="../media/robotgym_sponge_tactile.mp4?v=1021t" muted loop playsinline controls preload="metadata"></video><figcaption><b>海绵三次拧水 · 触觉版</b> — 右侧为两块指垫的读数，切向位移箭头放大 2 倍；全程 39.0 s，一张 A800 上 335 分钟。</figcaption></figure>
 <div class="note"><b>接入触觉时修掉的两个引擎问题</b>
 (1) 第一版床单的垫子还没碰到布就读出约 5 N、Newton 打满迭代：2.5 mm 厚的凝胶在床单用的 2 mm 障碍距离下，边缘的面互相落进了障碍区。
 用碰撞排除表把垫子对自己排除并不对——排除表的对角线在宽相里的含义是“这个物体和谁都不碰”，结果布直接穿过了垫子（法向力 0、布边没被提起来）。
-新增只关闭同一物体内部接触对的接口之后，垫子在接触前读数为 0，捏住布时每块约 6 N。
+新增只关闭同一物体内部接触对的接口之后，垫子在接触前读数为 0，捏住布时每块约 6 N。海绵的两组触觉运行是在这个接口加入之前跑的，读数偏高，正在重跑（见海绵一节）。
 (2) 打开多层加性 Schwarz 预条件器时，引擎会按 METIS 给每个物体的顶点重新编号；位置读数一直换回了输入顺序，逐顶点的接触力读数却没有。
 重排只发生在同一物体内部，所以整块垫子的合力（表里和曲线上的数）不受影响；逐顶点的力分布已经修正。</div>
 <!-- tactile:end -->
@@ -388,7 +389,7 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）用 2.5 s �
 <tr><td>床单对折 · 触觉版</td><td class="num">24.0 s</td><td class="num">601</td><td class="num">41 MB + 65 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bedsheet_tactile.usdc">robotgym_bedsheet_tactile.usdc</a><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bedsheet_tactile_data.npz">robotgym_bedsheet_tactile_data.npz</a></td></tr>
 <tr><td>捏瘪水瓶 · 慢捏 · 触觉版</td><td class="num">15.0 s</td><td class="num">376</td><td class="num">156 MB + 12 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_slow_tactile.usdc">robotgym_bottle_slow_tactile.usdc</a><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_slow_tactile_data.npz">robotgym_bottle_slow_tactile_data.npz</a></td></tr>
 <tr><td>捏瘪水瓶 · 快捏 · 触觉版</td><td class="num">13.3 s</td><td class="num">333</td><td class="num">143 MB + 7 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_fast_tactile.usdc">robotgym_bottle_fast_tactile.usdc</a><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_fast_tactile_data.npz">robotgym_bottle_fast_tactile_data.npz</a></td></tr>
-<tr><td>海绵三次拧水 · 触觉版</td><td class="num">39.0 s</td><td class="num">976</td><td class="num">307 MB + 72 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_sponge_3wrings_tactile.usdc">robotgym_sponge_3wrings_tactile.usdc</a><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_sponge_3wrings_tactile_data.npz">robotgym_sponge_3wrings_tactile_data.npz</a></td></tr>
+<tr><td>海绵三次拧水 · 触觉版（旧引擎，力读数偏高，重跑后替换）</td><td class="num">39.0 s</td><td class="num">976</td><td class="num">307 MB + 72 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_sponge_3wrings_tactile.usdc">robotgym_sponge_3wrings_tactile.usdc</a><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_sponge_3wrings_tactile_data.npz">robotgym_sponge_3wrings_tactile_data.npz</a></td></tr>
 <!-- tactile-dl:end -->
 </tbody></table></div>
 
