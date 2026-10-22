@@ -382,11 +382,12 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     路径追踪视频里“静止的水面在动”，则追到了一个根因：固壁只作用在粒子上，没有作用在网格上。
     修好根因后，又把残余的慢环流压住：静止的水从约 0.04 降到约 0.001 cm/s，长时间运行中水位也不再下沉。
     10-19 起对液固耦合做全面复审：补上可追溯的计数器、用薄板分隔试验量化串扰与穿板、加入兼容性屏蔽、闭合支撑力预算，并开始把运动学滴管泵换成腔压模型。
-    <a class="more" href="docs/liquid.html">阅读逐步改动日志 →</a> · <a class="more" href="docs/liquid.html#changes">复审改动清单 →</a></p>
+    10-22 起用最新的水（隐式表面张力、地面也是墙，桌上的水不冻结）重做了完整演示，并按公开实验逐项检查水像不像：倒水、装水、静水与真实一致，晃动和铺开明显偏黏。
+    <a class="more" href="docs/liquid.html">阅读逐步改动日志 →</a> · <a class="more" href="docs/liquid.html#changes">复审改动清单 →</a> · <a class="more" href="docs/liquid.html#realism">像不像真水 →</a></p>
   </div>
   <figure class="fig">
-    <video src="media/liquid_final_overview_4x.mp4" muted loop playsinline controls preload="metadata"></video>
-    <figcaption><b>最终演示（4 倍速）</b> — FR3 机械臂靠指尖触觉完成滴管取液滴液、试管倾倒、搅拌、摇匀并倒入废液杯；水与玻璃、夹爪在同一个 IPC 求解里双向耦合。路径追踪渲染。</figcaption>
+    <video src="media/liquid_latest_overview_4x.mp4?v=1023" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>最新的水 · 完整演示（4 倍速）</b> — FR3 机械臂靠指尖触觉完成滴管取液滴液、试管倾倒、搅拌、摇匀并倒入废液杯；水带隐式表面张力，与玻璃、夹爪在同一个 IPC 求解里双向耦合，桌上的水不冻结。路径追踪渲染。</figcaption>
   </figure>
   <figure class="fig">
     <video src="media/liquid_still_water_final.mp4" muted loop playsinline controls preload="metadata"></video>

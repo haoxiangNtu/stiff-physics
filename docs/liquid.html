@@ -53,6 +53,7 @@ svg.diagram .s-n { stroke: var(--acc-data); stroke-width: 2; }
 svg.diagram .s-gp { fill: none; stroke: var(--acc-hw); stroke-width: 2.2; }
 svg.diagram .m-red { fill: #d0453a; } svg.diagram .m-blue { fill: var(--primary); }
 svg.diagram .m-green { fill: var(--acc-data); } svg.diagram .m-amber { fill: var(--acc-hw); }
+.dl { display: inline-block; margin: .2rem .6rem .2rem 0; padding: .25rem .7rem; border: 1px solid var(--e300); border-radius: .5rem; font-size: .88rem; }
 </style>
 </head>
 <body>
@@ -83,7 +84,7 @@ svg.diagram .m-green { fill: var(--acc-data); } svg.diagram .m-amber { fill: var
 <a href="#demo">4 演示跑通</a><a href="#audit">5 审计与提速</a><a href="#symptom">6 静止的水在动</a>
 <a href="#hypotheses">7 排除假设</a><a href="#root">8 根因</a><a href="#stopgap">9 应急版固壁</a>
 <a href="#fix">10 根本修正</a><a href="#rest">11 让静水静下来</a>
-<a href="#reaudit">12 复审：可追溯</a><a href="#divider">13 薄板试验</a><a href="#cpic">14 兼容性屏蔽</a><a href="#budget">15 支撑力预算</a><a href="#pump">16 滴管</a><a href="#split">17 混合切割单元</a><a href="#twofield">18 每侧槽位</a><a href="#thinst">19 薄层张力</a><a href="#ground">20 地面也是墙</a><a href="#sti">21 隐式表面张力</a><a href="#changes">改动清单</a><a href="#status">现状</a><a href="#refs">参考文献</a>
+<a href="#reaudit">12 复审：可追溯</a><a href="#divider">13 薄板试验</a><a href="#cpic">14 兼容性屏蔽</a><a href="#budget">15 支撑力预算</a><a href="#pump">16 滴管</a><a href="#split">17 混合切割单元</a><a href="#twofield">18 每侧槽位</a><a href="#thinst">19 薄层张力</a><a href="#ground">20 地面也是墙</a><a href="#sti">21 隐式表面张力</a><a href="#lab14">22 最新的水做实验台</a><a href="#realism">23 像不像真水</a><a href="#changes">改动清单</a><a href="#status">现状</a><a href="#refs">参考文献</a>
 </div>
 
 <h2 id="overview">全程一览</h2>
@@ -1024,7 +1025,75 @@ m10 里直接放在地面上的水池也是这样：旧规则下 6 s 时 2.6 万
 <p><b>还没解决。</b>水洼在十秒量级上仍缓慢变平（12 s 内高 −13 %，来自地面附近原有的缓慢压实）；没有接触角，水和桌面之间只有摩擦；参与与否是逐步重算的 0/1 判据。
 液面很大的场景（泼水试验的后池）粒子对会到 9 万对，每仿真秒慢约一倍。</p>
 
-<h3 id="changes">改动清单（10-19 → 10-21，均在引擎开发分支，未发布）</h3>
+<h2 id="lab14"><span class="step-no">22</span>用最新的水重做实验台<span class="date">10-22 → 10-23</span></h2>
+<p>把第 20、21 步用到完整的五段实验台演示上：隐式表面张力（γ = 0.072 N/m）、地平面纳入壁面场约束、桌面薄层推开。桌上的水不再冻结（第 11 步的成片用过桌面粘附，让洒到桌上的水不乱跑），粒子也不冻结；其余设置与第 11 步的成片相同。</p>
+<p><b>先查出一个问题：小水滴几乎没有重量。</b>第一轮试管倒水，两个种子分别有 13 和 17 个粒子落到桌上；把试管瞄准往近侧挪 8 mm，同一种子从杯口外落下的反而从 13 个变成 28 个。
+逐粒子追踪发现，出界的都是倒水时被甩出来的散滴：离开管口后完全孤立（最近的邻居在 5–80 mm 外），竖直加速度只有 −1.5 至 −2 m/s²，水平速度不变，要飘 3–9 cm 才落到烧杯口的高度。
+原因是 10-19 复审时为了消掉容器上 2.1 % 的多余承重而关掉的 <code>LIQ_FLOOR_GRAVITY</code>：网格节点的质量有一个下限（0.05 ρdx³，只为 PCG 的条件数），关掉以后这部分只加惯性、不加重量。
+一个孤立粒子的质量摊在 27 个几乎空的节点上，惯性约是自身的 11 倍，重量却只有自身，所以几乎不往下掉。当时只用静水的支撑力验收，没有测自由下落。新加的自由下落试验（小水团从静止释放，0.2 s）：</p>
+<div class="tblwrap"><table><thead><tr><th>水团</th><th class="num">下限也称重（默认）</th><th class="num">下限只加惯性</th></tr></thead><tbody>
+<tr><td>1 个粒子</td><td class="num">100 % g</td><td class="num">0 %（悬在空中不动）</td></tr>
+<tr><td>8 个粒子</td><td class="num">100 %</td><td class="num">78 %</td></tr>
+<tr><td>64 个粒子</td><td class="num">100 %</td><td class="num">91 %</td></tr>
+<tr><td>512 个粒子</td><td class="num">100 %</td><td class="num">98 %</td></tr>
+</tbody></table></div>
+<p>改回默认以后，容器的多余承重回到 2.1 %，静水残差不受影响（复审时已测）。已发布的水瓶、海绵都用的默认值，不受影响；只有实验台这一轮用了关。</p>
+<p><b>三个种子的结果</b>（同一条命令，只换水的初始抖动；另跑一组去掉表面张力的对照）：</p>
+<div class="tblwrap"><table><thead><tr><th>运行</th><th class="num">落到桌上的试管水（共 354 个粒子）</th><th class="num">空中孤立散滴的竖直加速度</th><th class="num">滴管送液（粒子）</th><th class="num">倒进废液杯</th><th class="num">无人触碰的器皿位移</th><th class="num">用时（A800）</th></tr></thead><tbody>
+<tr><td>种子 0.30</td><td class="num">7（6 个停在离烧杯轴 9–17 cm 处，1 个滑到废液杯旁）</td><td class="num">−9.8 m/s²</td><td class="num">14</td><td class="num">2925 / 2925</td><td class="num">≤ 0.8 mm</td><td class="num">348 分钟</td></tr>
+<tr><td>种子 0.31（成片）</td><td class="num">0</td><td class="num">−8.9</td><td class="num">13</td><td class="num">2931 / 2931</td><td class="num">≤ 0.8 mm</td><td class="num">255 分钟</td></tr>
+<tr><td>种子 0.32</td><td class="num">1</td><td class="num">−7.9</td><td class="num">12</td><td class="num">2934 / 2934</td><td class="num">≤ 0.8 mm</td><td class="num">280 分钟</td></tr>
+<tr><td>去掉表面张力（种子 0.30）</td><td class="num">0</td><td class="num">−9.7（只有 1 个）</td><td class="num">14</td><td class="num">2932 / 2932</td><td class="num">≤ 0.8 mm</td><td class="num">239 分钟</td></tr>
+</tbody></table></div>
+<p>表面张力让细试管里的水先被托住、再一涌而出，涌出时甩出的散滴更多（倒水那一秒里空中孤立粒子的记录数：三个种子 20 / 5 / 8，去掉表面张力 1），所以洒不洒取决于种子：0 / 1 / 7 个。
+四次运行滴管里都没有粒子穿进玻璃。洒到桌上的粒子会滑开一段：水和桌面之间只有库仑摩擦（0.3），没有接触角把水滴钉在原地。成片用种子 0.31。</p>
+<div class="fig-grid">
+<figure class="fig"><video src="../media/liquid_latest_overview_4x.mp4?v=1023" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>最新的水 · 完整演示（4 倍速）</b>：滴管取液与滴液、试管倾倒、搅拌、摇匀并倒入废液杯，桌上的水不冻结。种子 0.31，路径追踪渲染，145.7 s 仿真。</figcaption></figure>
+<figure class="fig"><video src="../media/liquid_latest_tube_pour.mp4?v=1023" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>试管倒水（实时，局部放大 3 倍，51–64 s）</b>：试管里的水全部进了烧杯，从杯口外落下的 0 个。</figcaption></figure>
+</div>
+<p>USD 下载：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/lab_bench_latest_water.usdc">lab_bench_latest_water.usdc</a>（654 MB，145.7 s，3643 帧）。机械臂和玻璃器皿按变换动画，凝胶指垫和胶头滴管是点动画，水是 <span class="mono">/World/Liquid/water</span> 下的 Points（每个粒子一个点）；<span class="mono">/World/Telemetry</span> 下有夹爪开度、两块指垫的法向力和当前阶段名。</p>
+
+<h2 id="realism"><span class="step-no">23</span>像不像真的水：按公开实验逐项对比<span class="date">10-23</span></h2>
+<p>“像不像”没有一个总分。流体仿真的通行做法是验证与确认（V&amp;V，正式标准如 ASME V&amp;V 20）：先看网格、时间步加密以后结果是否收敛，再和有解析解或公开实验数据的标准算例比，给出误差。
+下面全部用第 22 步实验台的水（网格 5 mm、时间步 5 ms，一次只改一个开关），参考值都来自公开文献：</p>
+<div class="tblwrap"><table><thead><tr><th>现象</th><th>真实 / 理论</th><th>我们（实验台设置）</th><th>判断</th></tr></thead><tbody>
+<tr><td>自由落体（小水团从静止释放）</td><td>g</td><td>100 %（第 22 步修正前 0–98 %）</td><td>一致</td></tr>
+<tr><td>静水承重</td><td>等于水重</td><td>102.1 %（第 15 步支撑力预算）</td><td>基本一致</td></tr>
+<tr><td>静水是否在动</td><td>不动</td><td>约 0.001 cm/s（第 11 步）</td><td>一致</td></tr>
+<tr><td>烧杯里的晃荡频率（内径 46 mm，水深 40 mm）</td><td>4.46 Hz（线性理论）</td><td>3.20 Hz</td><td>低 28 %</td></tr>
+<tr><td>晃荡衰减（阻尼比）</td><td>约 0.008，能晃几十个来回（光滑圆筒的边界层阻尼，NASA TN D-1367 的实验关联）</td><td>0.53，一个来回就停</td><td>大 60 倍以上</td></tr>
+<tr><td>水滴振荡（半径 15 mm，失重）</td><td>2.08 Hz，约 45 s 才停（Rayleigh；Lamb 的黏性衰减）</td><td>不振荡：拉长量 2 s 内从 2.5 mm 慢慢降到约 1 mm，从不回弹</td><td>严重过阻尼</td></tr>
+<tr><td>溃坝前沿速度（57 × 114 mm 水柱）</td><td>1.69 √(gH)（Martin &amp; Moyce 1952）；同类实验 1.48–1.74</td><td>1.06–1.08</td><td>慢约 37 %</td></tr>
+<tr><td>溃坝前沿速度（57 × 57 mm 水柱）</td><td>1.48 √(gH)</td><td>0.85–0.94</td><td>慢约 40 %</td></tr>
+<tr><td>水箱底孔出流（80 mm 方箱、20 mm 方孔、水深 10 cm）</td><td>流量系数约 0.61（锐缘孔口）</td><td>0.25</td><td>流得慢 2.4 倍（孔只有 4 个网格宽）</td></tr>
+<tr><td>同一水箱加盖（倒置的密闭瓶）</td><td>要等空气从孔里回灌，按 Clanet &amp; Searby 2004 的经验律约 10 s 排空，比开口慢约 3 倍</td><td>和开口完全一样（排空一半 2.65 s 对 2.61 s）</td><td>没有空气</td></tr>
+<tr><td>滴管每滴</td><td>45–55 mg（USP 药用滴管，约 3 mm 外径）</td><td>约 47 mg（3 个粒子）</td><td>一致，但是标定的：水滴由脚本的泵脉冲挤出</td></tr>
+</tbody></table></div>
+<p><b>结论。</b>重力驱动的部分——倒水、装水、静水、自由下落——和真实一致；凡是靠惯性来回振荡或快速铺开的运动，这一版的水都明显太黏：晃两下就停、水滴不弹、溃坝铺得慢、小孔流得慢。
+按晃荡衰减折算的等效黏度约 1×10⁻³ m²/s，和甘油同一量级，是水（1×10⁻⁶ m²/s）的约一千倍（只是量级估计）。另外缺两样物理：没有空气（密闭容器里的水不会被托住，也不会咕嘟），
+没有接触角（水不挂壁，落到桌上的水滴靠摩擦停下，而不是被钉在原地）。</p>
+<p><b>阻尼从哪里来</b>（同一个晃荡试验，一次只改一个开关）：</p>
+<div class="tblwrap"><table><thead><tr><th>改动</th><th class="num">频率（理论 4.46 Hz）</th><th class="num">阻尼比（真水约 0.008）</th></tr></thead><tbody>
+<tr><td>实验台设置</td><td class="num">3.20</td><td class="num">0.53</td></tr>
+<tr><td>关隐式表面张力</td><td class="num">3.75</td><td class="num">0.15</td></tr>
+<tr><td>关壁面场约束与幽灵罚项</td><td class="num">5.00</td><td class="num">0.21</td></tr>
+<tr><td>关静止拖曳</td><td class="num">3.35</td><td class="num">0.37</td></tr>
+<tr><td>APIC 改成 FLIP 0.95</td><td class="num">3.90</td><td class="num">0.33</td></tr>
+<tr><td>时间步 5 → 2 ms</td><td class="num">3.10</td><td class="num">0.47</td></tr>
+<tr><td>质量下限 0.05 → 0.01</td><td class="num">3.10</td><td class="num">0.53</td></tr>
+<tr><td>网格 5 → 2.5 mm</td><td class="num">4.15</td><td class="num">0.19</td></tr>
+<tr><td>同时：FLIP、关拖曳、关表面张力、2 ms</td><td class="num">3.80</td><td class="num">0.14</td></tr>
+<tr><td>同上，网格 2.5 mm</td><td class="num">4.10</td><td class="num">0.08</td></tr>
+</tbody></table></div>
+<p>最大的单项是第 21 步的隐式表面张力：它让水珠保持成珠，但在隐式求解里对表面附近的任何相对运动都起阻尼作用。其次是让静水静下来的两项处理（壁面场约束 + 幽灵罚项、静止拖曳）和 APIC 传递本身的耗散；
+网格越细越好，时间步和质量下限影响很小。四项一起去掉并把网格加密到 2.5 mm，溃坝前沿到 1.45 √(gH)（实验 1.69，差 14 %），晃荡阻尼比 0.08（仍是真水的 10 倍），每步代价是原来的 10 倍以上；
+而去掉的这些项，正是静水不动、水珠成形所依赖的。</p>
+<p><b>可能的方向。</b>(1) 查清隐式表面张力为什么耗散，让它只贡献表面能；(2) 需要晃动的段落（摇匀、挤瓶）试 FLIP 混合，同时跑静水回归；(3) 空气：给密闭腔一个整体气压（腔压泵的推广）；(4) 接触角。
+试验脚本：<code>examples/liquid/m11_freefall.py</code>、<code>m12_dambreak_front.py</code>、<code>m13_efflux.py</code>，以及原有的 <code>m6_slosh.py</code>、<code>m7_drop.py</code>。</p>
+
+<h3 id="changes">改动清单（10-19 → 10-23，均在引擎开发分支，未发布）</h3>
 <div class="tblwrap"><table>
 <thead><tr><th>位置</th><th>改动</th><th>开关 / 默认</th><th>验证</th></tr></thead>
 <tbody>
@@ -1050,12 +1119,15 @@ m10 里直接放在地面上的水池也是这样：旧规则下 6 s 时 2.6 万
 <tr><td><code>examples/liquid/m10_spill.py</code></td><td>新增最近邻间距列与每 0.5 s 快照（桌上水的重建体积、水池分层间距由离线脚本算）</td><td>—</td><td>第 20 步数据来源</td></tr>
 <tr><td><code>k_coh_wallcells / k_coh_gate / k_coh_pairs / k_coh_energy / k_coh_grad / k_coh_hess_count / k_coh_hess</code></td><td>隐式表面张力：表面粒子对的内聚能进 Newton 求解（能量、经粒子嵌入的链式法则梯度、两粒子 8 节点三线性权之差的合同 Hessian，只写截断半径内的块）</td><td><code>LIQ_STI</code>（γ，N/m，默认 0 = 不变）、<code>LIQ_STI_R0</code>、<code>LIQ_STI_RC</code></td><td>泼水 12 s + 两版水瓶（第 21 步）</td></tr>
 <tr><td>探针 <code>LIQ_HYDRO_PROBE</code></td><td>新增粒子掩码、角点投票、第二套体积、ghost 角点、槽位表的导出</td><td>按需</td><td>第 17 步定位依据</td></tr>
+<tr><td>实验台设置</td><td>质量下限重新计入重量（<code>LIQ_FLOOR_GRAVITY</code> 回到默认 1），代码注释写明两种取值的代价</td><td>默认 1</td><td>自由下落试验 + 三个种子的实验台（第 22 步）</td></tr>
+<tr><td><code>examples/liquid/m11_freefall.py</code>、<code>m12_dambreak_front.py</code>、<code>m13_efflux.py</code></td><td>新验收试验：小水团自由下落、溃坝前沿速度（对 Martin &amp; Moyce / Lobovský）、水箱底孔出流（开口 / 加盖）</td><td>—</td><td>第 22、23 步数据来源</td></tr>
 </tbody></table></div>
 
 <h2 id="status">现状与下一步</h2>
 <ul>
 <li><b>已完成并验证</b>：液体与固体在同一 Newton 里双向隐式耦合；精确提速与 6 处修复；静止水的根因；应急版固壁和三处演示层修正；根本修正（壁面场约束 + 法向拉伸罚项）；静止处理（随速度切换的幽灵罚项 + 求解内的静止拖曳）和试管瞄准修正。</li>
-<li><b>最终演示</b>：根本修正 + 静止处理，所有器皿都加约束（包括试管），用原文的跟踪 J，226 分钟跑完五段全部通过；静止的水约 0.001 cm/s（第十步 0.03，应急版 0.13），水位不再下沉。</li>
+<li><b>最终演示</b>：根本修正 + 静止处理，所有器皿都加约束（包括试管），用原文的跟踪 J，226 分钟跑完五段全部通过；静止的水约 0.001 cm/s（第十步 0.03，应急版 0.13），水位不再下沉。<b>10-23 起</b>换成第 22 步用最新的水重做的版本（隐式表面张力、地面墙，桌上的水不冻结）：三个种子都通过，试管倒水洒出 0 / 1 / 7 个粒子，成片用不洒的一次。</li>
+<li><b>像不像真水（10-23，第 23 步）</b>：倒水、装水、静水、自由下落与真实一致；晃荡、水滴振荡、溃坝铺开、小孔出流都明显太黏（晃荡阻尼比 0.53，真水约 0.008；溃坝前沿慢约 37 %），最大的单项来源是隐式表面张力；另外没有空气、没有接触角。<b>下一步</b>：让隐式表面张力不再耗散，评估 FLIP 混合，密闭腔的整体气压。</li>
 <li><b>还没解决</b>：静止拖曳对很慢的流动相当于一个弱屈服（k = 20 时，约 3.4 m/s² 以下的驱动会被拖慢，而不是被挡住）；细试管里的水倒出得偏晚、偏急；滴管泵按位置搬运，送液量受水的状态影响；两侧都有水的薄壁（插在烧瓶里的滴管玻璃管）需要一个单元承载两块互不连通的流体，要用虚拟节点或界面积分；
 修好以后计划回到原文的跟踪 J 加对称能量，去掉 J 重锚定、无张力状态方程和粒子推开这些补丁；滴管泵从“按位置搬运”换成管口的压力或速度条件。</li>
 <li><b>桌上的水（10-21）</b>：地平面纳入壁面场约束 + 薄层推开以后，泼到桌上的水不再被压扁；加上隐式表面张力（第二十一步）以后，水珠落地保持成珠、不再摊成看不见的薄层，1 s 后完全静止。<b>仍未完成</b>：直接放在地面上的水池底部仍有缓慢压实，水洼在十秒量级上缓慢变平；没有接触角。</li>
@@ -1073,6 +1145,13 @@ m10 里直接放在地面上的水池也是这样：旧规则下 6 s 时 2.6 万
 <li>X. Li, M. Li, X. Han, H. Wang, Y. Yang, C. Jiang. <i>A Dynamic Duo of Finite Elements and Material Points.</i> SIGGRAPH 2024 Conference Papers. <a href="https://doi.org/10.1145/3641519.3657449">doi</a></li>
 <li>E. Burman. <i>Ghost penalty.</i> C. R. Acad. Sci. Paris, Ser. I 348, 2010；E. Burman, S. Claus, P. Hansbo, M. G. Larson, A. Massing. <i>CutFEM: Discretizing geometry and partial differential equations.</i> IJNME 104(7), 2015.</li>
 <li>N. Molino, Z. Bao, R. Fedkiw. <i>A virtual node algorithm for changing mesh topology during simulation.</i> SIGGRAPH 2004.</li>
+<li>J. C. Martin, W. J. Moyce. <i>Part IV. An experimental study of the collapse of liquid columns on a rigid horizontal plane.</i> Phil. Trans. R. Soc. A 244, 1952.（第 23 步溃坝参考）</li>
+<li>L. Lobovský, E. Botia-Vera, F. Castellana, J. Mas-Soler, A. Souto-Iglesias. <i>Experimental investigation of dynamic pressure loads during dam break.</i> J. Fluids Struct. 48, 2014. <a href="https://arxiv.org/abs/1308.0115">arXiv</a>（表 1 汇总了 Martin &amp; Moyce、Dressler 等的前沿速度）</li>
+<li>D. G. Stephens, H. W. Leonard, T. W. Perry. NASA TN D-1367, 1962. 无挡板圆筒中液体晃荡阻尼的实验（第 23 步晃荡阻尼参考）。<a href="https://ntrs.nasa.gov/citations/19620004069">NTRS</a></li>
+<li>C. Clanet, G. Searby. <i>On the glug-glug of ideal bottles.</i> J. Fluid Mech. 510, 2004.（倒置瓶排空）</li>
+<li>Lord Rayleigh. <i>On the capillary phenomena of jets.</i> Proc. R. Soc. Lond. 29, 1879；H. Lamb. <i>Hydrodynamics</i>, 6th ed., 1932.（水滴振荡频率与黏性衰减）</li>
+<li>United States Pharmacopeia, General Chapter &lt;1101&gt; Medicine Dropper.（每滴水 45–55 mg）</li>
+<li>ASME V&amp;V 20-2009. <i>Standard for Verification and Validation in Computational Fluid Dynamics and Heat Transfer.</i></li>
 </ul>
 </article>
 
