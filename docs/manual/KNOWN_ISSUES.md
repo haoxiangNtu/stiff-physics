@@ -31,6 +31,7 @@
   - [1.4 硬钉(USE_HARD_PIN)弹性链式法则缺失](#14-硬钉use_hard_pin弹性链式法则缺失)
   - [1.5 静摩擦蠕滑:场景派生 epsv 过大](#15-静摩擦蠕滑场景派生-epsv-过大)
   - [1.6 phase-cd:未移植 v0.8.5.4 真静摩擦(长时保持抓取蠕变)](#16-phase-cd未移植-v0854-真静摩擦长时保持抓取蠕变)
+  - [1.7 PCG 设备循环图重建后残留 CUDA 错误(随机 `parallel_for failed: cudaErrorInvalidDevice`)](#17-pcg-设备循环图重建后残留-cuda-错误随机-parallel_for-failed-cudaerrorinvaliddevice)
 - [2. 语义陷阱类](#2-语义陷阱类)
   - [2.1 legacy 接触力 API 返回 −F·dt² 而非牛顿](#21-legacy-接触力-api-返回-fdt-而非牛顿)
   - [2.2 `Config(**kwargs)` 静默忽略未知键](#22-configkwargs-静默忽略未知键)
@@ -158,6 +159,20 @@
 | 影响面 | 工程线上**所有长时保持类任务**:抓取-提升-保持(RL 操作回放、装配、递交)、堆叠静置、任何以"保持 N 秒后位姿"为成功判据的评测。**RL 训练尤其危险**——蠕变是**系统性偏置**而非噪声,策略会学到补偿它;换到稳定线 v0.8.5.4 上评估时行为不迁移。求解稳定性不受影响(不是发散,是**物理上错的"稳定"**)。另注意与 §1.1 的叠加效应:phase-cd 上既蠕变、又读不出摩擦力,滑移检测两头落空。 |
 | 规避方法 | ① **需要真静摩擦就用稳定线 v0.8.5.4**(默认即开;逃生阀 `absolute_epsv=0` / `friction_anchor=False`,或 `STIFF_EPSV=0` / `STIFF_FRIC_ANCHOR=0`)。② 必须留在 phase-cd 时的**部分缓解**:缩小场景有效 bbox(等比例收紧 epsv,副作用是接触整体变硬,须回归验证)、缩短保持窗口、在控制层做位置伺服补偿——**都补不上锚点每步重置这条**,只能减速不能归零。③ 手工移植:见 §1.0 的 `port/friction-anchor-086` 路径(该分支连 strict 的正解一并给了,`9fd2905` 逐 env 分箱能量 → anchor 在 strict 下也能默认开)。④ 评测纪律:凡是拿 phase-cd 数据做保持类结论,须标注"legacy 场景派生 epsv + 每步锚重置"口径。 |
 | 修复状态 | **稳定线已修(v0.8.5.4,默认开)**;`codex/phase-cd`(HEAD `b3ab747`)**未合入,提交都不在历史里**(分叉点 `05c3f75` 早于 `dc1a297`)。移植成品在 `port/friction-anchor-086`(`c735e13` epsv + `57015da` anchors + `9fd2905` strict 正解 + `1040edb` checkpoint 序列化),**须先前移到 `b3ab747` 并重跑 22 段门禁**(§1.0)。合入即**改变所有含摩擦场景的默认轨迹**——等于换锚立项,不是补丁合并。 |
+
+---
+
+### 1.7 PCG 设备循环图重建后残留 CUDA 错误(随机 `parallel_for failed: cudaErrorInvalidDevice`)
+
+**适用线:【稳定线+phase-cd】**(稳定线 v0.8.5.5 已修;phase-cd 同一代码,未修)
+
+| 项 | 内容 |
+|---|---|
+| 现象 | `Engine.step()` 偶发抛 `RuntimeError: parallel_for failed: cudaErrorInvalidDevice: invalid device ordinal`,随场景出现、看似随机;设 `STIFF_PCG_DEVICE_LOOP=0` 即消失。 |
+| 根因 | PCG 设备循环(自尾启动的 device-launch graph,K=8)在捕获拓扑变化时 `cudaGraphExecUpdate` 被拒(错误 910)。代码按返回值销毁并重新实例化,但没有清除线程的"最后错误";下一个检查错误的库调用(CCD 包围盒构建里的 thrust/cub launch)读到这个残留错误并抛出。单世界 `PCGSolver::pcg` 与分段(多环境)`seg_pcg` 两处相同。只在设备循环图需要重建时触发,所以看起来随机。用 compute-sanitizer `--report-api-errors explicit --show-backtrace host` 定位。 |
+| 影响面 | 默认开启 PCG 设备循环(v0.8.5.1 起)的所有场景,只要求解过程中图需要重建;不改变计算结果,只是误报并中断仿真。 |
+| 规避方法 | ≤ v0.8.5.4 与 phase-cd:`STIFF_PCG_DEVICE_LOOP=0`(退回主机端 graph,速度略降)。 |
+| 修复状态 | **稳定线 v0.8.5.5 已修**:两处被拒的更新之后各加一次 `cudaGetLastError()`,只清错误状态,不改变任何计算。复现用例修复前 2/2 崩溃,修复后 3/3 跑完,sanitizer 下只剩两次预期内、已处理的更新拒绝。**phase-cd 未修。** |
 
 ---
 

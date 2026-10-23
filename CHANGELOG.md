@@ -4,6 +4,66 @@ All notable changes to **stiff-physics** are documented here. This project
 follows the spirit of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/).
 
+## [0.8.5.5] — 2026-10-23
+
+Bug-fix release; no behavior or API changes.
+
+### Fixed
+- **Random `RuntimeError: parallel_for failed: cudaErrorInvalidDevice: invalid
+  device ordinal` from `Engine.step()`.** The PCG solver's device-launched
+  loop graph (on by default since 0.8.5.1) is re-instantiated when its
+  captured topology changes; the rejected `cudaGraphExecUpdate` was handled,
+  but its error stayed the CUDA thread's last error, and the next
+  error-checked library call (a thrust/cub launch in the CCD BVH build)
+  reported it and threw. The error is now cleared after the rejected update,
+  in both the single-world and the segmented (multi-env) PCG. It only fired
+  in scenes where the loop graph had to be rebuilt, which is why it looked
+  random and scene-dependent. Results are unchanged (only the error state is
+  cleared). Workaround for older versions: `STIFF_PCG_DEVICE_LOOP=0`.
+- **Wheels: GPU architectures restored.** The 0.8.5.4 wheels were built for
+  `sm_89` (RTX 40-series) only, so they had no kernels for A100/A800
+  (`sm_80`) or RTX 50-series (`sm_120`) GPUs. The 0.8.5.5 wheels again ship
+  `sm_80`, `sm_89` and `sm_120`, as 0.8.5.3 did.
+
+## [0.8.5.4] — 2026-08-12
+
+Friction line: true static friction. Two features, both new-default-ON —
+this release CHANGES trajectories for every scene with friction (escape
+hatches restore 0.8.5.3 behavior bit-exactly).
+
+### ⚠ Behavior changes
+- **`Config.absolute_epsv` (m/s) — default 1e-4** (was scene-derived
+  `epsv = 1e-2 * eff_scene_diag`, e.g. 19 mm/s on a 1.9 m scene). The IPC
+  stiction threshold is contact physics, not geometry; the scene-scale
+  coupling made static-friction accuracy depend on scene size (third member
+  of the bbox-derived-parameter family after dhat and kappa). Legacy:
+  `absolute_epsv=0` or `STIFF_EPSV=0`.
+- **`Config.friction_anchor` — default True** (strict multi-env mode
+  auto-suppresses it to preserve batch invariance — anchors nudge the
+  N-shape-dependent line-search energy sums across ulp compare boundaries;
+  `STIFF_FRIC_ANCHOR=1` forces it on there. Root fix — N-invariant energy
+  reductions — tracked for 0.8.6). Persistent cross-step friction
+  anchors: each lagged pair carries an accumulated tangential elastic offset
+  e; energy/gradient/Hessian evaluate u_total = relDX_step + e, making
+  stiction a spring against a persistent anchor. ||e|| is capped at
+  epsv*h — the cap sliding IS Coulomb sliding (radial return). Anchors carry
+  across steps by canonical pair key (cub merge-sort + binary search,
+  deterministic); ground pairs use a dense per-vertex array; teleports /
+  `reset_transient_contact_state()` clear them. Legacy: `friction_anchor=False`
+  or `STIFF_FRIC_ANCHOR=0`.
+
+### Why
+The per-step anchor reset of GIPC/IPC lagged friction creeps under sustained
+load at (load/(mu*lambda))*epsv: a held flask slid 3.7 mm and its frustum cap
+rotated 11-20 deg over 6 s at forces far inside the mu cone. With both
+features: hold-slide 0.00 mm, cap rotation pinned (0.7-1.4 deg, flat), the
+per-step drift drops from 10 um/frame to 5e-12 m/frame (newton-trace).
+Cost: +9% step time on the grasp scene (extra Newton/PCG work resolving real
+stick-slip in dynamic segments; hold-phase iterations unchanged).
+
+### Added
+- `STIFF_NEWTON_TRACE` — per-Newton-iteration move-norm trace (diagnostics).
+
 ## [0.8.5.3] — 2026-08-11
 
 Stable-line patch release (`release/stable-0.8`): two contact-I/O fixes
