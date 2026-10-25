@@ -84,7 +84,7 @@ svg.diagram .m-green { fill: var(--acc-data); } svg.diagram .m-amber { fill: var
 <a href="#demo">4 演示跑通</a><a href="#audit">5 审计与提速</a><a href="#symptom">6 静止的水在动</a>
 <a href="#hypotheses">7 排除假设</a><a href="#root">8 根因</a><a href="#stopgap">9 应急版固壁</a>
 <a href="#fix">10 根本修正</a><a href="#rest">11 让静水静下来</a>
-<a href="#reaudit">12 复审：可追溯</a><a href="#divider">13 薄板试验</a><a href="#cpic">14 兼容性屏蔽</a><a href="#budget">15 支撑力预算</a><a href="#pump">16 滴管</a><a href="#split">17 混合切割单元</a><a href="#twofield">18 每侧槽位</a><a href="#thinst">19 薄层张力</a><a href="#ground">20 地面也是墙</a><a href="#sti">21 隐式表面张力</a><a href="#lab14">22 最新的水做实验台</a><a href="#realism">23 像不像真水</a><a href="#cutcell">24 平衡算子与稳定器</a><a href="#residual">25 静水残余排查</a><a href="#changes">改动清单</a><a href="#status">现状</a><a href="#refs">参考文献</a>
+<a href="#reaudit">12 复审：可追溯</a><a href="#divider">13 薄板试验</a><a href="#cpic">14 兼容性屏蔽</a><a href="#budget">15 支撑力预算</a><a href="#pump">16 滴管</a><a href="#split">17 混合切割单元</a><a href="#twofield">18 每侧槽位</a><a href="#thinst">19 薄层张力</a><a href="#ground">20 地面也是墙</a><a href="#sti">21 隐式表面张力</a><a href="#lab14">22 最新的水做实验台</a><a href="#realism">23 像不像真水</a><a href="#cutcell">24 平衡算子与稳定器</a><a href="#residual">25 静水残余排查</a><a href="#rootcause">26 静水的两个根因</a><a href="#changes">改动清单</a><a href="#status">现状</a><a href="#refs">参考文献</a>
 </div>
 
 <h2 id="overview">全程一览</h2>
@@ -115,7 +115,8 @@ svg.diagram .m-green { fill: var(--acc-data); } svg.diagram .m-amber { fill: var
 <tr><td>22</td><td class="mono">10-22 → 10-23</td><td>用最新的水重做实验台</td><td>三个种子全部通过</td></tr>
 <tr><td>23</td><td class="mono">10-23</td><td>按公开实验逐项对比真实性</td><td>重力驱动一致；振荡类过黏（晃荡阻尼比 0.53 对 0.008）</td></tr>
 <tr><td>24</td><td class="mono">10-23</td><td>摩擦能量不一致的修复；切割单元的平衡算子（静水平衡精确到舍入）；系统地试验稳定器，证明"对本步位移的罚 = 粘度"</td><td>倾倒 Newton 1246 → 54 次/步；对齐方箱静水 1.5 → 0.016 mm/s；烧瓶最大粒子速度 5 mm/s（10-25 更正：原误写为 0.005 mm/s）；但同一稳定器把晃荡压死——静止与动力学的矛盾被定位到传输方案</td></tr>
-<tr class="hl"><td>25</td><td class="mono">10-24 → 10-25</td><td>完整回归 + 残余运动的系统排查：两处“墙后”判定回归、满格压力的体积权重不一致、逐项节点力探针</td><td>晃荡阻尼比 0.237 → 0.130（4.05 Hz）；薄隔板 45 → 0 穿板；静水残余确认为墙边 / 底板 / 水面附近千分之几重量的压力亏欠，仍未消除；底孔与滴管管口被堵</td></tr>
+<tr><td>25</td><td class="mono">10-24 → 10-25</td><td>完整回归 + 残余运动的系统排查：两处“墙后”判定回归、满格压力的体积权重不一致、逐项节点力探针</td><td>晃荡阻尼比 0.237 → 0.130（4.05 Hz）；薄隔板 45 → 0 穿板；静水残余确认为墙边 / 底板 / 水面附近千分之几重量的压力亏欠，仍未消除；底孔与滴管管口被堵</td></tr>
+<tr class="hl"><td>26</td><td class="mono">10-25</td><td>静水的两个根因：墙面上节点的墙后判定被舍入误差决定（角格几何错误）、墙边列水面被估低；平衡算子给薄水 / 稀疏水数倍于质量的重量（列密度判据）</td><td>精确静水初态：粒子最大速度 21.9 → 0.002 mm/s（中位 0.0002），无任何静止处理；倾倒过杯沿每步 Newton 240 → 36；晃荡阻尼比 0.119（拟合优度降到 0.70）</td></tr>
 </tbody></table></div>
 
 <h2 id="why"><span class="step-no">1</span>起点：为什么要把水放进引擎<span class="date">10-04 → 10-06</span></h2>
@@ -1161,7 +1162,7 @@ J 的更新用的是格均速度梯度，格内的非仿射运动对粒子<b>不
 <tr><td>底孔出流</td><td class="num">流量系数 0.06</td><td class="num">孔被堵住</td><td class="num">孔被堵住</td><td>恢复的判定规则会堵孔，见 (d)</td></tr>
 <tr><td>滴管吸水（管内粒子）</td><td class="num">15</td><td class="num">1</td><td class="num">1</td><td>管口也是孔，同样被堵</td></tr>
 <tr><td>泼水（桌面水洼）</td><td class="num">—</td><td class="num">r90 117 mm，0 穿越，3.8 min</td><td class="num">r90 129 mm，0 穿越，6.9 min</td><td>—</td></tr>
-<tr><td>烧杯倾倒</td><td class="num">杯内 8.5 %、地面 72 %，2470 s</td><td class="num">杯内 7.7 %、地面 71 %，2568 s</td><td class="num">运行中</td><td>第 22 步的水 1301 s；过杯沿阶段每步 150–360 次 Newton</td></tr>
+<tr><td>烧杯倾倒</td><td class="num">杯内 8.5 %、地面 72 %，2470 s</td><td class="num">杯内 7.7 %、地面 71 %，2568 s</td><td class="num">杯内 5.5 %、地面 72.5 %，<b>5297 s</b></td><td>第 22 步的水 1301 s。几何静止体积让过杯沿阶段（从 60° 起倒的对照）每步 Newton 约翻倍、PCG 迭代 2.5–3 倍，倒出量不变</td></tr>
 </tbody></table></div>
 
 <h3>(b) 残余运动是被持续推出来的</h3>
@@ -1237,6 +1238,91 @@ J 的更新用的是格均速度梯度，格内的非仿射运动对粒子<b>不
 满格几何静止体积 <code>LIQ_WB_GEOV</code>；沉积高度修正 <code>LIQ_WB_YBAR</code>（默认关）；运行期写入粒子 J <code>set_liquid_J</code>（静水起步试验）；墙面真实距离 <code>LIQ_WB_PHI_TRI</code>（默认关，未采用）；逐项节点力探针 <code>LIQ_FORCE_PROBE</code>（静水探针同时导出单元数据）；J 零空间滤波 <code>LIQ_JFILT</code>、G2P 只取流体单元 <code>LIQ_G2P_FLUID</code>（默认关，未采用）；
 方箱试验新增居中播种、加盖、重力、静置后释放与状态导出，烧瓶试验新增静置选项与求解速度报告。</p>
 
+<h2 id="rootcause"><span class="step-no">26</span>静水的两个根因，以及薄水被算重了几倍<span class="date">10-25</span></h2>
+
+<p>第 25 步把持续驱动定位到两类拐角（墙与底板的交棱、墙与水面的交线），但没有找到机理。这一步把精确静水初态第 0 步的节点力逐格拆开，两处都追到了具体的代码。
+两处都修掉以后，<b>从静水初态出发的水真的静止了</b>：粒子最大速度 2 µm/s，平均流场处处为零，每步 Newton 一次就收敛。这里没有用任何静止处理，看的是粒子本身。
+同一轮里还查出平衡算子给薄水和稀疏水数倍于质量的重量，这正是倾倒过杯沿时求解代价高的原因，修正后那一段每步 Newton 次数降到约六分之一。</p>
+
+<h3>(a) 交棱：恰好落在墙面上的节点，被舍入误差判到了墙后</h3>
+<p>节点坐标是 原点 + i·dx，墙点是粒子在墙上的投影，两者都只精确到舍入。“任一墙点平面的负侧即墙后”用的是严格的 d &lt; 0。对齐方箱的四壁和底板恰好穿过格点平面，
+例如 −0.1 + 12 × 0.005 比 −0.04 小一个最低位，于是墙面上的节点是否“在墙后”由最后一位舍入决定。被判到墙后的节点得到 φ = −(到最近墙点的距离)。墙点是稀疏的粒子投影，
+在底板与侧墙的交棱上，这个距离约 0.3 格。</p>
+<p>后果是贴底又贴墙的那排格子明明完全在水里，却被当成切割单元：几何体积只剩 0.782 dx³，内侧角点面积向量的一个分量变成 0（应为 0.25 dx²）。
+第 0 步的逐格分解显示，距墙一格、贴底第一行的内部节点因此受到 <b>5.7 倍节点重量、指向墙的水平力</b>。墙点随粒子移动，舍入的符号随之随机翻转，
+这排格子就在“满格”和“被裁掉一角”之间闪烁。第 25 步的交棱奇偶力对、角格 7 Pa 的欠压，以及“改用真实墙面距离后贴墙节点重量 0.971 → 0.9996”，都是同一件事。</p>
+<p><b>修正（<code>LIQ_WB_PHI_DTOL</code>）</b>：d &lt; −10⁻⁹ dx 才算墙后，只影响恰好在墙面上的节点。第 0 步内部自由节点的最大静力从 5.7 降到 6×10⁻⁵ 倍节点重量，角格恢复满格。</p>
+
+<h3>(b) 交线：每列水面高度在墙边被估低</h3>
+<p>平衡算子需要每列的水面高度，原来的估计是“该列最高的 4 个粒子的平均高度 + 半个粒子间距”。这默认每列每层有 4 个粒子。墙边的列粒子更少，因为粒子离墙有间隙，
+于是最高 4 个粒子会取到下一层，读数偏低最多半个粒子间距，3×3 平滑又把偏差带到相邻列。第 0 步水面行墙边三个节点的几何重量只有应有值的 78 % / 82 % / 93 %，被压力净推上去
+4–10 % 节点重量。静置以后，粒子会被推到“让这个估计看起来平”的位置：墙边真实的粒子表面高出约 0.2 mm，剩下约 0.05 mm 的不平，正好对应第 25 步的交线力对。</p>
+<p><b>修正（<code>LIQ_WB_HMODE</code>）</b>：每列按自己的粒子分布估计顶层。模式 1 取该列自己的“每层粒子数”作 K，用分数 K 连续变化；模式 2 / 3 取最高粒子以下一个窗口内的全部粒子（硬窗口 / 线性渐变）。三者在规则点阵上都精确。</p>
+
+<h3>(c) 决定性实验：精确静水初态</h3>
+<p>每个粒子的 J 设为所在深度的静水值，规则点阵，水的真实黏度。方箱 80 mm 见方、水深 60 mm，中位粒子速度（mm/s）：</p>
+<div class="tblwrap"><table><thead><tr><th>配置</th><th class="num">1 s</th><th class="num">2 s</th><th class="num">6 s</th><th class="num">6 s 最大</th></tr></thead><tbody>
+<tr><td>修正前</td><td class="num">0.92</td><td class="num">1.05</td><td class="num">0.48</td><td class="num">21.9</td></tr>
+<tr><td>只修水面估计</td><td class="num">0.87</td><td class="num">0.83</td><td class="num">0.27</td><td class="num">5.2</td></tr>
+<tr><td>只修舍入</td><td class="num">0.08</td><td class="num">0.07</td><td class="num">0.06（3–5 s 在 0.21–0.23 之间波动）</td><td class="num">1.4</td></tr>
+<tr><td>两处都修</td><td class="num">0.24</td><td class="num">0.0038</td><td class="num">0.0010</td><td class="num">0.021</td></tr>
+<tr class="hl"><td>两处都修 + 自然播种（离每面墙半个间距）</td><td class="num">0.0010</td><td class="num">0.0004</td><td class="num"><b>0.0002</b></td><td class="num"><b>0.002</b></td></tr>
+</tbody></table></div>
+<p>两处缺一不可。“两处都修”那一行 1 s 时的 0.24 mm/s 来自试验点阵：居中播种把第一层粒子放在离侧墙 2.5 mm 处，正好等于墙点搜索半径（判定是严格小于），
+第 0 步侧墙没有墙点、没有墙带，墙面节点被单侧水压推进墙里最多 0.5 mm。改用自然播种（离墙 1.25 mm）后第 0 步就有墙带，起步扰动消失。
+最后一行不开沉积高度修正（第 25 步的 <code>LIQ_WB_YBAR</code>）结果相同（6 s 中位 0.0002、最大 0.001），所以那项修正不是必需的。
+<b>结论：物理静水态就是这个格式的平衡态，第 24 步以来的“静水还在动”来自这两处缺陷，不是格式本身。</b></p>
+<p>从非静水初态出发（1 Pa·s 静置 3 s 后切回水的黏度，自然播种）也能收敛，6 s 中位速度：修正前 0.25 mm/s；两处都修后，水面估计用模式 1 为 <b>0.0018</b>，模式 2 为 0.023，模式 3 为 0.049。</p>
+
+<h3>(d) 薄水被算重了几倍：列模型的前提不成立</h3>
+<p>倾倒到 76° 时打了一次逐项节点力探针。重力权重不低于惯性质量 2 倍的节点有 832 个，承担了一半的总重量，中位高度 5 mm，就是倒到地上的水洼。按行统计：
+地面以下那一行格子的几何重量 121.6 dx³、沉积只有 9.1；贴地一行 303.6 对 41.9。地上 472 个粒子（约 59 dx³）承受了约 450 dx³ 的重力，约 7.6 倍。原因有两个：</p>
+<ul>
+<li><b>列模型的前提不成立</b>：平衡算子假定水从底到列水面把整列横截面填满。薄膜、稀疏的水洼、水流和飞溅都不满足。逐列统计“沉积 / 几何”，静水方箱最低 0.53（四个角列）、中位 1.0；
+倾倒时中位只有 0.14，低于 0.3 的列承担了 52 % 的重量（几何 516 dx³ 对沉积 54 dx³）。</li>
+<li><b>地面附近的墙面距离取了稀疏墙点</b>：地面上方节点的 φ 是到最近墙点的距离，稀疏水洼里可达半格到一格，而真实距离只有 0.1 mm。于是地面以下那一行被切出了“流体”。</li>
+</ul>
+<p>这些格子的重力和压力刚度都远大于它们的质量，求解自然变难；几何静止体积把压力刚度也按几何体积放大，所以开了它的倾倒更慢（整段 5297 s，不开 2568 s）。
+<b>修正（<code>LIQ_WB_COLMIN</code>）</b>：一列的沉积低于其水面以下几何体积的 0.3 倍时，这一列不当作连续水体，所有格子按独立水体计重（沉积重量）。静水方箱里最低的列也有 0.53，不受影响。
+从 60° 起倒的对照，取过杯沿阶段（70°–84°）每步的平均：</p>
+<div class="tblwrap"><table><thead><tr><th>配置</th><th class="num">Newton / 步</th><th class="num">PCG 迭代 / 步</th><th class="num">84° 时杯内 / 地面</th></tr></thead><tbody>
+<tr><td>第 25 步，不开几何静止体积</td><td class="num">155</td><td class="num">36.7 k</td><td class="num">51 % / 32 %</td></tr>
+<tr><td>第 25 步现行（几何静止体积）</td><td class="num">240</td><td class="num">88.3 k</td><td class="num">46 % / 36 %</td></tr>
+<tr class="hl"><td>新候选配置（两处修正 + 列密度判据 + 几何静止体积）</td><td class="num"><b>36.5</b></td><td class="num"><b>7.0 k</b></td><td class="num">40 % / 46 %</td></tr>
+<tr><td>新候选配置，不开几何静止体积</td><td class="num">31.5</td><td class="num">5.7 k</td><td class="num">44 % / 42 %</td></tr>
+</tbody></table></div>
+<p>过杯沿阶段的求解代价降到原来的约六分之一（Newton）到十二分之一（PCG）。同时水更早落到地面（84° 时地面 46 % 对 36 %）：原来被算重的薄水和水流现在按真实质量受力，这个场景没有实验参考，哪一个更接近真实目前判断不了。整段倾倒（回归套件）每步 Newton 的最大值从 416 降到 42，终态待出。</p>
+
+<h3>(e) 回归套件：三个版本</h3>
+<div class="tblwrap"><table><thead><tr><th>试验</th><th class="num">第 25 步现行</th><th class="num">+ 舍入 + 硬窗口水面</th><th class="num"><b>新候选配置</b>：+ 舍入 + 模式 1 水面 + 列密度</th><th>参考</th></tr></thead><tbody>
+<tr><td>方箱静置，壁面对齐（原不对称播种）：中位</td><td class="num">0.51</td><td class="num">0.043</td><td class="num"><b>0.050</b></td><td>mm/s；自然播种 + 静水初态见 (c)</td></tr>
+<tr><td>方箱静置，转 30°：中位</td><td class="num">0.23</td><td class="num">0.16</td><td class="num">0.17</td><td>mm/s</td></tr>
+<tr><td>烧瓶静置：中位 / p90</td><td class="num">0.93 / 2.2</td><td class="num">0.74 / 2.1</td><td class="num">0.84 / 2.4</td><td>mm/s；曲壁切割单元仍是主要来源</td></tr>
+<tr><td>滑动水箱：相对中位</td><td class="num">0.52</td><td class="num">0.44</td><td class="num">0.48</td><td>mm/s</td></tr>
+<tr><td>烧杯晃荡：阻尼比（拟合优度，频率）</td><td class="num">0.130（0.91，4.05 Hz）</td><td class="num">0.200（0.58，4.30 Hz）</td><td class="num"><b>0.119</b>（0.70，4.15 Hz）</td><td>解析 4.46 Hz；真水约 0.008</td></tr>
+<tr><td>薄板分隔：穿板粒子</td><td class="num">0</td><td class="num">2</td><td class="num">0</td><td>—</td></tr>
+<tr><td>溃坝前沿</td><td class="num">1.45 √(gH)</td><td class="num">1.50</td><td class="num">1.44</td><td>实验 1.48–1.74</td></tr>
+<tr><td>泼水（桌面水洼）r90</td><td class="num">129 mm</td><td class="num">143 mm</td><td class="num">运行中</td><td>—</td></tr>
+<tr><td>烧杯倾倒</td><td class="num">杯内 5.5 %、地面 72.5 %，5297 s</td><td class="num">运行中</td><td class="num">运行中（每步 Newton 最大 42）</td><td>—</td></tr>
+<tr><td>底孔、滴管管口</td><td class="num">被堵</td><td class="num">被堵</td><td class="num">被堵</td><td>判定规则问题，未处理</td></tr>
+</tbody></table></div>
+<p>晃荡的变化全部来自水面估计：只开舍入修正时晃荡与原来完全相同（0.130 / 0.909）。各种水面估计在这个小烧杯上的结果：</p>
+<div class="tblwrap"><table><thead><tr><th>水面估计（都带舍入修正）</th><th class="num">阻尼比</th><th class="num">拟合优度</th><th class="num">频率</th><th class="num">静水初态 6 s</th><th class="num">静置释放 6 s</th></tr></thead><tbody>
+<tr><td>原来：最高 4 个粒子</td><td class="num">0.130</td><td class="num">0.91</td><td class="num">4.05 Hz</td><td class="num">0.06–0.23，不收敛（居中播种）</td><td class="num">0.12，在增长（居中播种）</td></tr>
+<tr><td>模式 2：硬窗口（半个间距）</td><td class="num">0.200</td><td class="num">0.60</td><td class="num">4.30 Hz</td><td class="num">0.0002</td><td class="num">0.023</td></tr>
+<tr><td>模式 3：线性渐变窗口（一个间距）</td><td class="num">0.125</td><td class="num">0.52</td><td class="num">4.35 Hz</td><td class="num">0.0002</td><td class="num">0.049</td></tr>
+<tr><td>模式 1：每列自己的每层粒子数</td><td class="num">0.180</td><td class="num">0.70</td><td class="num">4.15 Hz</td><td class="num">0.0002</td><td class="num">0.0018</td></tr>
+<tr class="hl"><td>模式 1 + 列密度判据（新候选配置）</td><td class="num">0.119</td><td class="num">0.70</td><td class="num">4.15 Hz</td><td class="num">0.0002</td><td class="num">0.0018</td></tr>
+<tr><td>新候选配置 + 平滑按每列每层粒子数加权</td><td class="num">0.185</td><td class="num">0.88</td><td class="num">3.90 Hz</td><td class="num">0.0002</td><td class="num">0.0040</td></tr>
+</tbody></table></div>
+<p>这个烧杯只有 4.6 格宽，大部分列被曲壁切过，每层只有 1–2 个粒子，阻尼、频率和信号噪声随水面估计此消彼长。原来的“最高 4 个”总是平均 4 个粒子，对稀疏列更平滑，代价是在墙边系统性偏低。
+带阈值的满格几何体积（只对填充率高于阈值的满格用几何体积）也试过：阈值 0.05–0.8 全部让晃荡变成 0.185–0.193，<b>否决</b>。</p>
+<p><b>下一步</b>：新候选配置的泼水、倾倒、滴管、底孔还在跑，跑完补进上表；晃荡信号偏噪（拟合优度 0.70）要找到不牺牲阻尼的水面估计；
+曲壁容器（烧瓶仍有 0.84 mm/s）里切割单元用的也是稀疏墙点距离，是同一类问题；地面附近的墙面距离改用解析平面；孔洞仍被堵。</p>
+<p class="small">新增与改动（均在引擎开发分支，未发布）：墙后判定的舍入容差 <code>LIQ_WB_PHI_DTOL</code>；列水面估计 <code>LIQ_WB_HMODE</code>（0 最高 k 个、1 每列每层粒子数、2 硬窗口、3 渐变窗口）与窗口宽度 <code>LIQ_WB_HWIN</code>；
+列密度判据 <code>LIQ_WB_COLMIN</code>；水面平滑按每列每层粒子数加权 <code>LIQ_WB_HSMOOTH_W</code>；带阈值的满格几何体积 <code>LIQ_WB_GEOV=2</code> / <code>LIQ_WB_GEOV_FILL</code>（否决）；方箱试验的播种边距 <code>--margin</code>。
+表中第二、三列都同时开了沉积高度修正；所有开关默认关闭，引擎默认行为与第 25 步相同。</p>
+
 <h3 id="changes">改动清单（10-19 → 10-23，均在引擎开发分支，未发布）</h3>
 <div class="tblwrap"><table>
 <thead><tr><th>位置</th><th>改动</th><th>开关 / 默认</th><th>验证</th></tr></thead>
@@ -1278,6 +1364,11 @@ J 的更新用的是格均速度梯度，格内的非仿射运动对粒子<b>不
 <tr><td><code>sim_engine</code>、绑定、<code>engine.py</code>、<code>m15_box_rest.py</code></td><td>运行期写入粒子 J（<code>set_liquid_J</code>）；方箱试验 <code>--hydro-init</code> 静水起步</td><td>—</td><td>第 25 步 (f)</td></tr>
 <tr><td><code>liquid_system.cu</code></td><td>扣除静水部分的 J 零空间滤波；G2P 只取流体单元；自由面以上节点计重（诊断）</td><td><code>LIQ_JFILT</code>、<code>LIQ_G2P_FLUID</code>、<code>LIQ_WB_AIRGRAV</code>（默认 0，未采用）</td><td>第 25 步 (c)</td></tr>
 <tr><td><code>m15_box_rest.py</code>、<code>m14_still_water.py</code></td><td>居中播种、加盖、重力、播种扰动、静置后释放、状态导出；烧瓶的静置选项、求解速度报告、打印单位</td><td>—</td><td>第 25 步数据来源</td></tr>
+<tr><td><code>liquid_wb.cuh</code> 节点符号距离</td><td>墙后判定加舍入容差：d &lt; −dtol·dx 才算墙后（恰在墙面上的节点不再由最后一位舍入决定）</td><td><code>LIQ_WB_PHI_DTOL</code>（默认 0；候选 1e-9）</td><td>第 0 步角格力 5.7 → 6×10⁻⁵ 节点重量；第 26 步 (a)</td></tr>
+<tr><td><code>liquid_wb.cuh</code> 列水面</td><td>列水面估计：0 最高 k 个、1 每列每层粒子数（分数 K）、2 硬窗口、3 渐变窗口；平滑可按每列每层粒子数加权</td><td><code>LIQ_WB_HMODE</code>、<code>LIQ_WB_HWIN</code>、<code>LIQ_WB_HSMOOTH_W</code>（默认 0）</td><td>第 26 步 (b)(e)</td></tr>
+<tr><td><code>liquid_wb.cuh</code> 列水面</td><td>列密度判据：列沉积 &lt; colmin × 水面以下几何体积时整列按独立水体（沉积重量）</td><td><code>LIQ_WB_COLMIN</code>（默认 0；候选 0.3）</td><td>倾倒过杯沿 Newton 240 → 36 次/步；第 26 步 (d)</td></tr>
+<tr><td><code>liquid_system.cu</code> 体素能量</td><td>满格几何静止体积只用于填充率高于阈值的满格</td><td><code>LIQ_WB_GEOV=2</code>、<code>LIQ_WB_GEOV_FILL</code>（否决）</td><td>晃荡 0.185–0.193</td></tr>
+<tr><td><code>m15_box_rest.py</code></td><td>播种边距 <code>--margin</code>（0.5 + 居中 = 离每面墙半个间距的自然点阵）</td><td>默认 0.6 不变</td><td>第 26 步 (c)</td></tr>
 </tbody></table></div>
 
 <h2 id="status">现状与下一步</h2>
@@ -1285,6 +1376,7 @@ J 的更新用的是格均速度梯度，格内的非仿射运动对粒子<b>不
 <li><b>已完成并验证</b>：液体与固体在同一 Newton 里双向隐式耦合；精确提速与 6 处修复；静止水的根因；应急版固壁和三处演示层修正；根本修正（壁面场约束 + 法向拉伸罚项）；静止处理（随速度切换的幽灵罚项 + 求解内的静止拖曳）和试管瞄准修正。</li>
 <li><b>最终演示</b>：根本修正 + 静止处理，所有器皿都加约束（包括试管），用原文的跟踪 J，226 分钟跑完五段全部通过；静止的水约 0.001 cm/s（第十步 0.03，应急版 0.13），水位不再下沉。<b>10-23 起</b>换成第 22 步用最新的水重做的版本（隐式表面张力、地面墙，桌上的水不冻结）：三个种子都通过，试管倒水洒出 0 / 1 / 7 个粒子，成片用不洒的一次。</li>
 <li><b>像不像真水（10-23，第 23 步）</b>：倒水、装水、静水、自由下落与真实一致；晃荡、水滴振荡、溃坝铺开、小孔出流都明显太黏（晃荡阻尼比 0.53，真水约 0.008；溃坝前沿慢约 37 %），最大的单项来源是隐式表面张力；另外没有空气、没有接触角。<b>下一步</b>：让隐式表面张力不再耗散，评估 FLIP 混合，密闭腔的整体气压。</li>
+<li><b>静水的根因（10-25，第 26 步）</b>：持续驱动来自两处缺陷——墙面上节点的墙后判定被舍入误差决定（贴底又贴墙的格子几何出错）、墙边列水面被系统性估低。两处修掉后，精确静水初态的水真正静止（粒子最大 2 µm/s，无静止处理），从非静水初态释放 6 s 后中位 0.0018 mm/s。另查出平衡算子给薄水 / 稀疏水数倍于质量的重量（倒到地上的水洼约 7.6 倍），列密度判据修正后倾倒过杯沿的求解代价降到约六分之一。<b>未完成</b>：小烧杯晃荡信号偏噪（拟合优度 0.70）、曲壁容器（烧瓶 0.84 mm/s）、孔洞被堵；候选配置的倾倒 / 泼水 / 滴管 / 底孔在跑。</li>
 <li><b>静水残余（10-25，第 25 步）</b>：残余运动是被持续推出来的（1000 倍黏度下仍在动，没有重力则精确静止），驱动是墙边、底板、水面附近压力比静水平衡低千分之几节点重量，已用逐项节点力探针直接测到；推开、粒子 J 弥散、拉伸刚度、墙带刚度、接触都已排除。修掉两处“墙后”判定回归（晃荡、隔板）和满格压力体积权重的不一致（晃荡阻尼比 0.237 → 0.130）。<b>下一步</b>：查清边界层压力亏欠在沉积 / 插值中如何形成；孔洞（底孔、滴管管口）需要按区复制节点或流体侧泛洪。</li>
 <li><b>静水的根（10-23，第 24 步）</b>：摩擦能量不一致的 bug 已修（倾倒 Newton 1246 → 54 次/步）；切割单元的平衡算子让静水平衡精确到舍入（对齐方箱 0.016 mm/s）；
 但让残余噪声彻底消失的稳定器都等价于 κ·Δt 量级的黏度，静止与晃荡不能兼得，原因定位到 MPM Lite 的格心传输（粒子看不见子格状态）。<b>待决定</b>：换传输方案 / 量化代价后接受切割带稳定项 / 静态动态分开配置。</li>
