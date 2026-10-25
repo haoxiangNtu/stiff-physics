@@ -173,6 +173,7 @@ td.mono, th.mono { white-space: nowrap; }
 .tag { display: inline-block; border-radius: 999px; padding: 0 .6rem; font-size: .78rem; font-weight: 600; background: var(--e200); color: var(--primary); white-space: nowrap; }
 .tag.ok { color: var(--ok); }
 .tag.na { color: var(--na); }
+.dl { display: inline-block; margin: .2rem .6rem .2rem 0; padding: .25rem .7rem; border: 1px solid var(--e300); border-radius: .5rem; font-size: .88rem; }
 
 /* ---------- admonition-style panels ---------- */
 .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; margin: 1.25rem 0 1.5rem; }
@@ -210,6 +211,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <a class="item opt" href="#hands">灵巧手</a>
   <a class="item opt" href="#data">数据与验证</a>
   <a class="item opt" href="#liquid">液体</a>
+  <a class="item opt" href="#mpm">流固耦合</a>
   <a class="item opt" href="#robotgym">三个任务</a><a class="item opt" href="#washroom">晾衣间</a>
   <a class="item opt" href="#modules">模块</a>
   <a class="item opt" href="docs/outputs.html">技术详解</a>
@@ -394,6 +396,41 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <figcaption><b>静止的水</b> — 同一时刻的两次完整运行（路径追踪）：左为上一版成片（应急版固壁），无人触碰的烧瓶里水以约 0.13 cm/s 慢慢环流；右为最终版（根本修正 + 静止处理），约 0.001 cm/s。修复前这里是约 2 cm/s。
     液体模块目前在引擎开发分支上，尚未进入公开发布的 wheel。</figcaption>
   </figure>
+</div></section>
+
+<section class="block" id="mpm"><div class="container">
+  <div class="section-intro">
+    <div class="kicker kicker--sdk">Engine · MPM × IPC</div>
+    <h2>流固耦合：液体龙、弹性龙与方块塔</h2>
+    <p class="lead">MPM 粒子（液体或弹性体）和 IPC 布料、刚体放在同一个 Newton 求解里：网格节点是未知量，每个粒子是 IPC 的接触代理顶点，
+    接触的梯度和 Hessian 经插值权重链式回传到网格。两万粒子的液体龙落到钉边的布上，90 个刚体立方体叠成的塔压在布中央；
+    把龙换成橡胶（fixed-corotated 弹性材料）后，同一条管线跑出被压扁但体积不变的龙。四个场景各有 MP4 和时间采样的 USD。
+    <a class="more" href="docs/mpm_ipc.html">阅读场景、方法、差异与下载 →</a></p>
+  </div>
+  <div class="fig-grid">
+    <figure class="fig">
+      <video src="media/mpm_case13_liquid_pygipc.mp4" muted loop playsinline controls preload="metadata"></video>
+      <figcaption><b>液体龙 + 布 + 方块塔</b> — 20,000 粒子、31.7 kg 的水从龙形落到两边钉死的布上，10 层方块塔叠在布中央；漫过布边的水落到 y = −1 的地面。实时速度，3 s。</figcaption>
+    </figure>
+    <figure class="fig">
+      <video src="media/mpm_case13_liquid_direct.mp4" muted loop playsinline controls preload="metadata"></video>
+      <figcaption><b>同一场景 · 地面在 y = 0</b> — stiff_physics 直写版：水在布上摊开，布中心在水和塔的重量下沉到 y ≈ 0.30；逐帧检查布下无粒子穿透。</figcaption>
+    </figure>
+    <figure class="fig">
+      <video src="media/mpm_case13_elastic.mp4" muted loop playsinline controls preload="metadata"></video>
+      <figcaption><b>弹性龙</b> — 龙换成 E = 1e5 Pa、ν = 0.3 的橡胶：被塔压扁、塔随之倾斜，但龙的体积保持。</figcaption>
+    </figure>
+    <figure class="fig">
+      <video src="media/mpm_elastic_cube_box.mp4" muted loop playsinline controls preload="metadata"></video>
+      <figcaption><b>弹性方块验证</b> — 20 cm 方块（E = 1e5 Pa）落地回弹，3.5 kg 刚体盒落在上面：稳态压缩约 1.5%，体积比 J 稳定在 0.992，不蠕变。</figcaption>
+    </figure>
+  </div>
+  <p style="margin:.2rem 0 0;color:var(--sub);font-size:.93rem">USD（Y 轴向上、米制、时间采样：刚体变换 + 布料顶点 + 粒子 Points）：
+    <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-mpm-2026-10/case13_mpm_ipcabd_pygipc.usdc">液体龙 · pygipc 版（90 MB）</a>
+    <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-mpm-2026-10/case13_mpm_ipcabd_direct.usdc">液体龙 · 直写版（90 MB）</a>
+    <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-mpm-2026-10/case13_mpm_ipcabd_elastic.usdc">弹性龙（91 MB）</a>
+    <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-mpm-2026-10/elastic_cube_E1e5_with_rigid_box.usdc">弹性方块（12 MB）</a>
+    <br>MPM 模块在引擎开发分支上，尚未进入公开发布的 wheel。</p>
 </div></section>
 
 <section class="block" id="robotgym"><div class="container">

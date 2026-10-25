@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MPM–IPC 流固耦合：液体龙、弹性龙与方块塔</title>
+<meta name="description" content="在 StiffGIPC 里把 MPM 粒子（液体 / fixed-corotated 弹性体）与 IPC 布料、刚体放进同一个 Newton 求解：场景参数、耦合方法、四个场景的视频与时间采样 USD、与参考实现的差异、复现命令。">
+<link rel="stylesheet" href="docs.css">
+<style>
+.fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
+  margin: 1.2rem 0 1.5rem; padding: .6rem; box-shadow: var(--fig-shadow); }
+.fig img, .fig video { border-radius: .4rem; width: 100%; height: auto; display: block; background: #fff; }
+.fig figcaption { color: var(--sub); text-align: center; padding: .6rem .5rem .1rem; font-size: .86rem; line-height: 1.6; }
+.fig figcaption b { color: var(--ink); font-weight: 600; }
+figure { margin: 0; }
+.fig-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; margin: 1.2rem 0 1.5rem; }
+.fig-grid .fig { margin: 0; }
+@media (max-width: 768px) { .fig-grid { grid-template-columns: 1fr; } }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dl { display: inline-block; margin: .2rem .6rem .2rem 0; padding: .25rem .7rem; border: 1px solid var(--e300); border-radius: .5rem; font-size: .88rem; }
+</style>
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="liquid.html">液体改动日志</a>
+  <a class="item" href="robotgym.html">三个任务</a>
+  <a class="item" href="outputs.html">技术详解</a>
+  <a class="item" href="../#mpm">返回演示 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / MPM–IPC 流固耦合</div>
+<div class="kicker">Engine · MPM × IPC · Fluid–Solid Coupling</div>
+<h1>MPM–IPC 流固耦合：液体龙、弹性龙与方块塔</h1>
+<p class="lead">这一页记录四个流固耦合场景：MPM 粒子（液体，或 fixed-corotated 弹性体）与 IPC 布料、刚体在<b>同一个</b> Newton 求解里耦合，
+不做交替迭代。每个场景给出参数、视频、时间采样的 USD 与运行时间，并写明与参考实现的差异。
+全部在一张 RTX 4090 D 上计算，渲染为 pyrender/EGL 离屏序列（1280×720）。</p>
+
+<div class="toc"><b>目录</b>
+  <a href="#scene">一、场景</a><a href="#method">二、方法</a><a href="#results">三、结果</a><a href="#usd">四、USD 下载</a><a href="#diff">五、与参考实现的差异</a><a href="#repro">六、复现</a>
+</div>
+
+<h2 id="scene">一、场景</h2>
+<p>主场景是一条液体龙落到钉边的布上，同时一座刚体方块塔压在布中央；"弹性龙"把液体换成橡胶，其余不变。第四个场景是弹性材料的独立验证。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>对象</th><th>规格</th></tr></thead>
+<tbody>
+<tr><td>液体龙</td><td>龙形采样 20,000 个 MPM 粒子，ρ = 1000 kg/m³，体积弹模 κ = 1e5 Pa，总质量 31.7 kg，初始最低点 y = 0.97 m</td></tr>
+<tr><td>弹性龙（替换项）</td><td>同一组粒子，fixed-corotated 弹性材料，E = 1e5 Pa，ν = 0.3</td></tr>
+<tr><td>布</td><td>4225 顶点的方形布，1.5 倍缩放，置于 y = 0.525 m；拉伸刚度 5e7，弯曲刚度 1e8，厚 1 mm，200 kg/m³；左右两边共 130 个顶点钉死</td></tr>
+<tr><td>方块塔</td><td>10 层 × 9 个 0.14 m 的 ABD 刚体立方体（κ = 1e8，ρ = 1000），从 y = 1.345 m 起叠放</td></tr>
+<tr><td>接触</td><td>IPC 接触与摩擦，摩擦系数 0.2，dhat 3 mm；弹性体对地面改用网格贴地层（见第二节）</td></tr>
+<tr><td>时间</td><td>dt = 0.01 s，300 步 = 3 s，100 fps；隐式 Euler</td></tr>
+<tr><td>弹性方块验证</td><td>20 cm 方块，4096 粒子，E = 1e5 Pa，ν = 0.3，ρ = 1000，从 25 cm 高落下；回弹后 3.5 kg 刚体盒落在上面；1.2 s，241 帧</td></tr>
+</tbody>
+</table></div>
+
+<h2 id="method">二、方法：粒子作为接触代理顶点的单体求解</h2>
+<ul>
+  <li><b>未知量是网格节点位移。</b>MPM 背景网格的活动节点作为点体顶点进入 IPC 的 Newton 系统，与布料、刚体的自由度一起求解。</li>
+  <li><b>每个粒子是 IPC 的接触代理顶点。</b>粒子参与和布料、刚体以及粒子之间的接触、摩擦（dhat 3 mm），接触能量对粒子位置的梯度与 Hessian
+  经插值权重链式回传到网格节点，所以"水推布、布兜水"在同一次 Newton 迭代里收敛。</li>
+  <li><b>液体：</b>逐单元体积能（水的状态方程，κ = 1e5 Pa），APIC 传输。</li>
+  <li><b>弹性体：</b>每粒子变形梯度 F 上的 fixed-corotated 能量 ψ = μ Σ(σ<sub>i</sub> − 1)² + λ/2 (J − 1)²，
+  在网格单元上做 cell-mean 单点求积，9×9 Hessian 做 PSD 投影后装配成与液体相同的 36 块布局；
+  F 用所在单元的变形映射 A 提交（F ← A·F），与能量里的单元映射一致——用插值速度梯度提交会在恒定载荷下持续蠕变。</li>
+  <li><b>弹性体与地面：</b>贴地的一层网格节点固定（sticky），粒子–地面 IPC 关闭。否则粒子代理被钳在离地 0.1 mm，回弹时 CCD 把 Newton 步长压到 0，方块一步步被压扁。</li>
+  <li><b>求解：</b>隐式 Euler 单步，Newton + PCG（对角预条件）。</li>
+</ul>
+
+<h2 id="results">三、结果</h2>
+<div class="fig-grid">
+  <figure class="fig">
+    <video src="../media/mpm_case13_liquid_pygipc.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>液体龙 + 布 + 方块塔 · pygipc 前端版</b> — 20,000 粒子、31.7 kg 的水落到两边钉死的布上，10 层方块塔叠在布中央；漫过布边的水落到 y = −1 的地面。实时速度，3 s；一张 4090 D 上 10.5 min。</figcaption>
+  </figure>
+  <figure class="fig">
+    <video src="../media/mpm_case13_liquid_direct.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>同一场景 · 直写版</b> — 用 stiff_physics API 直接搭建，地面在 y = 0；水在布上摊开，布中心在水和塔的重量下沉到 y ≈ 0.30。3 s，5.1 min。</figcaption>
+  </figure>
+  <figure class="fig">
+    <video src="../media/mpm_case13_elastic.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>弹性龙</b> — 龙换成 E = 1e5 Pa、ν = 0.3 的橡胶：被塔压扁、塔随之倾斜，龙的体积保持。3 s，15.1 min。</figcaption>
+  </figure>
+  <figure class="fig">
+    <video src="../media/mpm_elastic_cube_box.mp4" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>弹性方块验证</b> — 20 cm 方块落地回弹，3.5 kg 刚体盒落在上面：稳态压缩约 1.5%，体积比 J 的均值稳定在 0.992，不蠕变。1.2 s。</figcaption>
+  </figure>
+</div>
+<div class="note good"><b>穿透检查</b>
+两条液体路径逐帧检查：布下 2 cm 以内没有粒子（0 个），即水没有穿过布；溢出的水只从布边流走。弹性方块在盒子压住后的 1 s 内 J 均值不再下降。</div>
+
+<h2 id="usd">四、USD 下载</h2>
+<p>Y 轴向上，单位米，时间采样：刚体立方体 / 盒子是静态网格 + 变换动画（<code>/World/Rigid</code>），布料是顶点动画（<code>/World/Deformables</code>），
+MPM 粒子是 Points（<code>/World/Liquid/particles</code>，每个粒子一个点）。前三个每秒 100 个时间码，方块例子每秒 200 个。
+可用 usdview、Houdini、Blender（4.x 的 USD 导入）或 Omniverse 打开。文件放在仓库的
+<a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-mpm-2026-10">GitHub Release</a> 里（不是软件版本）。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>场景</th><th class="num">时长</th><th class="num">帧</th><th class="num">大小</th><th>文件</th></tr></thead>
+<tbody>
+<tr><td>液体龙 · pygipc 前端版（地面 y = −1）</td><td class="num">3.0 s</td><td class="num">301</td><td class="num">90 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-mpm-2026-10/case13_mpm_ipcabd_pygipc.usdc">case13_mpm_ipcabd_pygipc.usdc</a></td></tr>
+<tr><td>液体龙 · 直写版（地面 y = 0）</td><td class="num">3.0 s</td><td class="num">301</td><td class="num">90 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-mpm-2026-10/case13_mpm_ipcabd_direct.usdc">case13_mpm_ipcabd_direct.usdc</a></td></tr>
+<tr><td>弹性龙</td><td class="num">3.0 s</td><td class="num">301</td><td class="num">91 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-mpm-2026-10/case13_mpm_ipcabd_elastic.usdc">case13_mpm_ipcabd_elastic.usdc</a></td></tr>
+<tr><td>弹性方块 + 刚体盒</td><td class="num">1.2 s</td><td class="num">241</td><td class="num">12 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-mpm-2026-10/elastic_cube_E1e5_with_rigid_box.usdc">elastic_cube_E1e5_with_rigid_box.usdc</a></td></tr>
+</tbody>
+</table></div>
+
+<h2 id="diff">五、与参考实现的差异</h2>
+<p>主场景来自 pygipc 参考实现的示例 13（MPM + IPC + ABD）。原脚本经一层 <code>pygipc → stiff_physics</code> 兼容后端<b>不改一行</b>跑在 StiffGIPC 上（第一条视频），直写版用同样的参数重新搭建（第二条）。求解器本身有以下差异：</p>
+<div class="note warn"><b>没有照搬的部分</b>
+<ul style="margin:.3rem 0 0">
+  <li>稠密背景格子（dx ≈ 2.3 cm，粒子体积与质量按原值）代替 16 cm 稀疏页式网格 + 分区子求积；</li>
+  <li>逐单元 cell-mean 体积能，代替逐粒子求积；</li>
+  <li>对角 PCG 代替 MAS 预条件器；</li>
+  <li>隐式 Euler 单步代替 BDF2 + CFL 子步；</li>
+  <li>Drucker-Prager / von Mises 塑性未移植（后端对这两种材料明确报错）；</li>
+  <li>渲染是粒子点云 + 网格，没有做流体表面重建。</li>
+</ul></div>
+<p>MPM 液体 / 弹性体模块在引擎分支 <code>feat/unified-mpm-elastic</code> 上，尚未进入公开发布的 wheel。</p>
+
+<h2 id="repro">六、复现</h2>
+<pre class="code"><span class="c"># 环境：STIFFGIPC_NATIVE_DIR=&lt;engine&gt;/build_4090 PYTHONPATH=&lt;engine&gt; PYOPENGL_PLATFORM=egl；$PY = python3.11</span>
+<span class="c"># 主场景（液体龙 / 弹性龙）：求解 → recording.npz</span>
+$PY examples/unified/mpm_ipcabd_liquid.py --out out/case13 --steps 300            <span class="c"># 液体</span>
+$PY examples/unified/mpm_ipcabd_liquid.py --out out/case13e --steps 300 --model elastic --young 1e5 --poisson 0.3
+
+<span class="c"># 弹性方块验证</span>
+$PY examples/unified/mpm_elastic_cube.py --with-box --out out/cube
+
+<span class="c"># 出片与导出</span>
+$PY examples/unified/render_recording.py out/case13/recording.npz --out case13.mp4
+$PY examples/unified/export_usd.py      out/case13/recording.npz --out case13.usdc
+
+<span class="c"># pygipc 原脚本原样运行（兼容后端）</span>
+GIPC_PYGIPC_BACKEND=stiff $PY python_examples/13_mpm_ipcabd.py --headless --steps 300</pre>
+</article>
+
+<footer><div class="container">
+  <span><a href="../">← 返回首页</a></span>
+  <span><a href="liquid.html">液体引擎改动日志 →</a></span>
+</div></footer>
+</body>
+</html>
