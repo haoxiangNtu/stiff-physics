@@ -1161,7 +1161,7 @@ J 的更新用的是格均速度梯度，格内的非仿射运动对粒子<b>不
 <tr><td>底孔出流</td><td class="num">流量系数 0.06</td><td class="num">孔被堵住</td><td class="num">孔被堵住</td><td>恢复的判定规则会堵孔，见 (d)</td></tr>
 <tr><td>滴管吸水（管内粒子）</td><td class="num">15</td><td class="num">1</td><td class="num">1</td><td>管口也是孔，同样被堵</td></tr>
 <tr><td>泼水（桌面水洼）</td><td class="num">—</td><td class="num">r90 117 mm，0 穿越，3.8 min</td><td class="num">r90 129 mm，0 穿越，6.9 min</td><td>—</td></tr>
-<tr><td>烧杯倾倒</td><td class="num">杯内 8.5 %、地面 72 %，2470 s</td><td class="num">运行中</td><td class="num">运行中</td><td>第 22 步的水 1301 s</td></tr>
+<tr><td>烧杯倾倒</td><td class="num">杯内 8.5 %、地面 72 %，2470 s</td><td class="num">杯内 7.7 %、地面 71 %，2568 s</td><td class="num">运行中</td><td>第 22 步的水 1301 s；过杯沿阶段每步 150–360 次 Newton</td></tr>
 </tbody></table></div>
 
 <h3>(b) 残余运动是被持续推出来的</h3>
@@ -1223,13 +1223,18 @@ J 的更新用的是格均速度梯度，格内的非仿射运动对粒子<b>不
 格均值看不见，粒子一移动就漏出来。</p>
 <p>还查出一处几何上的不精确：节点到墙的距离取的是“到最近墙点的距离”，而墙点是粒子在墙上的投影、是稀疏采样，平墙上的节点得到的是到最近采样点的面内距离（可达半个粒子间距），
 贴墙切割单元因此少了约 6 % 的流体体积，并且随粒子移动而变。改成到墙点所在三角形的真实距离后，方箱贴墙节点的重量回到满值（0.971 → 0.9996），但这组拐角力不变；而且斜放的方箱静置从约 0.2 变成 2.2 mm/s、烧瓶 0.9 → 1.7 mm/s、晃荡阻尼比 0.130 → 0.193——<b>未采用</b>。现行的固定带与切割单元规则是在采样距离之上调出来的，墙面距离要和它们一起重做。</p>
+<p><b>从精确的静水初态出发</b>（每个粒子的 J 设成它所在深度的静水值，规则粒子格）：水仍在 1 s 内动到 0.9 mm/s。第 0 步的节点力给出了原因的一部分——体内节点精确平衡（&lt; 5×10⁻⁷），
+贴底一行却亏欠约 12 % 节点重量：格心模板的沉积在底板处被截断，贴底单元只收到上方的粒子，沉积出的 J 属于这些粒子的平均高度（离底 3.04 mm），而不是单元形心（2.5 mm），
+按静水梯度正好差出约 5 Pa。水面下的单元方向相反。<b>修正（<code>LIQ_WB_YBAR</code>）</b>：沉积时同时记下粒子沿重力方向的加权平均高度，用静水梯度把单元的 J 平移到它的流体形心。
+第 0 步的贴底一行从 −123 降到 +0.03（×10⁻³ 节点重量），远离墙的水面行从 ±80 降到 ±0.06；剩下的只有墙与水面交线附近两圈（最大约 5 %）。但运动本身没有变（静水起步、静置释放、高黏度稳态都与修正前相同）——
+这处偏差是真的，持续的驱动在交线和交棱处。</p>
 <p><b>下一步</b>：在这两类拐角查清沉积、J 更新和墙带与底板带在交棱处的组合是怎样造成奇偶力对的，而不是再加一项能量。曲壁容器更严重：同样的探针在烧瓶里测得的黏性力中位数约为方箱的 24 倍。</p>
 
 <h3>(g) 试验本身的问题</h3>
 <p>方箱静置试验的播种格并不对称：靠两面墙的间隙 1.5 mm，对面两面墙 3.5 mm。无论有没有随机扰动，都会长出同一方向的整箱环流。改成居中播种后，
 “静置后释放”的方箱 6 s 内从 0.60 mm/s 一直降到 0.25 mm/s，而不对称播种停在 0.4–0.6。之前所有用这个试验比较的“对齐方箱”数字都带着这一项（套件表也是）。</p>
 <p class="small">新增与改动（均在引擎开发分支，未发布）：运行期黏度接口 <code>set_liquid_visc</code>；墙后判定开关 <code>LIQ_WB_PHI_SIGN</code>（默认恢复为 3 = 任一壁点平面）；
-满格几何静止体积 <code>LIQ_WB_GEOV</code>；墙面真实距离 <code>LIQ_WB_PHI_TRI</code>（默认关，未采用）；逐项节点力探针 <code>LIQ_FORCE_PROBE</code>（静水探针同时导出单元数据）；J 零空间滤波 <code>LIQ_JFILT</code>、G2P 只取流体单元 <code>LIQ_G2P_FLUID</code>（默认关，未采用）；
+满格几何静止体积 <code>LIQ_WB_GEOV</code>；沉积高度修正 <code>LIQ_WB_YBAR</code>（默认关）；运行期写入粒子 J <code>set_liquid_J</code>（静水起步试验）；墙面真实距离 <code>LIQ_WB_PHI_TRI</code>（默认关，未采用）；逐项节点力探针 <code>LIQ_FORCE_PROBE</code>（静水探针同时导出单元数据）；J 零空间滤波 <code>LIQ_JFILT</code>、G2P 只取流体单元 <code>LIQ_G2P_FLUID</code>（默认关，未采用）；
 方箱试验新增居中播种、加盖、重力、静置后释放与状态导出，烧瓶试验新增静置选项与求解速度报告。</p>
 
 <h3 id="changes">改动清单（10-19 → 10-23，均在引擎开发分支，未发布）</h3>
@@ -1269,6 +1274,8 @@ J 的更新用的是格均速度梯度，格内的非仿射运动对粒子<b>不
 <tr><td><code>liquid_system.cu</code> 体素能量</td><td>满格 / 切割格的静止体积 = 几何体积 / J（单元力 = 压力 × 几何面积）</td><td><code>LIQ_WB_GEOV</code>（默认 0，现行配置开）</td><td>晃荡 0.177 → 0.130</td></tr>
 <tr><td><code>liquid_system.cu</code> 探针</td><td>逐项节点力：求解首次迭代与收敛点各导出一份（压力与静水修正、黏性、墙边固定带、惯性、几何重量）</td><td><code>LIQ_FORCE_PROBE</code>、<code>LIQ_FORCE_PROBE_STEP</code></td><td>闭合 4×10⁻⁷</td></tr>
 <tr><td><code>liquid_wb.cuh</code> 节点符号距离</td><td>距离取墙点所在三角形的真实距离（原为到墙点采样本身的距离）</td><td><code>LIQ_WB_PHI_TRI</code>（默认 0，未采用）</td><td>贴墙节点重量 0.971 → 0.9996；斜墙与烧瓶变差</td></tr>
+<tr><td><code>liquid_system.cu</code> 沉积</td><td>沉积时累加粒子沿重力方向的高度，单元 J 按静水梯度平移到流体形心</td><td><code>LIQ_WB_YBAR</code>（默认 0）</td><td>静水起步第 0 步贴底行 −0.123 → +3×10⁻⁵ 节点重量</td></tr>
+<tr><td><code>sim_engine</code>、绑定、<code>engine.py</code>、<code>m15_box_rest.py</code></td><td>运行期写入粒子 J（<code>set_liquid_J</code>）；方箱试验 <code>--hydro-init</code> 静水起步</td><td>—</td><td>第 25 步 (f)</td></tr>
 <tr><td><code>liquid_system.cu</code></td><td>扣除静水部分的 J 零空间滤波；G2P 只取流体单元；自由面以上节点计重（诊断）</td><td><code>LIQ_JFILT</code>、<code>LIQ_G2P_FLUID</code>、<code>LIQ_WB_AIRGRAV</code>（默认 0，未采用）</td><td>第 25 步 (c)</td></tr>
 <tr><td><code>m15_box_rest.py</code>、<code>m14_still_water.py</code></td><td>居中播种、加盖、重力、播种扰动、静置后释放、状态导出；烧瓶的静置选项、求解速度报告、打印单位</td><td>—</td><td>第 25 步数据来源</td></tr>
 </tbody></table></div>
