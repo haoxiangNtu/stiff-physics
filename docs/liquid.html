@@ -84,7 +84,7 @@ svg.diagram .m-green { fill: var(--acc-data); } svg.diagram .m-amber { fill: var
 <a href="#demo">4 演示跑通</a><a href="#audit">5 审计与提速</a><a href="#symptom">6 静止的水在动</a>
 <a href="#hypotheses">7 排除假设</a><a href="#root">8 根因</a><a href="#stopgap">9 应急版固壁</a>
 <a href="#fix">10 根本修正</a><a href="#rest">11 让静水静下来</a>
-<a href="#reaudit">12 复审：可追溯</a><a href="#divider">13 薄板试验</a><a href="#cpic">14 兼容性屏蔽</a><a href="#budget">15 支撑力预算</a><a href="#pump">16 滴管</a><a href="#split">17 混合切割单元</a><a href="#twofield">18 每侧槽位</a><a href="#thinst">19 薄层张力</a><a href="#ground">20 地面也是墙</a><a href="#sti">21 隐式表面张力</a><a href="#lab14">22 最新的水做实验台</a><a href="#realism">23 像不像真水</a><a href="#changes">改动清单</a><a href="#status">现状</a><a href="#refs">参考文献</a>
+<a href="#reaudit">12 复审：可追溯</a><a href="#divider">13 薄板试验</a><a href="#cpic">14 兼容性屏蔽</a><a href="#budget">15 支撑力预算</a><a href="#pump">16 滴管</a><a href="#split">17 混合切割单元</a><a href="#twofield">18 每侧槽位</a><a href="#thinst">19 薄层张力</a><a href="#ground">20 地面也是墙</a><a href="#sti">21 隐式表面张力</a><a href="#lab14">22 最新的水做实验台</a><a href="#realism">23 像不像真水</a><a href="#cutcell">24 平衡算子与稳定器</a><a href="#changes">改动清单</a><a href="#status">现状</a><a href="#refs">参考文献</a>
 </div>
 
 <h2 id="overview">全程一览</h2>
@@ -108,6 +108,13 @@ svg.diagram .m-green { fill: var(--acc-data); } svg.diagram .m-amber { fill: var
 <tr><td>15</td><td class="mono">10-20</td><td>液→固反力导出（壁面场约束反力、ghost 反力），支撑力预算</td><td>barrier + WFC + ghost = 水重，误差 ±0.5 %；floor_gravity 多算 2.1 % 水重</td></tr>
 <tr><td>16</td><td class="mono">10-20</td><td>滴管：运动学泵隔离试验、腔压泵模式、薄壳胶头资产</td><td>运动学泵丢液 66/86 且零滴出；腔压泵吸液 33 粒，提升时仍脱离（未完成）</td></tr>
 <tr><td>17</td><td class="mono">10-20</td><td>混合切割单元：按侧拆元 + 私有固定 ghost 角点（5 轮调试后被实验否决）；确定正确原语是每侧一个节点槽位</td><td>偏置板串扰不降；烧瓶里容器只承担 8 % 水重；默认关闭，S2 仍为交付配置</td></tr>
+<tr><td>18</td><td class="mono">10-20</td><td>每侧一个节点槽位（薄壁两侧各自的流体）</td><td>已实现，未稳定；默认关闭</td></tr>
+<tr><td>19</td><td class="mono">10-20 → 10-21</td><td>薄层表面张力：只拉自由面上的水</td><td>m10 隔离试验 + 两版水瓶</td></tr>
+<tr><td>20</td><td class="mono">10-21</td><td>地面也是墙：解析地平面进壁面场约束，薄层推开</td><td>桌上的水不再被压扁</td></tr>
+<tr><td>21</td><td class="mono">10-21</td><td>隐式表面张力：内聚能进 Newton 求解</td><td>水珠落地保持成珠，1 s 后静止</td></tr>
+<tr><td>22</td><td class="mono">10-22 → 10-23</td><td>用最新的水重做实验台</td><td>三个种子全部通过</td></tr>
+<tr><td>23</td><td class="mono">10-23</td><td>按公开实验逐项对比真实性</td><td>重力驱动一致；振荡类过黏（晃荡阻尼比 0.53 对 0.008）</td></tr>
+<tr class="hl"><td>24</td><td class="mono">10-23</td><td>摩擦能量不一致的修复；切割单元的平衡算子（静水平衡精确到舍入）；系统地试验稳定器，证明"对本步位移的罚 = 粘度"</td><td>倾倒 Newton 1246 → 54 次/步；对齐方箱静水 1.5 → 0.016 mm/s；烧瓶最大粒子速度 0.005 mm/s；但同一稳定器把晃荡压死——静止与动力学的矛盾被定位到传输方案</td></tr>
 </tbody></table></div>
 
 <h2 id="why"><span class="step-no">1</span>起点：为什么要把水放进引擎<span class="date">10-04 → 10-06</span></h2>
@@ -1093,6 +1100,45 @@ m10 里直接放在地面上的水池也是这样：旧规则下 6 s 时 2.6 万
 <p><b>可能的方向。</b>(1) 先理顺隐式表面张力和粒子推开的关系，再考虑换一种表面张力的离散方式（例如作用在网格上的表面能，而不是粒子对），让它只贡献表面能、不带来黏性；(2) 需要晃动的段落（摇匀、挤瓶）试 FLIP 混合，同时跑静水回归；(3) 空气：给密闭腔一个整体气压（腔压泵的推广）；(4) 接触角。
 试验脚本：<code>examples/liquid/m11_freefall.py</code>、<code>m12_dambreak_front.py</code>、<code>m13_efflux.py</code>，以及原有的 <code>m6_slosh.py</code>、<code>m7_drop.py</code>。</p>
 
+<h2 id="cutcell"><span class="step-no">24</span>平衡算子与稳定器：静水为什么还在动，为什么让它不动会让它不晃<span class="date">10-23</span></h2>
+<p>第 23 步把“水太黏”的账算到了隐式表面张力和幽灵罚项头上。这一步换一个问法：<b>不加任何静止处理</b>（没有拖曳、没有休眠、没有随速度切换的罚项），一杯静水里的 MPM 粒子能不能真的不动？
+验收标准改成粒子本身：静置后粒子速度的中位数和最大值，而不是渲染里看不看得出来。试验用三个几何：80 mm 方箱（壁面与网格对齐）、同一方箱绕竖轴转 30°（壁面斜切网格）、第 22 步的烧瓶（曲壁）。</p>
+
+<p><b>先修了一个真正的 bug。</b>倒水和底孔出流里 Newton 偶发 1000 次不收敛、线搜索缩到 2<sup>−25</sup> 的根因，是摩擦项的梯度按每个顶点的摩擦系数算（水和桌面 0.3），
+能量却乘的是全局的滑移率 0：有力没有能量，方向不是下降方向。用一个有限差分探针（沿 Newton 方向比较能量斜率与 −g·d，按能量项分开）二十分钟定位。修复后倾倒每步 Newton 最多 54 次（之前 1246 次、两小时跑不完），出流 0 次线搜索耗尽。</p>
+
+<p><b>平衡算子。</b>静水在动的几何原因：被墙或自由面切开的网格单元仍按整格积分，压力面积、静水修正和节点重量三者对不上，节点上留下一个常驻的净力，
+水就得动起来去平衡它。改成按每个单元里的<b>真实流体子体积</b>积分（墙面用粒子的最近壁点定义节点上的符号距离，自由面用每一列水的高度；子体积由 6 个 Kuhn 四面体逐个切出，
+GPU 结果与 CPU 原型一致到 1e-15）：压力作用面向量、单元内线性静水变化的修正项、节点重量都来自同一块体积，对任何线性压力场逐节点精确平衡。
+对齐方箱 10 s 静置的速度中位数从 1.5 mm/s 降到 <b>0.016 mm/s</b>（深处 0.01，到了舍入水平），30° 方箱 0.10，烧瓶 0.06；残余全在自由面附近。
+这一组数字仍带着第 11 步的幽灵罚项（它在慢速时按全梯度罚）。</p>
+
+<div class="note warn"><b>然后是矛盾。</b>去掉幽灵罚项，30° 方箱发散（23 → 137 mm/s）；留着它，烧杯晃荡的阻尼比 0.92–0.95——水不晃了（第 23 步是 0.53，真水 0.008）。
+把罚项强度降 10–50 倍，静止稳不住、晃荡仍然压死；只在静止期开罚、给近壁节点加惯性下限、按 AgMPM 的办法把流体份额小的节点约束到内部单元的多项式延拓、
+切割单元的子格体积一致性（6 个四面体片段的体应变相对格均的偏差，以水自身的体模量作罚）、粒子级的体积偏差弹性能量、切割单元的精确行列式、隐式的自由面重力刚度——
+一天里逐个实现、逐个用实验否决（每一个都先过有限差分探针，再跑静水和晃荡）。</div>
+
+<div class="tblwrap"><table><thead><tr><th>配置（都用平衡算子，固定墙）</th><th class="num">对齐方箱 10 s 中位</th><th class="num">30° 方箱 10 s 中位</th><th class="num">烧瓶 10 s 最大</th><th class="num">晃荡阻尼比</th><th>其它</th></tr></thead><tbody>
+<tr><td>不加稳定器</td><td class="num">0.27</td><td class="num">发散</td><td class="num">—</td><td class="num">0.107（f 4.35 Hz，理论 4.46）</td><td>溃坝 1.51 √(gH)</td></tr>
+<tr><td>幽灵罚项（第 11 步）</td><td class="num">0.016</td><td class="num">0.10</td><td class="num">1.4</td><td class="num">0.92</td><td>—</td></tr>
+<tr><td>子格体积一致性 ×1</td><td class="num">—</td><td class="num">1.35</td><td class="num">0.007</td><td class="num">0.1 s 内停</td><td>溃坝 1.27 √(gH)</td></tr>
+<tr><td>子格体积一致性 ×10</td><td class="num">0.25</td><td class="num">0.66</td><td class="num">0.005</td><td class="num">0.1 s 内停</td><td>出流 Newton 停滞</td></tr>
+<tr><td>子格体积一致性 ×100</td><td class="num">0.25</td><td class="num">0.13</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+</tbody></table></div>
+<p class="small">速度单位 mm/s。晃荡：内径 46 mm 烧杯、水深 40 mm，网格 5 mm——直径只有 4.6 格，是对阻尼最苛刻的试验。</p>
+
+<p><b>为什么是同一枚硬币。</b>这些稳定器都是对<b>本步位移</b> u = Δt·v 的二次罚 ½k|Lu|²。对位移增量的罚，就是对速度的罚乘 Δt：它等价于一个黏度 k·Δt。
+要在一步里压住切割单元的噪声，k 得和体模量 κ 同量级，于是黏度就是 κ·Δt = 10⁵ Pa × 5 ms = 500 Pa·s，是水（10⁻³）的五十万倍——静止好和晃荡死是同一个数。
+弱到不伤晃荡，就稳不住静止。唯一的出路是<b>有记忆的（弹性）</b>子格刚度：状态由粒子携带，能量随运动储存和归还，只有分辨不了的高频子格模式被隐式积分器吃掉。
+试了：把每个粒子的 J 相对格内线性静水剖面的偏差作为弹性能量——半秒内爆炸。原因是这个引擎（MPM Lite）的粒子只看格均场：粒子速度是 8 个角的平均经格心插值，
+J 的更新用的是格均速度梯度，格内的非仿射运动对粒子<b>不可见</b>，弹簧的伸长从不被记录，每步同样的力推下去。换句话说，MPM Lite 里不存在子格体积状态，
+有记忆的稳定器做不出来；要做，得换成标准 MPM 的传输（粒子直接采样 27 节点场，形变梯度在粒子处更新），这是传输方案层面的改动，不是再加一项能量。</p>
+
+<p><b>现在的状态。</b>平衡算子 + 固定墙 + 子格一致性是目前最安静的静水：烧瓶 10 s 后粒子最大速度 0.005 mm/s，30° 方箱 0.13 mm/s；代价是晃荡、溃坝、出流都被同一项粘住，不能作默认。
+三个选项摆在面前：(A) 换传输方案，一天以上的工作，影响现有全部液体演示；(B) 把子格一致性当作“随网格加密消失”的切割带稳定项，在真实分辩率（容器 10–20 格宽）下量化动力学代价后再定；
+(C) 静态场景用平衡算子 + 子格一致性，动态场景沿用第 22 步的水。所有开关默认关闭，没有发布。</p>
+<p class="small">试验脚本：<code>examples/liquid/m15_box_rest.py</code>（方箱静置，含分区与频谱报告）、<code>m14_still_water.py</code>（烧瓶）、<code>m6_slosh.py</code>、<code>m12_dambreak_front.py</code>、<code>m13_efflux.py</code>、<code>m4_beaker_tilt.py</code>；回归套件 <code>examples/liquid/suite/</code>。</p>
+
 <h3 id="changes">改动清单（10-19 → 10-23，均在引擎开发分支，未发布）</h3>
 <div class="tblwrap"><table>
 <thead><tr><th>位置</th><th>改动</th><th>开关 / 默认</th><th>验证</th></tr></thead>
@@ -1121,6 +1167,10 @@ m10 里直接放在地面上的水池也是这样：旧规则下 6 s 时 2.6 万
 <tr><td>探针 <code>LIQ_HYDRO_PROBE</code></td><td>新增粒子掩码、角点投票、第二套体积、ghost 角点、槽位表的导出</td><td>按需</td><td>第 17 步定位依据</td></tr>
 <tr><td>实验台设置</td><td>质量下限重新计入重量（<code>LIQ_FLOOR_GRAVITY</code> 回到默认 1），代码注释写明两种取值的代价</td><td>默认 1</td><td>自由下落试验 + 三个种子的实验台（第 22 步）</td></tr>
 <tr><td><code>examples/liquid/m11_freefall.py</code>、<code>m12_dambreak_front.py</code>、<code>m13_efflux.py</code></td><td>新验收试验：小水团自由下落、溃坝前沿速度（对 Martin &amp; Moyce / Lobovský）、水箱底孔出流（开口 / 加盖）</td><td>—</td><td>第 22、23 步数据来源</td></tr>
+<tr><td><code>GIPC.cu</code> 摩擦能量</td><td>摩擦能量与梯度用同一套（全局，按表）滑移率；有限差分探针 <code>LIQ_FD_FRAME</code> / <code>LIQ_FD_ON_EXHAUST</code></td><td>常开修复；探针按需</td><td>倾倒 Newton 1246 → 54 次/步；出流 0 次耗尽</td></tr>
+<tr><td><code>mpm/liquid_wb.cuh</code>（新）、<code>liquid_system.cu</code></td><td>平衡的切割单元算子：节点符号距离、按列水面、Kuhn 四面体切割、子体积的压力面积 / 静水修正 / 节点重量；墙上节点滑移或固定；移动壁面的目标位移</td><td><code>LIQ_WB</code>（默认 0）及 <code>LIQ_WB_*</code></td><td>GPU = CPU 原型 1e-15；对齐方箱 1.5 → 0.016 mm/s</td></tr>
+<tr><td><code>liquid_wb.cuh</code>、<code>liquid_system.cu</code></td><td>稳定器试验：节点聚合（AgMPM 式）、子格体积一致性、粒子体积偏差能量、切割单元精确行列式、自由面重力刚度、孔内节点的横向门</td><td><code>LIQ_WB_AGGR</code>、<code>LIQ_WB_HG</code>、<code>LIQ_PDEV</code>、<code>LIQ_WB_DET</code>、<code>LIQ_WB_SURFK</code>、<code>LIQ_WB_LAT</code>（除横向门外默认 0）</td><td>第 24 步表格；除子格一致性外均被否决</td></tr>
+<tr><td><code>examples/liquid/m15_box_rest.py</code>、<code>suite/</code></td><td>方箱静置试验（分区速度、深度分层、末 4 s 频谱）；回归套件 <code>run_suite.sh</code> / <code>summarize.py</code></td><td>—</td><td>第 24 步数据来源</td></tr>
 </tbody></table></div>
 
 <h2 id="status">现状与下一步</h2>
@@ -1128,6 +1178,8 @@ m10 里直接放在地面上的水池也是这样：旧规则下 6 s 时 2.6 万
 <li><b>已完成并验证</b>：液体与固体在同一 Newton 里双向隐式耦合；精确提速与 6 处修复；静止水的根因；应急版固壁和三处演示层修正；根本修正（壁面场约束 + 法向拉伸罚项）；静止处理（随速度切换的幽灵罚项 + 求解内的静止拖曳）和试管瞄准修正。</li>
 <li><b>最终演示</b>：根本修正 + 静止处理，所有器皿都加约束（包括试管），用原文的跟踪 J，226 分钟跑完五段全部通过；静止的水约 0.001 cm/s（第十步 0.03，应急版 0.13），水位不再下沉。<b>10-23 起</b>换成第 22 步用最新的水重做的版本（隐式表面张力、地面墙，桌上的水不冻结）：三个种子都通过，试管倒水洒出 0 / 1 / 7 个粒子，成片用不洒的一次。</li>
 <li><b>像不像真水（10-23，第 23 步）</b>：倒水、装水、静水、自由下落与真实一致；晃荡、水滴振荡、溃坝铺开、小孔出流都明显太黏（晃荡阻尼比 0.53，真水约 0.008；溃坝前沿慢约 37 %），最大的单项来源是隐式表面张力；另外没有空气、没有接触角。<b>下一步</b>：让隐式表面张力不再耗散，评估 FLIP 混合，密闭腔的整体气压。</li>
+<li><b>静水的根（10-23，第 24 步）</b>：摩擦能量不一致的 bug 已修（倾倒 Newton 1246 → 54 次/步）；切割单元的平衡算子让静水平衡精确到舍入（对齐方箱 0.016 mm/s）；
+但让残余噪声彻底消失的稳定器都等价于 κ·Δt 量级的黏度，静止与晃荡不能兼得，原因定位到 MPM Lite 的格心传输（粒子看不见子格状态）。<b>待决定</b>：换传输方案 / 量化代价后接受切割带稳定项 / 静态动态分开配置。</li>
 <li><b>还没解决</b>：静止拖曳对很慢的流动相当于一个弱屈服（k = 20 时，约 3.4 m/s² 以下的驱动会被拖慢，而不是被挡住）；细试管里的水倒出得偏晚、偏急；滴管泵按位置搬运，送液量受水的状态影响；两侧都有水的薄壁（插在烧瓶里的滴管玻璃管）需要一个单元承载两块互不连通的流体，要用虚拟节点或界面积分；
 修好以后计划回到原文的跟踪 J 加对称能量，去掉 J 重锚定、无张力状态方程和粒子推开这些补丁；滴管泵从“按位置搬运”换成管口的压力或速度条件。</li>
 <li><b>桌上的水（10-21）</b>：地平面纳入壁面场约束 + 薄层推开以后，泼到桌上的水不再被压扁；加上隐式表面张力（第二十一步）以后，水珠落地保持成珠、不再摊成看不见的薄层，1 s 后完全静止。<b>仍未完成</b>：直接放在地面上的水池底部仍有缓慢压实，水洼在十秒量级上缓慢变平；没有接触角。</li>
