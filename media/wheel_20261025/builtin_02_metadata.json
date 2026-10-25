@@ -1,0 +1,44 @@
+{
+  "case": "builtin_02",
+  "status": "completed",
+  "completed_steps": 500,
+  "simulation_seconds": 4.999999999999938,
+  "target_seconds": 5.0,
+  "record_fps": 30.0,
+  "initial_repair_requested": false,
+  "available_scene_count": 15,
+  "initial_intersections": false,
+  "dt": 0.01,
+  "target_steps": 500,
+  "vertices": 12510,
+  "faces": 18636,
+  "mpm_parents": 0,
+  "ready": true,
+  "initialization_seconds": 0.38067319999936444,
+  "recorded_mpm_particles": 0,
+  "recording_dtype": "float32",
+  "full_position_snapshots_dtype": "float64",
+  "visualization_subsample_only": true,
+  "saved_samples": 151,
+  "advance_retrieve_seconds": 10.309585799996057,
+  "elapsed_seconds": 11.203563699998995,
+  "exit_code": 0,
+  "local_validation": "passed",
+  "original_archive_sha256": "8c3c2e0c550345f9d33332945f7e327b58790eb514a44e08764ae556a61da518",
+  "bounds": [
+    [
+      -13.92714786529541,
+      -0.992500901222229,
+      -45.17721939086914
+    ],
+    [
+      33.27394485473633,
+      18.921653747558594,
+      -15.749439239501953
+    ]
+  ],
+  "title": "内置 case3：撞球场景",
+  "video_fps": 30,
+  "video_playback_speed": 1.0,
+  "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7"
+}

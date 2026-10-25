@@ -1,0 +1,44 @@
+{
+  "case": "builtin_04",
+  "status": "completed",
+  "completed_steps": 500,
+  "simulation_seconds": 4.999999999999938,
+  "target_seconds": 5.0,
+  "record_fps": 30.0,
+  "initial_repair_requested": false,
+  "available_scene_count": 15,
+  "initial_intersections": false,
+  "dt": 0.01,
+  "target_steps": 500,
+  "vertices": 45000,
+  "faces": 89996,
+  "mpm_parents": 0,
+  "ready": true,
+  "initialization_seconds": 2.717217299999902,
+  "recorded_mpm_particles": 0,
+  "recording_dtype": "float32",
+  "full_position_snapshots_dtype": "float64",
+  "visualization_subsample_only": true,
+  "saved_samples": 151,
+  "advance_retrieve_seconds": 14.690086600010545,
+  "elapsed_seconds": 19.13822699999946,
+  "exit_code": 0,
+  "local_validation": "passed",
+  "original_archive_sha256": "9c23bc25e56eda52289d77687f34dddc87a165071156417976a8ad653c1eecc9",
+  "bounds": [
+    [
+      -0.5028402805328369,
+      -0.4981355369091034,
+      -0.5000829696655273
+    ],
+    [
+      0.5029004812240601,
+      0.4986228346824646,
+      0.5000237822532654
+    ]
+  ],
+  "title": "内置 case5：柔性软垫",
+  "video_fps": 30,
+  "video_playback_speed": 1.0,
+  "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7"
+}

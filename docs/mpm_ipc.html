@@ -18,6 +18,16 @@ figure { margin: 0; }
 @media (max-width: 768px) { .fig-grid { grid-template-columns: 1fr; } }
 td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .dl { display: inline-block; margin: .2rem .6rem .2rem 0; padding: .25rem .7rem; border: 1px solid var(--e300); border-radius: .5rem; font-size: .88rem; }
+
+#wheel-reference, #wheel-reference figure { scroll-margin-top: 76px; }
+#wheel-reference .fig-grid { grid-template-columns: 1fr; }
+#wheel-reference table { min-width: 740px; }
+@media (max-width: 600px) {
+  .navbar .container { height: auto; min-height: 60px; flex-wrap: wrap; gap: 6px 14px; padding-block: 10px; }
+  .navbar__title { flex-basis: 100%; }
+  .navbar a.item { white-space: nowrap; font-size: .8rem; }
+  #wheel-reference, #wheel-reference figure, article h2, article h3 { scroll-margin-top: 110px; }
+}
 </style>
 </head>
 <body>
@@ -36,11 +46,86 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <h1>MPM–IPC 流固耦合：液体龙、弹性龙与方块塔</h1>
 <p class="lead">这一页记录四个流固耦合场景：MPM 粒子（液体，或 fixed-corotated 弹性体）与 IPC 布料、刚体在<b>同一个</b> Newton 求解里耦合，
 不做交替迭代。每个场景给出参数、视频、时间采样的 USD 与运行时间，并写明与参考实现的差异。
-全部在一张 RTX 4090 D 上计算，渲染为 pyrender/EGL 离屏序列（1280×720）。</p>
+这四个兼容后端实验在 RTX 4090 D 上计算，渲染为 pyrender/EGL 离屏序列（1280×720）。下方新增原始 Windows wheel 在 RTX 5090 上的独立长时复现与完整场景检查。</p>
 
 <div class="toc"><b>目录</b>
-  <a href="#scene">一、场景</a><a href="#method">二、方法</a><a href="#results">三、结果</a><a href="#usd">四、USD 下载</a><a href="#diff">五、与参考实现的差异</a><a href="#repro">六、复现</a>
+  <a href="#wheel-reference">原始 wheel 长时复现</a><a href="#scene">一、场景</a><a href="#method">二、方法</a><a href="#results">三、结果</a><a href="#usd">四、USD 下载</a><a href="#diff">五、与参考实现的差异</a><a href="#repro">六、复现</a>
 </div>
+
+
+<section id="wheel-reference">
+<h2>原始 Windows wheel：5 秒复现与完整场景检查</h2>
+<p>2026-10-25 更新。这里直接运行所提供的 <code>pygipc-0.0.1-cp314-cp314-win_amd64.whl</code>，
+没有经过下文的 <code>stiff_physics</code> 兼容后端。环境为 Windows 11、CPython 3.14.2、NumPy 2.5.4、RTX 5090（32 GB，驱动 591.86）。
+包内只有一个 Python 入口，但 <code>available_scene_count()</code> 返回 15 个内置场景。</p>
+<div class="note"><b>当前覆盖：</b>15 个内置场景已逐项检查；7 个内置场景及 1 个附带脚本完成长时运行、回传与可视化。
+完成项均至少运行 5 秒；另有 1 个场景提供明确标注的部分回传预览。其余项目的原因保留在下表，不能视为完整复现。</div>
+<div class="tblwrap"><table><thead><tr><th>入口／场景</th><th class="num">仿真时长</th><th class="num">步数</th><th class="num">MPM 粒子</th><th>状态与结果</th></tr></thead><tbody>
+<tr><td>附带 Python 示例 · 液体龙＋布料＋方块塔</td><td class="num">5.00 s</td><td class="num">500</td><td class="num">20,000</td><td>完成，检查通过<br><a href="#wheel-provided_example">视频</a> · <a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/provided_example_data.zip">数据 ZIP（39.9 MB）</a></td></tr><tr><td>case1 · 混合方块</td><td class="num">5.00 s</td><td class="num">500</td><td class="num">0</td><td>完成，检查通过<br><a href="#wheel-builtin_00">视频</a> · <a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_00_data.zip">数据 ZIP（1.6 MB）</a></td></tr><tr><td>case2 · 双兔子</td><td class="num">5.00 s</td><td class="num">500</td><td class="num">0</td><td>远端运行完成；回传缺 4 个采样帧，仅预览<br><a href="#wheel-builtin_01">视频</a> · <a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_01_partial_data.zip">部分数据 ZIP（314.3 MB）</a></td></tr><tr><td>case3 · 撞球</td><td class="num">5.00 s</td><td class="num">500</td><td class="num">0</td><td>完成，检查通过<br><a href="#wheel-builtin_02">视频</a> · <a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_02_data.zip">数据 ZIP（19.1 MB）</a></td></tr><tr><td>case4 · 高分辨率布料</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>初始网格相交，已显式尝试修复。最后取得的状态仍为初始化、0 步；ToDesk 断连后尚未核验后续结果。</td></tr><tr><td>case5 · 柔性软垫</td><td class="num">5.00 s</td><td class="num">500</td><td class="num">0</td><td>完成，检查通过<br><a href="#wheel-builtin_04">视频</a> · <a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_04_data.zip">数据 ZIP（72.0 MB）</a></td></tr><tr><td>case6 · 147 粒子 MPM</td><td class="num">5.00 s</td><td class="num">500</td><td class="num">147</td><td>完成，检查通过<br><a href="#wheel-builtin_05">视频</a> · <a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_05_data.zip">数据 ZIP（0.4 MB）</a></td></tr><tr><td>case7 · fluffy_ball</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>缺少原始资源：tetMesh/fluffy_ball.msh</td></tr><tr><td>case8 · animal_well</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>缺少原始资源：tetMesh/animal_well.msh</td></tr><tr><td>case9 · 服装人体动画</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>缺少原始资源：scene/case9_garment_human.json 及其引用的动画资源</td></tr><tr><td>case10 · ABD 服装动画</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>缺少原始资源：tetMesh/abd_dress/ignored_obj.txt、服装网格及 triMesh/body2 动画</td></tr><tr><td>case11 · 61K 软球</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>缺少原始资源：tetMesh/squishy_ball_61K.msh</td></tr><tr><td>case12 · MPM＋布料＋方块塔</td><td class="num">5.00 s</td><td class="num">500</td><td class="num">20,000</td><td>完成，检查通过<br><a href="#wheel-builtin_11">视频</a> · <a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_11_data.zip">数据 ZIP（39.8 MB）</a></td></tr><tr><td>case13 · HyperMPM 双龙</td><td class="num">5.00 s</td><td class="num">500</td><td class="num">95,650</td><td>完成，检查通过<br><a href="#wheel-builtin_12">视频</a> · <a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_12_data.zip">数据 ZIP（148.4 MB）</a></td></tr><tr><td>case14 · implicit-gpu-mpm 双龙</td><td class="num">5.00 s</td><td class="num">600</td><td class="num">95,541</td><td>完成，检查通过<br><a href="#wheel-builtin_13">视频</a> · <a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_13_data.zip">数据 ZIP（150.5 MB）</a></td></tr><tr><td>case15 · 溃坝</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>5 秒目标未完成；记录到 0.59 s（59 步）。前 50 步耗时 1005.74 s，接触阶段反复线搜索。因耗时过长主动中止本轮，保留部分轨迹与日志。</td></tr>
+</tbody></table></div>
+<p>物理时间步、材料、积分器和预条件器均沿用各入口原来的设置，仅延长运行帧数。
+附带脚本与内置 case12 虽然初始位置相同，Newton 阈值、MPM 预条件器及重力值存在差异，因此分别运行、分别展示，不将它们视为完全相同的实验。</p>
+<div class="fig-grid"><figure class="fig" id="wheel-provided_example">
+<video src="../media/wheel_20261025/provided_example.mp4" poster="../media/wheel_20261025/provided_example.jpg" controls muted loop playsinline preload="none"></video>
+<figcaption><b>附带 Python 示例 · 液体龙＋布料＋方块塔</b> — 5.00 s，500 步，dt = 0.01 s；真实仿真速度回放。
+4,945 网格顶点、20,000 MPM 粒子；advance + retrieve 累计 21.26 s。
+<br><a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/provided_example_data.zip">下载轨迹数据</a> · <a href="../media/wheel_20261025/provided_example_metadata.json">运行与校验记录</a></figcaption></figure><figure class="fig" id="wheel-builtin_00">
+<video src="../media/wheel_20261025/builtin_00.mp4" poster="../media/wheel_20261025/builtin_00.jpg" controls muted loop playsinline preload="none"></video>
+<figcaption><b>case1 · 混合方块</b> — 5.00 s，500 步，dt = 0.01 s；真实仿真速度回放。
+1,024 网格顶点、0 MPM 粒子；advance + retrieve 累计 9.27 s。
+<br><a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_00_data.zip">下载轨迹数据</a> · <a href="../media/wheel_20261025/builtin_00_metadata.json">运行与校验记录</a></figcaption></figure><figure class="fig" id="wheel-builtin_01">
+<video src="../media/wheel_20261025/builtin_01.mp4" poster="../media/wheel_20261025/builtin_01.jpg" controls muted loop playsinline preload="none"></video>
+<figcaption><b>case2 · 双兔子</b> — 5.00 s，500 步，dt = 0.01 s；真实仿真速度回放。
+202,508 网格顶点、0 MPM 粒子；advance + retrieve 累计 50.87 s。<br><b>部分回传预览：</b>147 / 151 个采样帧通过 ZIP 内部 CRC 校验；4 帧损坏，缺口使用最近有效采样并在视频中标红。初末全量状态与逐步指标可读；原归档 SHA256 不匹配，仍需重传。
+<br><a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_01_partial_data.zip">下载部分轨迹数据</a> · <a href="../media/wheel_20261025/builtin_01_metadata.json">运行与校验记录</a></figcaption></figure><figure class="fig" id="wheel-builtin_02">
+<video src="../media/wheel_20261025/builtin_02.mp4" poster="../media/wheel_20261025/builtin_02.jpg" controls muted loop playsinline preload="none"></video>
+<figcaption><b>case3 · 撞球</b> — 5.00 s，500 步，dt = 0.01 s；真实仿真速度回放。
+12,510 网格顶点、0 MPM 粒子；advance + retrieve 累计 10.31 s。
+<br><a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_02_data.zip">下载轨迹数据</a> · <a href="../media/wheel_20261025/builtin_02_metadata.json">运行与校验记录</a></figcaption></figure><figure class="fig" id="wheel-builtin_04">
+<video src="../media/wheel_20261025/builtin_04.mp4" poster="../media/wheel_20261025/builtin_04.jpg" controls muted loop playsinline preload="none"></video>
+<figcaption><b>case5 · 柔性软垫</b> — 5.00 s，500 步，dt = 0.01 s；真实仿真速度回放。
+45,000 网格顶点、0 MPM 粒子；advance + retrieve 累计 14.69 s。
+<br><a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_04_data.zip">下载轨迹数据</a> · <a href="../media/wheel_20261025/builtin_04_metadata.json">运行与校验记录</a></figcaption></figure><figure class="fig" id="wheel-builtin_05">
+<video src="../media/wheel_20261025/builtin_05.mp4" poster="../media/wheel_20261025/builtin_05.jpg" controls muted loop playsinline preload="none"></video>
+<figcaption><b>case6 · 147 粒子 MPM</b> — 5.00 s，500 步，dt = 0.01 s；真实仿真速度回放。
+0 网格顶点、147 MPM 粒子；advance + retrieve 累计 2.58 s。
+<br><a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_05_data.zip">下载轨迹数据</a> · <a href="../media/wheel_20261025/builtin_05_metadata.json">运行与校验记录</a></figcaption></figure><figure class="fig" id="wheel-builtin_11">
+<video src="../media/wheel_20261025/builtin_11.mp4" poster="../media/wheel_20261025/builtin_11.jpg" controls muted loop playsinline preload="none"></video>
+<figcaption><b>case12 · MPM＋布料＋方块塔</b> — 5.00 s，500 步，dt = 0.01 s；真实仿真速度回放。
+4,945 网格顶点、20,000 MPM 粒子；advance + retrieve 累计 22.54 s。
+<br><a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_11_data.zip">下载轨迹数据</a> · <a href="../media/wheel_20261025/builtin_11_metadata.json">运行与校验记录</a></figcaption></figure><figure class="fig" id="wheel-builtin_12">
+<video src="../media/wheel_20261025/builtin_12.mp4" poster="../media/wheel_20261025/builtin_12.jpg" controls muted loop playsinline preload="none"></video>
+<figcaption><b>case13 · HyperMPM 双龙</b> — 5.00 s，500 步，dt = 0.01 s；真实仿真速度回放。
+0 网格顶点、95,650 MPM 粒子；advance + retrieve 累计 73.34 s。
+<br><a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_12_data.zip">下载轨迹数据</a> · <a href="../media/wheel_20261025/builtin_12_metadata.json">运行与校验记录</a></figcaption></figure><figure class="fig" id="wheel-builtin_13">
+<video src="../media/wheel_20261025/builtin_13.mp4" poster="../media/wheel_20261025/builtin_13.jpg" controls muted loop playsinline preload="none"></video>
+<figcaption><b>case14 · implicit-gpu-mpm 双龙</b> — 5.00 s，600 步，dt = 0.00833333 s；真实仿真速度回放。
+0 网格顶点、95,541 MPM 粒子；advance + retrieve 累计 266.09 s。
+<br><a href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_13_data.zip">下载轨迹数据</a> · <a href="../media/wheel_20261025/builtin_13_metadata.json">运行与校验记录</a></figcaption></figure></div>
+<h3>数据、验证与资源范围</h3>
+<ul>
+<li>远端每一个物理步检查坐标有限、形状不变、帧号递增；标为完整结果的数据已通过回传 ZIP 的 SHA256 校验。部分回传预览单独注明缺帧与校验范围。该检查验证运行和数据完整性，不等于与作者参考轨迹数值一致，也不替代穿透或守恒专项验证。</li>
+<li><code>frames/</code> 是约 30 Hz 的 float32 可视化采样；超过 150,000 粒子的场景仅对显示采样，索引保存在 <code>topology.npz</code>。实际仿真粒子数不变。
+<code>initial_state_full.npz</code> 和 <code>final_state_full.npz</code> 保存全量 float64 位置，<code>metrics.csv</code> 覆盖每个物理步。</li>
+<li>兔子、软垫及撞球四面体模型来自已有 Stiff-GIPC Assets，作为缺失资源补充；原 zip 内的文件没有被替换。
+毛球、animal_well、61K 软球及两组服装动画的原始资源仍未包含在分发包中，未使用替代形状冒充原场景。</li>
+</ul>
+<p><a class="dl" href="../media/wheel_20261025/catalog.json">完整机器可读目录</a>
+<a class="dl" href="../media/wheel_20261025/capture_suite.py">批量运行与数据导出脚本</a>
+<a class="dl" href="../media/wheel_20261025/render_suite.py">MP4 渲染脚本</a>
+<a class="dl" href="../media/wheel_20261025/supplemental_asset_manifest.json">补充模型来源与 SHA256</a>
+<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/SHA256SUMS.txt">公开数据包 SHA256</a>
+<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/pygipc-wheel-examples-20261025">全部数据下载</a></p>
+<p>将原始 ZIP 内容解压到 <code>source/</code>，使同级目录包含 <code>capture_suite.py</code>、
+<code>source/13_mpm_ipcabd.py</code> 与 <code>source/Assets/</code>；在已安装原始 wheel 和 NumPy 的 Windows Python 3.14 环境运行。
+复现记录使用作者的 StiffGIPC / pygipc；场景与材料来源见原始分发包，本站仅提供运行记录、导出脚本和结果。</p>
+<pre class="code"># 示例：分别运行附带脚本和四个内置 MPM 场景
+python capture_suite.py --output suite_5s --seconds 5 --cases provided_example builtin_11 builtin_12 builtin_13 builtin_14
+# 省略 --cases 会逐项尝试全部 15 个内置场景及附带脚本；缺资源的项目会记录失败。
+# builtin_00..builtin_14 对应 C++ case1..case15。
+# 如需显式修复初始相交，额外传 --repair；不要把修复后的状态当作原始初态。</pre>
+<p>下面保留此前四个 <code>stiff_physics</code> 兼容后端实验，包含各自的参数和方法差异。</p>
+</section>
 
 <h2 id="scene">一、场景</h2>
 <p>主场景是一条液体龙落到钉边的布上，同时一座刚体方块塔压在布中央；"弹性龙"把液体换成橡胶，其余不变。第四个场景是弹性材料的独立验证。</p>

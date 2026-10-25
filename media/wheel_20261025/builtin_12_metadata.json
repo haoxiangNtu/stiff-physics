@@ -1,0 +1,44 @@
+{
+  "case": "builtin_12",
+  "status": "completed",
+  "completed_steps": 500,
+  "simulation_seconds": 4.999999999999938,
+  "target_seconds": 5.0,
+  "record_fps": 30.0,
+  "initial_repair_requested": false,
+  "available_scene_count": 15,
+  "initial_intersections": false,
+  "dt": 0.01,
+  "target_steps": 500,
+  "vertices": 0,
+  "faces": 0,
+  "mpm_parents": 95650,
+  "ready": true,
+  "initialization_seconds": 0.3542369000006147,
+  "recorded_mpm_particles": 95650,
+  "recording_dtype": "float32",
+  "full_position_snapshots_dtype": "float64",
+  "visualization_subsample_only": true,
+  "saved_samples": 151,
+  "advance_retrieve_seconds": 73.33942569999635,
+  "elapsed_seconds": 77.55656330000056,
+  "exit_code": 0,
+  "local_validation": "passed",
+  "original_archive_sha256": "064ec424ba8c3a38809126db07c1a7c8ced863fa724d5c100b4bb3c3b7fc2f5e",
+  "bounds": [
+    [
+      0.38206756114959717,
+      2.780553359116311e-06,
+      0.21957197785377502
+    ],
+    [
+      0.6361497640609741,
+      0.9247279763221741,
+      0.8154849410057068
+    ]
+  ],
+  "title": "内置 case13：HyperMPM 双龙碰撞",
+  "video_fps": 30,
+  "video_playback_speed": 1.0,
+  "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7"
+}

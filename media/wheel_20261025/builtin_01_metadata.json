@@ -1,0 +1,66 @@
+{
+  "case": "builtin_01",
+  "status": "partial_transfer",
+  "completed_steps": 500,
+  "simulation_seconds": 4.999999999999938,
+  "target_seconds": 5.0,
+  "record_fps": 30.0,
+  "initial_repair_requested": false,
+  "available_scene_count": 15,
+  "initial_intersections": false,
+  "dt": 0.01,
+  "target_steps": 500,
+  "vertices": 202508,
+  "faces": 49540,
+  "mpm_parents": 0,
+  "ready": true,
+  "initialization_seconds": 9.587282000000414,
+  "recorded_mpm_particles": 0,
+  "recording_dtype": "float32",
+  "full_position_snapshots_dtype": "float64",
+  "visualization_subsample_only": true,
+  "saved_samples": 151,
+  "advance_retrieve_seconds": 50.8691048000037,
+  "elapsed_seconds": 68.09814150000057,
+  "exit_code": 0,
+  "local_validation": "partial_transfer",
+  "original_archive_sha256": "580ed40123df15efe051ce235d3141a7bfd5a6cedf86ee5e76473162bda162c5",
+  "bounds": [
+    [
+      -0.6754204630851746,
+      -0.9999951720237732,
+      -0.6505382657051086
+    ],
+    [
+      1.2958476543426514,
+      0.8480839729309082,
+      0.26342442631721497
+    ]
+  ],
+  "remote_simulation_status": "completed",
+  "received_archive_sha256": "e14f41bb111e7bd71817e148a6659667d0fefe859b51c0e297094903eddec679",
+  "missing_samples": [
+    {
+      "file": "frames/sample_000051.npz",
+      "error": "Error -3 while decompressing data: invalid stored block lengths"
+    },
+    {
+      "file": "frames/sample_000052.npz",
+      "error": "Error -3 while decompressing data: invalid stored block lengths"
+    },
+    {
+      "file": "frames/sample_000073.npz",
+      "error": "Error -3 while decompressing data: invalid stored block lengths"
+    },
+    {
+      "file": "frames/sample_000074.npz",
+      "error": "Error -3 while decompressing data: invalid stored block lengths"
+    }
+  ],
+  "available_samples": 147,
+  "preview_gap_policy": "nearest valid sample; gaps marked in video",
+  "title": "内置 case2：双兔子",
+  "video_fps": 30,
+  "video_playback_speed": 1.0,
+  "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7"
+}

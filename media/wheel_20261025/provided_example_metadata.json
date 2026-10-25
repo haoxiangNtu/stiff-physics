@@ -1,0 +1,44 @@
+{
+  "case": "provided_example",
+  "status": "completed",
+  "completed_steps": 500,
+  "simulation_seconds": 4.999999999999938,
+  "target_seconds": 5.0,
+  "record_fps": 30.0,
+  "initial_repair_requested": false,
+  "available_scene_count": 15,
+  "initial_intersections": false,
+  "dt": 0.01,
+  "target_steps": 500,
+  "vertices": 4945,
+  "faces": 9272,
+  "mpm_parents": 20000,
+  "ready": true,
+  "initialization_seconds": 0.5872540000000299,
+  "recorded_mpm_particles": 20000,
+  "recording_dtype": "float32",
+  "full_position_snapshots_dtype": "float64",
+  "visualization_subsample_only": true,
+  "saved_samples": 151,
+  "advance_retrieve_seconds": 21.261970500028838,
+  "elapsed_seconds": 22.850259699998787,
+  "exit_code": 0,
+  "local_validation": "passed",
+  "original_archive_sha256": "02778ed35311260d4abddecc0a5ef9749d231262242dc801f1a003326ba21ac4",
+  "bounds": [
+    [
+      -8.089835166931152,
+      -0.9983140826225281,
+      -11.866353988647461
+    ],
+    [
+      6.57575798034668,
+      3.140000104904175,
+      8.241808891296387
+    ]
+  ],
+  "title": "Python 示例：液体龙、布料与方块塔",
+  "video_fps": 30,
+  "video_playback_speed": 1.0,
+  "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7"
+}

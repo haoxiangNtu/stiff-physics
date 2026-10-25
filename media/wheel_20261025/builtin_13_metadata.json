@@ -1,0 +1,44 @@
+{
+  "case": "builtin_13",
+  "status": "completed",
+  "completed_steps": 600,
+  "simulation_seconds": 5.000000000000038,
+  "target_seconds": 5.0,
+  "record_fps": 30.0,
+  "initial_repair_requested": false,
+  "available_scene_count": 15,
+  "initial_intersections": false,
+  "dt": 0.008333333333333333,
+  "target_steps": 600,
+  "vertices": 0,
+  "faces": 0,
+  "mpm_parents": 95541,
+  "ready": true,
+  "initialization_seconds": 0.3668582000009337,
+  "recorded_mpm_particles": 95541,
+  "recording_dtype": "float32",
+  "full_position_snapshots_dtype": "float64",
+  "visualization_subsample_only": true,
+  "saved_samples": 151,
+  "advance_retrieve_seconds": 266.0886481999987,
+  "elapsed_seconds": 270.3303448000006,
+  "exit_code": 0,
+  "local_validation": "passed",
+  "original_archive_sha256": "ac83780f99ccbef32ae09229e254bd877ac7914646c711b4741fb80545eda1cc",
+  "bounds": [
+    [
+      0.3544696271419525,
+      1.0357404534033776e-07,
+      0.00254452764056623
+    ],
+    [
+      0.6361497044563293,
+      0.9219787120819092,
+      0.9937897324562073
+    ]
+  ],
+  "title": "内置 case14：implicit-gpu-mpm 双龙",
+  "video_fps": 30,
+  "video_playback_speed": 1.0,
+  "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7"
+}

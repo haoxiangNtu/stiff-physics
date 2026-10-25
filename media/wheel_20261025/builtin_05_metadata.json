@@ -1,0 +1,44 @@
+{
+  "case": "builtin_05",
+  "status": "completed",
+  "completed_steps": 500,
+  "simulation_seconds": 4.999999999999938,
+  "target_seconds": 5.0,
+  "record_fps": 30.0,
+  "initial_repair_requested": false,
+  "available_scene_count": 15,
+  "initial_intersections": false,
+  "dt": 0.01,
+  "target_steps": 500,
+  "vertices": 0,
+  "faces": 0,
+  "mpm_parents": 147,
+  "ready": true,
+  "initialization_seconds": 0.30392570000003616,
+  "recorded_mpm_particles": 147,
+  "recording_dtype": "float32",
+  "full_position_snapshots_dtype": "float64",
+  "visualization_subsample_only": true,
+  "saved_samples": 151,
+  "advance_retrieve_seconds": 2.5772432999747252,
+  "elapsed_seconds": 2.9858757999991212,
+  "exit_code": 0,
+  "local_validation": "passed",
+  "original_archive_sha256": "89373a763153b39e48387bdb0f805f3ca3ac92bd1eb162361045e38414bb1466",
+  "bounds": [
+    [
+      -0.5079803466796875,
+      -0.9993970990180969,
+      -0.5391267538070679
+    ],
+    [
+      0.5173273682594299,
+      1.100000023841858,
+      0.5159353017807007
+    ]
+  ],
+  "title": "内置 case6：147 粒子 MPM 场景",
+  "video_fps": 30,
+  "video_playback_speed": 1.0,
+  "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7"
+}

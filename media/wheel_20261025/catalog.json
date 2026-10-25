@@ -1,0 +1,474 @@
+{
+  "updated": "2026-10-25",
+  "entries": [
+    {
+      "case": "provided_example",
+      "status": "completed",
+      "completed_steps": 500,
+      "simulation_seconds": 4.999999999999938,
+      "target_seconds": 5.0,
+      "record_fps": 30.0,
+      "initial_repair_requested": false,
+      "available_scene_count": 15,
+      "initial_intersections": false,
+      "dt": 0.01,
+      "target_steps": 500,
+      "vertices": 4945,
+      "faces": 9272,
+      "mpm_parents": 20000,
+      "ready": true,
+      "initialization_seconds": 0.5872540000000299,
+      "recorded_mpm_particles": 20000,
+      "recording_dtype": "float32",
+      "full_position_snapshots_dtype": "float64",
+      "visualization_subsample_only": true,
+      "saved_samples": 151,
+      "advance_retrieve_seconds": 21.261970500028838,
+      "elapsed_seconds": 22.850259699998787,
+      "exit_code": 0,
+      "local_validation": "passed",
+      "original_archive_sha256": "02778ed35311260d4abddecc0a5ef9749d231262242dc801f1a003326ba21ac4",
+      "bounds": [
+        [
+          -8.089835166931152,
+          -0.9983140826225281,
+          -11.866353988647461
+        ],
+        [
+          6.57575798034668,
+          3.140000104904175,
+          8.241808891296387
+        ]
+      ],
+      "title": "Python 示例：液体龙、布料与方块塔",
+      "video_fps": 30,
+      "video_playback_speed": 1.0,
+      "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7",
+      "public_data_url": "https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/provided_example_data.zip"
+    },
+    {
+      "case": "builtin_00",
+      "status": "completed",
+      "completed_steps": 500,
+      "simulation_seconds": 4.999999999999938,
+      "target_seconds": 5.0,
+      "record_fps": 30.0,
+      "initial_repair_requested": false,
+      "available_scene_count": 15,
+      "initial_intersections": false,
+      "dt": 0.01,
+      "target_steps": 500,
+      "vertices": 1024,
+      "faces": 1536,
+      "mpm_parents": 0,
+      "ready": true,
+      "initialization_seconds": 0.3531920999994327,
+      "recorded_mpm_particles": 0,
+      "recording_dtype": "float32",
+      "full_position_snapshots_dtype": "float64",
+      "visualization_subsample_only": true,
+      "saved_samples": 151,
+      "advance_retrieve_seconds": 9.268395399994915,
+      "elapsed_seconds": 9.74583580000035,
+      "exit_code": 0,
+      "local_validation": "passed",
+      "original_archive_sha256": "9d6ddd1e01d541471ee5dda8aaefb92512b331cd838a6d1d1e5993166c9de3a7",
+      "bounds": [
+        [
+          -2.3708512783050537,
+          -0.9992490410804749,
+          -1.292834997177124
+        ],
+        [
+          1.801833152770996,
+          0.800000011920929,
+          1.2766858339309692
+        ]
+      ],
+      "title": "内置 case1：混合方块",
+      "video_fps": 30,
+      "video_playback_speed": 1.0,
+      "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7",
+      "public_data_url": "https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_00_data.zip"
+    },
+    {
+      "case": "builtin_01",
+      "status": "partial_transfer",
+      "completed_steps": 500,
+      "simulation_seconds": 4.999999999999938,
+      "target_seconds": 5.0,
+      "record_fps": 30.0,
+      "initial_repair_requested": false,
+      "available_scene_count": 15,
+      "initial_intersections": false,
+      "dt": 0.01,
+      "target_steps": 500,
+      "vertices": 202508,
+      "faces": 49540,
+      "mpm_parents": 0,
+      "ready": true,
+      "initialization_seconds": 9.587282000000414,
+      "recorded_mpm_particles": 0,
+      "recording_dtype": "float32",
+      "full_position_snapshots_dtype": "float64",
+      "visualization_subsample_only": true,
+      "saved_samples": 151,
+      "advance_retrieve_seconds": 50.8691048000037,
+      "elapsed_seconds": 68.09814150000057,
+      "exit_code": 0,
+      "local_validation": "partial_transfer",
+      "original_archive_sha256": "580ed40123df15efe051ce235d3141a7bfd5a6cedf86ee5e76473162bda162c5",
+      "bounds": [
+        [
+          -0.6754204630851746,
+          -0.9999951720237732,
+          -0.6505382657051086
+        ],
+        [
+          1.2958476543426514,
+          0.8480839729309082,
+          0.26342442631721497
+        ]
+      ],
+      "remote_simulation_status": "completed",
+      "received_archive_sha256": "e14f41bb111e7bd71817e148a6659667d0fefe859b51c0e297094903eddec679",
+      "missing_samples": [
+        {
+          "file": "frames/sample_000051.npz",
+          "error": "Error -3 while decompressing data: invalid stored block lengths"
+        },
+        {
+          "file": "frames/sample_000052.npz",
+          "error": "Error -3 while decompressing data: invalid stored block lengths"
+        },
+        {
+          "file": "frames/sample_000073.npz",
+          "error": "Error -3 while decompressing data: invalid stored block lengths"
+        },
+        {
+          "file": "frames/sample_000074.npz",
+          "error": "Error -3 while decompressing data: invalid stored block lengths"
+        }
+      ],
+      "available_samples": 147,
+      "preview_gap_policy": "nearest valid sample; gaps marked in video",
+      "title": "内置 case2：双兔子",
+      "video_fps": 30,
+      "video_playback_speed": 1.0,
+      "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7",
+      "public_data_url": "https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_01_partial_data.zip"
+    },
+    {
+      "case": "builtin_02",
+      "status": "completed",
+      "completed_steps": 500,
+      "simulation_seconds": 4.999999999999938,
+      "target_seconds": 5.0,
+      "record_fps": 30.0,
+      "initial_repair_requested": false,
+      "available_scene_count": 15,
+      "initial_intersections": false,
+      "dt": 0.01,
+      "target_steps": 500,
+      "vertices": 12510,
+      "faces": 18636,
+      "mpm_parents": 0,
+      "ready": true,
+      "initialization_seconds": 0.38067319999936444,
+      "recorded_mpm_particles": 0,
+      "recording_dtype": "float32",
+      "full_position_snapshots_dtype": "float64",
+      "visualization_subsample_only": true,
+      "saved_samples": 151,
+      "advance_retrieve_seconds": 10.309585799996057,
+      "elapsed_seconds": 11.203563699998995,
+      "exit_code": 0,
+      "local_validation": "passed",
+      "original_archive_sha256": "8c3c2e0c550345f9d33332945f7e327b58790eb514a44e08764ae556a61da518",
+      "bounds": [
+        [
+          -13.92714786529541,
+          -0.992500901222229,
+          -45.17721939086914
+        ],
+        [
+          33.27394485473633,
+          18.921653747558594,
+          -15.749439239501953
+        ]
+      ],
+      "title": "内置 case3：撞球场景",
+      "video_fps": 30,
+      "video_playback_speed": 1.0,
+      "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7",
+      "public_data_url": "https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_02_data.zip"
+    },
+    {
+      "case": "builtin_03",
+      "title": "case4 · 高分辨率布料",
+      "status": "repair_unverified",
+      "reason": "初始网格相交，已显式尝试修复。最后取得的状态仍为初始化、0 步；ToDesk 断连后尚未核验后续结果。"
+    },
+    {
+      "case": "builtin_04",
+      "status": "completed",
+      "completed_steps": 500,
+      "simulation_seconds": 4.999999999999938,
+      "target_seconds": 5.0,
+      "record_fps": 30.0,
+      "initial_repair_requested": false,
+      "available_scene_count": 15,
+      "initial_intersections": false,
+      "dt": 0.01,
+      "target_steps": 500,
+      "vertices": 45000,
+      "faces": 89996,
+      "mpm_parents": 0,
+      "ready": true,
+      "initialization_seconds": 2.717217299999902,
+      "recorded_mpm_particles": 0,
+      "recording_dtype": "float32",
+      "full_position_snapshots_dtype": "float64",
+      "visualization_subsample_only": true,
+      "saved_samples": 151,
+      "advance_retrieve_seconds": 14.690086600010545,
+      "elapsed_seconds": 19.13822699999946,
+      "exit_code": 0,
+      "local_validation": "passed",
+      "original_archive_sha256": "9c23bc25e56eda52289d77687f34dddc87a165071156417976a8ad653c1eecc9",
+      "bounds": [
+        [
+          -0.5028402805328369,
+          -0.4981355369091034,
+          -0.5000829696655273
+        ],
+        [
+          0.5029004812240601,
+          0.4986228346824646,
+          0.5000237822532654
+        ]
+      ],
+      "title": "内置 case5：柔性软垫",
+      "video_fps": 30,
+      "video_playback_speed": 1.0,
+      "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7",
+      "public_data_url": "https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_04_data.zip"
+    },
+    {
+      "case": "builtin_05",
+      "status": "completed",
+      "completed_steps": 500,
+      "simulation_seconds": 4.999999999999938,
+      "target_seconds": 5.0,
+      "record_fps": 30.0,
+      "initial_repair_requested": false,
+      "available_scene_count": 15,
+      "initial_intersections": false,
+      "dt": 0.01,
+      "target_steps": 500,
+      "vertices": 0,
+      "faces": 0,
+      "mpm_parents": 147,
+      "ready": true,
+      "initialization_seconds": 0.30392570000003616,
+      "recorded_mpm_particles": 147,
+      "recording_dtype": "float32",
+      "full_position_snapshots_dtype": "float64",
+      "visualization_subsample_only": true,
+      "saved_samples": 151,
+      "advance_retrieve_seconds": 2.5772432999747252,
+      "elapsed_seconds": 2.9858757999991212,
+      "exit_code": 0,
+      "local_validation": "passed",
+      "original_archive_sha256": "89373a763153b39e48387bdb0f805f3ca3ac92bd1eb162361045e38414bb1466",
+      "bounds": [
+        [
+          -0.5079803466796875,
+          -0.9993970990180969,
+          -0.5391267538070679
+        ],
+        [
+          0.5173273682594299,
+          1.100000023841858,
+          0.5159353017807007
+        ]
+      ],
+      "title": "内置 case6：147 粒子 MPM 场景",
+      "video_fps": 30,
+      "video_playback_speed": 1.0,
+      "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7",
+      "public_data_url": "https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_05_data.zip"
+    },
+    {
+      "case": "builtin_06",
+      "title": "case7 · fluffy_ball",
+      "status": "missing_assets",
+      "reason": "缺少原始资源：tetMesh/fluffy_ball.msh"
+    },
+    {
+      "case": "builtin_07",
+      "title": "case8 · animal_well",
+      "status": "missing_assets",
+      "reason": "缺少原始资源：tetMesh/animal_well.msh"
+    },
+    {
+      "case": "builtin_08",
+      "title": "case9 · 服装人体动画",
+      "status": "missing_assets",
+      "reason": "缺少原始资源：scene/case9_garment_human.json 及其引用的动画资源"
+    },
+    {
+      "case": "builtin_09",
+      "title": "case10 · ABD 服装动画",
+      "status": "missing_assets",
+      "reason": "缺少原始资源：tetMesh/abd_dress/ignored_obj.txt、服装网格及 triMesh/body2 动画"
+    },
+    {
+      "case": "builtin_10",
+      "title": "case11 · 61K 软球",
+      "status": "missing_assets",
+      "reason": "缺少原始资源：tetMesh/squishy_ball_61K.msh"
+    },
+    {
+      "case": "builtin_11",
+      "status": "completed",
+      "completed_steps": 500,
+      "simulation_seconds": 4.999999999999938,
+      "target_seconds": 5.0,
+      "record_fps": 30.0,
+      "initial_repair_requested": false,
+      "available_scene_count": 15,
+      "initial_intersections": false,
+      "dt": 0.01,
+      "target_steps": 500,
+      "vertices": 4945,
+      "faces": 9272,
+      "mpm_parents": 20000,
+      "ready": true,
+      "initialization_seconds": 0.507955299999594,
+      "recorded_mpm_particles": 20000,
+      "recording_dtype": "float32",
+      "full_position_snapshots_dtype": "float64",
+      "visualization_subsample_only": true,
+      "saved_samples": 151,
+      "advance_retrieve_seconds": 22.539408900016497,
+      "elapsed_seconds": 24.050022699999317,
+      "exit_code": 0,
+      "local_validation": "passed",
+      "original_archive_sha256": "9b871103ed49240f932198f8e14ca53ffd1e0104437986034514e69e2f41534c",
+      "bounds": [
+        [
+          -1.5,
+          -0.9978079795837402,
+          -4.485886573791504
+        ],
+        [
+          1.5,
+          3.140000104904175,
+          1.5000039339065552
+        ]
+      ],
+      "title": "内置 case12：MPM、布料与方块塔",
+      "video_fps": 30,
+      "video_playback_speed": 1.0,
+      "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7",
+      "public_data_url": "https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_11_data.zip"
+    },
+    {
+      "case": "builtin_12",
+      "status": "completed",
+      "completed_steps": 500,
+      "simulation_seconds": 4.999999999999938,
+      "target_seconds": 5.0,
+      "record_fps": 30.0,
+      "initial_repair_requested": false,
+      "available_scene_count": 15,
+      "initial_intersections": false,
+      "dt": 0.01,
+      "target_steps": 500,
+      "vertices": 0,
+      "faces": 0,
+      "mpm_parents": 95650,
+      "ready": true,
+      "initialization_seconds": 0.3542369000006147,
+      "recorded_mpm_particles": 95650,
+      "recording_dtype": "float32",
+      "full_position_snapshots_dtype": "float64",
+      "visualization_subsample_only": true,
+      "saved_samples": 151,
+      "advance_retrieve_seconds": 73.33942569999635,
+      "elapsed_seconds": 77.55656330000056,
+      "exit_code": 0,
+      "local_validation": "passed",
+      "original_archive_sha256": "064ec424ba8c3a38809126db07c1a7c8ced863fa724d5c100b4bb3c3b7fc2f5e",
+      "bounds": [
+        [
+          0.38206756114959717,
+          2.780553359116311e-06,
+          0.21957197785377502
+        ],
+        [
+          0.6361497640609741,
+          0.9247279763221741,
+          0.8154849410057068
+        ]
+      ],
+      "title": "内置 case13：HyperMPM 双龙碰撞",
+      "video_fps": 30,
+      "video_playback_speed": 1.0,
+      "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7",
+      "public_data_url": "https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_12_data.zip"
+    },
+    {
+      "case": "builtin_13",
+      "status": "completed",
+      "completed_steps": 600,
+      "simulation_seconds": 5.000000000000038,
+      "target_seconds": 5.0,
+      "record_fps": 30.0,
+      "initial_repair_requested": false,
+      "available_scene_count": 15,
+      "initial_intersections": false,
+      "dt": 0.008333333333333333,
+      "target_steps": 600,
+      "vertices": 0,
+      "faces": 0,
+      "mpm_parents": 95541,
+      "ready": true,
+      "initialization_seconds": 0.3668582000009337,
+      "recorded_mpm_particles": 95541,
+      "recording_dtype": "float32",
+      "full_position_snapshots_dtype": "float64",
+      "visualization_subsample_only": true,
+      "saved_samples": 151,
+      "advance_retrieve_seconds": 266.0886481999987,
+      "elapsed_seconds": 270.3303448000006,
+      "exit_code": 0,
+      "local_validation": "passed",
+      "original_archive_sha256": "ac83780f99ccbef32ae09229e254bd877ac7914646c711b4741fb80545eda1cc",
+      "bounds": [
+        [
+          0.3544696271419525,
+          1.0357404534033776e-07,
+          0.00254452764056623
+        ],
+        [
+          0.6361497044563293,
+          0.9219787120819092,
+          0.9937897324562073
+        ]
+      ],
+      "title": "内置 case14：implicit-gpu-mpm 双龙",
+      "video_fps": 30,
+      "video_playback_speed": 1.0,
+      "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7",
+      "public_data_url": "https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_13_data.zip"
+    },
+    {
+      "case": "builtin_14",
+      "title": "case15 · 溃坝",
+      "status": "interrupted_slow_solver",
+      "reason": "5 秒目标未完成；记录到 0.59 s（59 步）。前 50 步耗时 1005.74 s，接触阶段反复线搜索。因耗时过长主动中止本轮，保留部分轨迹与日志。"
+    }
+  ]
+}

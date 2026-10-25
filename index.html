@@ -402,6 +402,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <div class="section-intro">
     <div class="kicker kicker--sdk">Engine · MPM × IPC</div>
     <h2>流固耦合：液体龙、弹性龙与方块塔</h2>
+<p class="lead" id="wheel-reference-link"><a href="docs/mpm_ipc.html#wheel-reference">新增：原始 Windows wheel 的 15 个内置场景检查、至少 5 秒仿真视频及数据下载 →</a></p>
     <p class="lead">MPM 粒子（液体或弹性体）和 IPC 布料、刚体放在同一个 Newton 求解里：网格节点是未知量，每个粒子是 IPC 的接触代理顶点，
     接触的梯度和 Hessian 经插值权重链式回传到网格。两万粒子的液体龙落到钉边的布上，90 个刚体立方体叠成的塔压在布中央；
     把龙换成橡胶（fixed-corotated 弹性材料）后，同一条管线跑出被压扁但体积不变的龙。四个场景各有 MP4 和时间采样的 USD。

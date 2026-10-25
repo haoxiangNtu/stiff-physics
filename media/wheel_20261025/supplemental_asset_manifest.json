@@ -1,0 +1,39 @@
+{
+  "description": "Supplemental assets absent from the user-provided wheel ZIP; sourced from an existing Stiff-GIPC asset checkout.",
+  "files": [
+    {
+      "asset": "tetMesh/bunny10.msh",
+      "source": "Assets/tetMesh/bunny10.msh",
+      "bytes": 31776470,
+      "sha256": "fbdfa9b9956ddec962313e7cb2a32063f58638dc604213bc98acd5b10c9ee70a"
+    },
+    {
+      "asset": "tetMesh/high_mat.msh",
+      "source": "Assets/tetMesh/high_mat.msh",
+      "bytes": 6061489,
+      "sha256": "a8cb1a7d96bb55df5327411758b566794ea52908d880fd36942187a682f2690d"
+    },
+    {
+      "asset": "tetMesh/wrecking-ball-mesh/wrecking-ball/link.obj_.msh",
+      "source": "Assets/tetMesh/wrecking-ball-mesh/wrecking-ball/link.obj_.msh",
+      "bytes": 70541,
+      "sha256": "60bfedac862051cf9014d2bb8b02cf2ec5f3ab24d051df30c4de4b323b7c7630"
+    },
+    {
+      "asset": "tetMesh/wrecking-ball-mesh/wrecking-ball/ball.obj_.msh",
+      "source": "Assets/tetMesh/wrecking-ball-mesh/wrecking-ball/ball.obj_.msh",
+      "bytes": 331626,
+      "sha256": "56660588f0e5250a54bf5bc8a938589d8d6638f28ff0a48e3d4a0bbcbbcb27bb"
+    },
+    {
+      "asset": "tetMesh/wrecking-ball-mesh/cube.obj_.msh",
+      "source": "Assets/tetMesh/wrecking-ball-mesh/cube.obj_.msh",
+      "bytes": 215,
+      "sha256": "bc9e6f109ef49623db06d5227f7f889711c870a8e26187638103f67e487ef2c8"
+    }
+  ],
+  "source_checkout": {
+    "repository": "https://github.com/haoxiangNtu/Stiff-GIPC",
+    "commit": "5e6c4202e2c50ba7b2746f08098b09deb1accaed"
+  }
+}
