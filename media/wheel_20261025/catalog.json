@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-25",
+  "updated": "2026-10-26",
   "entries": [
     {
       "case": "provided_example",
@@ -93,7 +93,7 @@
     },
     {
       "case": "builtin_01",
-      "status": "partial_transfer",
+      "status": "completed",
       "completed_steps": 500,
       "simulation_seconds": 4.999999999999938,
       "target_seconds": 5.0,
@@ -116,7 +116,7 @@
       "advance_retrieve_seconds": 50.8691048000037,
       "elapsed_seconds": 68.09814150000057,
       "exit_code": 0,
-      "local_validation": "partial_transfer",
+      "local_validation": "passed",
       "original_archive_sha256": "580ed40123df15efe051ce235d3141a7bfd5a6cedf86ee5e76473162bda162c5",
       "bounds": [
         [
@@ -130,33 +130,15 @@
           0.26342442631721497
         ]
       ],
-      "remote_simulation_status": "completed",
-      "received_archive_sha256": "e14f41bb111e7bd71817e148a6659667d0fefe859b51c0e297094903eddec679",
-      "missing_samples": [
-        {
-          "file": "frames/sample_000051.npz",
-          "error": "Error -3 while decompressing data: invalid stored block lengths"
-        },
-        {
-          "file": "frames/sample_000052.npz",
-          "error": "Error -3 while decompressing data: invalid stored block lengths"
-        },
-        {
-          "file": "frames/sample_000073.npz",
-          "error": "Error -3 while decompressing data: invalid stored block lengths"
-        },
-        {
-          "file": "frames/sample_000074.npz",
-          "error": "Error -3 while decompressing data: invalid stored block lengths"
-        }
-      ],
-      "available_samples": 147,
-      "preview_gap_policy": "nearest valid sample; gaps marked in video",
       "title": "内置 case2：双兔子",
       "video_fps": 30,
       "video_playback_speed": 1.0,
       "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7",
-      "public_data_url": "https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_01_partial_data.zip"
+      "transfer_recovery": {
+        "date": "2026-10-26",
+        "note": "First ToDesk transfer corrupted 4 frame entries (sample_000051/52/73/74). Remote archive re-verified against original SHA256; those 4 files re-packed on the workstation, re-transferred (SHA256 matched) and merged. Local repacked archive SHA256 cec3d0946ac2ab156d263e32104ab659d1f98d612ab3c0c330f5bb79bee24dcf."
+      },
+      "public_data_url": "https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_01_data.zip"
     },
     {
       "case": "builtin_02",
@@ -206,8 +188,8 @@
     {
       "case": "builtin_03",
       "title": "case4 · 高分辨率布料",
-      "status": "repair_unverified",
-      "reason": "初始网格相交，已显式尝试修复。最后取得的状态仍为初始化、0 步；ToDesk 断连后尚未核验后续结果。"
+      "status": "repair_timeout",
+      "reason": "原始初态存在服装自相交。显式开启 wheel 自带的初始相交修复后运行 2 小时超时，自相交数在 12–14 之间反复、未降到 0，仿真 0 步。未经修复的原始初态尚未单独试跑。"
     },
     {
       "case": "builtin_04",
@@ -466,9 +448,48 @@
     },
     {
       "case": "builtin_14",
-      "title": "case15 · 溃坝",
-      "status": "interrupted_slow_solver",
-      "reason": "5 秒目标未完成；记录到 0.59 s（59 步）。前 50 步耗时 1005.74 s，接触阶段反复线搜索。因耗时过长主动中止本轮，保留部分轨迹与日志。"
+      "status": "completed",
+      "completed_steps": 500,
+      "simulation_seconds": 4.999999999999938,
+      "target_seconds": 5.0,
+      "record_fps": 30.0,
+      "initial_repair_requested": false,
+      "available_scene_count": 15,
+      "initial_intersections": false,
+      "dt": 0.01,
+      "target_steps": 500,
+      "vertices": 0,
+      "faces": 0,
+      "mpm_parents": 1280000,
+      "ready": true,
+      "initialization_seconds": 1.451354499993613,
+      "recorded_mpm_particles": 150000,
+      "recording_dtype": "float32",
+      "full_position_snapshots_dtype": "float64",
+      "visualization_subsample_only": true,
+      "saved_samples": 151,
+      "advance_retrieve_seconds": 5837.482551799971,
+      "elapsed_seconds": 5848.5890449,
+      "exit_code": 0,
+      "local_validation": "passed",
+      "original_archive_sha256": "54eece88f73e644f1661ab637b317f49e393e659837bdd01921df5c89826b68c",
+      "bounds": [
+        [
+          0.0016977122286334634,
+          0.0016315093962475657,
+          0.0016748887719586492
+        ],
+        [
+          0.9983019232749939,
+          0.858593761920929,
+          0.9983403086662292
+        ]
+      ],
+      "title": "内置 case15：128 万粒子溃坝",
+      "video_fps": 30,
+      "video_playback_speed": 1.0,
+      "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7",
+      "public_data_url": "https://github.com/haoxiangNtu/stiff-physics/releases/download/pygipc-wheel-examples-20261025/builtin_14_data.zip"
     }
   ]
 }

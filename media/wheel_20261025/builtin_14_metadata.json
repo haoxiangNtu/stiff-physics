@@ -1,0 +1,44 @@
+{
+  "case": "builtin_14",
+  "status": "completed",
+  "completed_steps": 500,
+  "simulation_seconds": 4.999999999999938,
+  "target_seconds": 5.0,
+  "record_fps": 30.0,
+  "initial_repair_requested": false,
+  "available_scene_count": 15,
+  "initial_intersections": false,
+  "dt": 0.01,
+  "target_steps": 500,
+  "vertices": 0,
+  "faces": 0,
+  "mpm_parents": 1280000,
+  "ready": true,
+  "initialization_seconds": 1.451354499993613,
+  "recorded_mpm_particles": 150000,
+  "recording_dtype": "float32",
+  "full_position_snapshots_dtype": "float64",
+  "visualization_subsample_only": true,
+  "saved_samples": 151,
+  "advance_retrieve_seconds": 5837.482551799971,
+  "elapsed_seconds": 5848.5890449,
+  "exit_code": 0,
+  "local_validation": "passed",
+  "original_archive_sha256": "54eece88f73e644f1661ab637b317f49e393e659837bdd01921df5c89826b68c",
+  "bounds": [
+    [
+      0.0016977122286334634,
+      0.0016315093962475657,
+      0.0016748887719586492
+    ],
+    [
+      0.9983019232749939,
+      0.858593761920929,
+      0.9983403086662292
+    ]
+  ],
+  "title": "内置 case15：128 万粒子溃坝",
+  "video_fps": 30,
+  "video_playback_speed": 1.0,
+  "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7"
+}

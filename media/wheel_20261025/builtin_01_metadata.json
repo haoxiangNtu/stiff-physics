@@ -1,6 +1,6 @@
 {
   "case": "builtin_01",
-  "status": "partial_transfer",
+  "status": "completed",
   "completed_steps": 500,
   "simulation_seconds": 4.999999999999938,
   "target_seconds": 5.0,
@@ -23,7 +23,7 @@
   "advance_retrieve_seconds": 50.8691048000037,
   "elapsed_seconds": 68.09814150000057,
   "exit_code": 0,
-  "local_validation": "partial_transfer",
+  "local_validation": "passed",
   "original_archive_sha256": "580ed40123df15efe051ce235d3141a7bfd5a6cedf86ee5e76473162bda162c5",
   "bounds": [
     [
@@ -37,30 +37,12 @@
       0.26342442631721497
     ]
   ],
-  "remote_simulation_status": "completed",
-  "received_archive_sha256": "e14f41bb111e7bd71817e148a6659667d0fefe859b51c0e297094903eddec679",
-  "missing_samples": [
-    {
-      "file": "frames/sample_000051.npz",
-      "error": "Error -3 while decompressing data: invalid stored block lengths"
-    },
-    {
-      "file": "frames/sample_000052.npz",
-      "error": "Error -3 while decompressing data: invalid stored block lengths"
-    },
-    {
-      "file": "frames/sample_000073.npz",
-      "error": "Error -3 while decompressing data: invalid stored block lengths"
-    },
-    {
-      "file": "frames/sample_000074.npz",
-      "error": "Error -3 while decompressing data: invalid stored block lengths"
-    }
-  ],
-  "available_samples": 147,
-  "preview_gap_policy": "nearest valid sample; gaps marked in video",
   "title": "内置 case2：双兔子",
   "video_fps": 30,
   "video_playback_speed": 1.0,
-  "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7"
+  "source_wheel_sha256": "6db76a8416c9d4e9bd48eef4d0fa1029409a1154b3765507f4c58aceaf0488b7",
+  "transfer_recovery": {
+    "date": "2026-10-26",
+    "note": "First ToDesk transfer corrupted 4 frame entries (sample_000051/52/73/74). Remote archive re-verified against original SHA256; those 4 files re-packed on the workstation, re-transferred (SHA256 matched) and merged. Local repacked archive SHA256 cec3d0946ac2ab156d263e32104ab659d1f98d612ab3c0c330f5bb79bee24dcf."
+  }
 }
