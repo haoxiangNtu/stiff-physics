@@ -45,7 +45,7 @@ def child(args):
             state = {}
             pre_init = example.make_pre_init(cloth, state)
         else:
-            scene = gipc.Scene.from_builtin(int(args.child.split("_")[1]), config={"max_frames": 1_000_000})
+            scene = gipc.Scene.from_builtin(int(args.child.split("_")[1]), config={"max_frames": 1_000_000, **json.loads(os.environ.get("GIPC_EXTRA_CONFIG", "{}"))})
             state = {}
             pre_init = None
         world = gipc.World(gipc.Engine("cuda"))
