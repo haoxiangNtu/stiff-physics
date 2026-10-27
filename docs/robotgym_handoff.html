@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>三个操作任务的复现任务书（新资产版）</title>
+<meta name="description" content="把床上叠毛毯、厨房海绵吸水拧水、捏水瓶三个 FR3 操作场景交给另一套物理仿真器复现时用的任务书：布置、尺寸、时间线、材料、指标、对比表，以及我们每次运行的结果和 27 段路径追踪视频。">
+<link rel="stylesheet" href="docs.css">
+<style>
+.fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
+  margin: 1.2rem 0 1.5rem; padding: .6rem; box-shadow: var(--fig-shadow); scroll-margin-top: 76px; }
+.fig img, .fig video { border-radius: .4rem; width: 100%; height: auto; display: block; background: #fff; }
+.fig video { aspect-ratio: 4 / 3; }
+.fig figcaption { color: var(--sub); text-align: center; padding: .6rem .5rem .1rem; font-size: .86rem; line-height: 1.6; }
+.fig figcaption b { color: var(--ink); font-weight: 600; }
+.fig:target { border-color: var(--primary); }
+figure { margin: 0; }
+.fig-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; margin: 1.2rem 0 1.5rem; }
+.fig-grid .fig { margin: 0; }
+.fig-grid.g3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.fig-grid.g3 figcaption { font-size: .8rem; }
+@media (max-width: 860px) { .fig-grid.g3 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 768px) { .fig-grid { grid-template-columns: 1fr; } .fig-grid.g3 { grid-template-columns: 1fr; } }
+.note p { margin: .3rem 0; }
+</style>
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="robotgym.html">三个操作任务</a>
+  <a class="item" href="liquid.html">液体改动日志</a>
+  <a class="item" href="outputs.html">技术详解</a>
+  <a class="item" href="../#robotgym">返回演示 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / <a href="robotgym.html">三个操作任务的复现</a> / 复现任务书</div>
+<div class="kicker">Handoff · Cloth · Porous liquid · Shell</div>
+<h1>三个操作任务的复现任务书（新资产版）</h1>
+<p class="lead">把<a href="robotgym.html#fbx">换成新资产重跑</a>的三个场景交给另一套物理仿真器复现时用的任务书：两台 FR3 在床尾捏起毛毯，对折到床头一侧；
+一台 FR3 把海绵在左边水槽里泡湿，提到右边水槽上方挤水；一台 FR3 从侧面捏扁一只装水的开口方瓶。目标是复现得比我们现在的版本更真实。
+正文原本写给接手复现的 Claude，所以用“你”称呼读者。我们的结果用 StiffGIPC（GPU IPC 引擎）在 A800 上算，数据截至 2026-10-27。</p>
+
+<div class="note"><b>交接包不公开</b>
+文中的 <span class="mono">assets/</span>、<span class="mono">code_reference/</span>、<span class="mono">metrics/</span>、<span class="mono">reference/</span> 是交接包里的目录。
+交接包里有原始 FBX 模型，不能公开分发，所以不在网上提供。<span class="mono">reference/videos/</span> 里的 27 段视频都放在本页：
+每个场景“我们的结果”一节的开头是这个场景的全部视频，点表格里的视频文件名会跳到对应的视频。</div>
+
+<div class="toc"><b>目录</b>
+<a href="#0">0. 先读这一节</a><a href="#1">1. 文件夹内容</a><a href="#2">2. 资产与尺寸</a><a href="#3">3. 通用约定</a><a href="#4">4. 场景一：床上叠毛毯</a><a href="#5">5. 场景二：厨房海绵吸水、拧水</a><a href="#6">6. 场景三：捏水瓶（开口，装水）</a><a href="#7-metricshandoff_metricspy-numpy">7. 指标（metrics/handoff_metrics.py，只依赖 numpy）</a><a href="#8">8. 渲染参考（方便并排对比）</a><a href="#9">9. 对比表（请填写）</a><a href="#10">10. 我们引擎里查到的问题（供参考，别踩同样的坑）</a><a href="#11">11. 建议的工作顺序</a><a href="#12">12. 选仿真器时要看的能力</a>
+</div>
+
+
+<h2 id="0">0. 先读这一节</h2>
+<h3 id="01">0.1 三个任务</h3>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>场景</th>
+<th>用到的资产</th>
+<th>机械臂做什么</th>
+<th>我们的结果（一句话）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>床上叠毛毯</td>
+<td><code>床.fbx</code> + <code>毛毯.fbx</code></td>
+<td>两台 FR3 在床尾捏起毛毯，把它对折到床头一侧</td>
+<td>床面上的部分都折过去了。竖直提起时床头那一半被拖动 8–9 cm；改成绕折线走圆弧后降到 1.0–1.5 cm；再改成靠床头的手指不动、手掌顺着被面坡度微倾，降到 0.7 mm（重跑与换参数的五组 0.0–0.8 mm）</td>
+</tr>
+<tr>
+<td>2</td>
+<td>厨房海绵吸水、拧水</td>
+<td><code>厨房.fbx</code> + 我们自建的海绵</td>
+<td>一台 FR3 把海绵在左槽里泡水，提到右槽上方挤三次</td>
+<td>海绵吸了约 240 ml，提起时流回约 100 ml，三次挤压只挤出 20–24 ml 到右槽；放回左槽、换位置重新抓再挤，四个周期 48 ml</td>
+</tr>
+<tr>
+<td>3</td>
+<td>捏水瓶</td>
+<td><code>塑料水瓶.fbx</code> + 水</td>
+<td>一台 FR3 从侧面夹住开口水瓶并捏扁</td>
+<td>瓶宽从 55 mm 捏到 21–25 mm，挤走 79–91 ml。只装 433–451 ml 时，最多洒出 15 ml（4 mm 液体网格 20 ml：捏之前瓶里空气少了约 10 ml，§6.4）</td>
+</tr>
+</tbody>
+</table></div><div class="fig-grid g3"><figure class="fig"><video src="../media/robotgym_fbx_bed_headtilt.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>圆弧翻折 · 只合拢床尾那根手指、手掌微倾（目前最好）</b><br>折过 99.7 %（床面上 100 %）· 床头被带动 0.7 mm · A800 上 118 min<br><span class="mono">bed_F4N_20mm_4N_bendphys_arc_headtilt.mp4</span></figcaption></figure><figure class="fig"><video src="../media/robotgym_fbx_kitchen_regrasp.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>换位再挤 4 个周期（目前最好）：每挤一次就放回槽 a，挪 20 mm 重新抓、泡一秒</b><br>槽 b 最后接到 48.2 ml · A800 上 999 min<br><span class="mono">kitchen_regrasp_E5e4_4cycles.mp4</span></figcaption></figure><figure class="fig"><video src="../media/robotgym_fbx_bottle_spill.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>451 ml · 捏到 16 mm · 屈服 0.1（洒得最多）</b><br>挤走 91 ml，捏之前空气 72 ml · 冲出瓶口最多 17.3 ml，最后桌上 12.7 ml · A800 上 158 min<br><span class="mono">bottle_451ml_gap16_yield0.1.mp4</span></figcaption></figure></div>
+<h3 id="02">0.2 用户的硬性要求</h3>
+<ol>
+<li>必须用这四个 FBX 模型，只能等比缩放，不能改变形状。</li>
+<li>模型和机械臂的相对尺寸要对。我们定的缩放比例和理由见 §2.1。你有更好的理由可以改，但要写明。</li>
+</ol>
+<h3 id="03">0.3 你要交付的东西（每个场景都要）</h3>
+<ul>
+<li><strong>视频</strong>：分辨率不低于 960×720，25 fps。镜头尽量用我们的参数（§8），方便并排对比。</li>
+<li><strong>指标</strong>：用 <code>metrics/handoff_metrics.py</code> 计算（定义见 §7），填进 §9 的对比表。</li>
+<li><strong>可复现材料</strong>：脚本、运行命令、仿真器名称和版本、硬件、墙钟时间。</li>
+<li><strong>对比说明</strong>：哪里比我们好、哪里不如，以及原因。</li>
+</ul>
+<h3 id="04">0.4 怎么判断“更好”（按优先级）</h3>
+<ol>
+<li><strong>物理上对</strong>：<ul>
+<li>毛毯不穿透、不抖，折得干净。</li>
+<li>海绵被挤压的部分要流出大部分水。</li>
+<li>装满的瓶子一捏就溢出或喷出，水的体积全程守恒。</li>
+</ul>
+</li>
+<li><strong>看起来真实</strong>：布料褶皱，水的飞溅、水膜和水滴，塑料瓶的凹陷和回弹。</li>
+<li><strong>稳健、够快</strong>：同样的动作重复跑，结果一致；墙钟时间短。</li>
+</ol>
+
+<h2 id="1">1. 文件夹内容</h2>
+<pre class="code"><code>README.md                      本文
+assets/source_fbx/             用户原始 FBX，4 个，未改动
+assets/derived/bed/            处理好的床和毛毯（米制，已摆在场景坐标里，可直接加载）
+assets/derived/kitchen/        厨房碰撞网格、渲染部件、水槽尺寸 JSON
+assets/derived/bottle/         水瓶单层壳网格（两版）和截面高度图 .npz
+assets/robot/                  FR3 + Franka Hand 的 URDF 和网格（已改成相对路径）
+reference/videos/              我们的路径追踪视频（Mitsuba 3，960×720）
+reference/contact_sheets/      视频截帧，每张 2×2
+reference/our_results.json     我们各次运行的指标（由 metrics 脚本算出）
+code_reference/                我们的场景脚本。依赖我们的引擎，不能直接跑，只供阅读：时间线、参数、坐标都在里面
+metrics/handoff_metrics.py     与仿真器无关的指标脚本，只依赖 numpy（python handoff_metrics.py --selftest）
+</code></pre>
+<p><strong>版权</strong>：这些原始模型和含有它们的 USD 不能公开分发，所以交接包不在网上提供；本页的视频都可以直接播放。</p>
+
+<h2 id="2">2. 资产与尺寸</h2>
+<h3 id="21-fbxassetssource_fbx">2.1 原始 FBX（<code>assets/source_fbx/</code>）</h3>
+<p>四个文件都是 3ds Max 2022 导出、FBX 7400 二进制、Y 轴向上，贴图都没有嵌入（只引用了作者电脑上的路径）。</p>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>文件</th>
+<th>内容</th>
+<th>单位</th>
+<th>原始尺寸</th>
+<th>缩放</th>
+<th>缩放后尺寸</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>床.fbx</code>（31.4 MB）</td>
+<td>一个网格：243,442 顶点、484,574 三角形，4 个材质（床垫、枕头1、枕头2、木床）</td>
+<td>mm</td>
+<td>1.249 × 0.605 × 1.450 m</td>
+<td><strong>×1.4</strong></td>
+<td>床架 1.56 × 1.98 m，总高 0.85 m</td>
+</tr>
+<tr>
+<td><code>毛毯.fbx</code>（27 KB）</td>
+<td>一个 8 顶点的扁盒，就是一张 1.900 × 0.001 × 1.201 m 的平面加贴图</td>
+<td>mm</td>
+<td>1.90 × 1.20 m</td>
+<td><strong>×1.0</strong></td>
+<td>1.90 × 1.20 m</td>
+</tr>
+<tr>
+<td><code>厨房.fbx</code>（1.2 MB）</td>
+<td>23 个网格：台面、柜体、双槽水槽、两个滤网、水龙头</td>
+<td>mm</td>
+<td>台面 1.20 × 2.40 m，台面高 0.901 m</td>
+<td><strong>×1.0</strong></td>
+<td>不变</td>
+</tr>
+<tr>
+<td><code>塑料水瓶.fbx</code>（1.5 MB）</td>
+<td>一个渲染网格：22,114 顶点、43,872 三角形，有壁厚、内壁和标签层</td>
+<td>cm（原始为 inch）</td>
+<td>宽 45.2 mm（对边），高 167.8 mm，瓶口外径 22.1 mm</td>
+<td><strong>×1.22</strong></td>
+<td>宽 54.8 mm（对边），高 204.7 mm</td>
+</tr>
+</tbody>
+</table></div>
+<pre class="code"><code>md5  702140bf9b0885076a4c28c9def0899c  床.fbx
+md5  297301915404f1ad9f307114b961813b  毛毯.fbx
+md5  64479e49a7377aee7933e12100378732  厨房.fbx
+md5  00003c949b49652ca594a288646af110  塑料水瓶.fbx
+</code></pre>
+<p><strong>为什么这样缩放</strong></p>
+<ul>
+<li><strong>床 ×1.4</strong>：原始床架只有约 1.1 × 1.4 m，比 1.9 × 1.2 m 的毛毯还小。放大后：<ul>
+<li>床架 1.56 × 1.98 m，相当于标准 1.5 × 2.0 m 双人床；</li>
+<li>被褥顶面 0.50 m，床头板 0.85 m，枕头顶 0.67 m。</li>
+</ul>
+</li>
+<li><strong>毛毯 ×1.0</strong>：1.9 × 1.2 m 本来就是常见的盖毯尺寸。</li>
+<li><strong>厨房 ×1.0</strong>：台面高 0.90 m，单槽内口约 0.44 × 0.32 m、深 115 mm，已经是真实尺寸。</li>
+<li><strong>水瓶 ×1.22</strong>：<ul>
+<li>原始瓶口外径只有 22.1 mm，市面上没有这么细的饮料瓶口，原始容积也只有约 275 ml。</li>
+<li>放大后瓶口是标准 28 mm 瓶口（PCO 1881：螺纹外径 27.4 mm，支撑环 33 mm），整瓶是标准 500 ml 水瓶：对边宽 54.8 mm，高 204.7 mm，满口容积 496 ml。</li>
+<li>FR3 手爪最大开口 80 mm，夹得住。</li>
+</ul>
+</li>
+</ul>
+<h3 id="22-assetsderived">2.2 我们处理后的几何（<code>assets/derived/</code>）</h3>
+<p>单位为米，已经摆在 §4–§6 的场景坐标里，可以直接加载。</p>
+<p><strong>床 <code>bed/</code></strong></p>
+<ul>
+<li><code>bed_collision.obj</code>：床的碰撞体，125,638 顶点、249,313 三角形。<ul>
+<li>包括被子、床单、床架、床腿、床头板。</li>
+<li>被子上的长边细分到 ≤ 40 mm，其他部件 ≤ 0.3 m。这只是为了接触检测的效率，形状没变。</li>
+<li>我们把它当成一个静止的刚体。</li>
+</ul>
+</li>
+<li><code>render/*.obj</code> 和 <code>parts.json</code>：按部件拆开的全分辨率渲染网格（含枕头、床头软包），每个部件带颜色。</li>
+<li><code>blanket_20mm.obj</code>（96×61 = 5,856 顶点）和 <code>blanket_15mm.obj</code>（128×81 = 10,368 顶点）：<ul>
+<li>毛毯重新三角化成的规则网格；</li>
+<li>平放在 y = 0，中心在原点，x 方向 1.90 m，z 方向 1.20 m；</li>
+<li>场景里再平移到位（§4.1）。</li>
+</ul>
+</li>
+<li><code>bed_meta.json</code>：缩放比例、FBX 坐标换算，以及各部件的包围盒。例如被子 x −0.795..0.796，y 0.245..0.496，z −1.603..0。</li>
+</ul>
+<p><strong>厨房 <code>kitchen/</code></strong></p>
+<ul>
+<li><code>kitchen_collision.obj</code>：24,874 顶点、48,431 三角形。<ul>
+<li>包括台面、台面边、两个水槽、两个滤网和水龙头。</li>
+<li>另外加了两个堵头圆片：每个滤网下方一个，半径比滤网大 2 mm。我们不模拟下水，防止水从下水口漏掉。</li>
+</ul>
+</li>
+<li><code>render/*.obj</code> 和 <code>parts.json</code>：全部 23 个部件。柜体、搁板等不参与碰撞。</li>
+<li><code>kitchen_meta.json</code>：两个水槽的轮廓多边形、槽底和槽沿高度、底部圆角、下水口位置和半径、台面范围、水龙头包围盒。</li>
+</ul>
+<p><strong>水瓶 <code>bottle/</code></strong></p>
+<ul>
+<li><code>pet_bottle_fbx_2p5mm.obj</code>：单层三角壳，7,805 顶点，边长约 2.5 mm，保留了瓶颈的支撑环。</li>
+<li><code>pet_bottle_fbx_noring.obj</code>：去掉支撑环的仿真壳，7,121 顶点。带水的运行都用这一版，渲染时再把支撑环画回去（原因见 §6.6）。</li>
+<li><code>*.npz</code>：<ul>
+<li>瓶身截面高度图 R(φ, y)：φ 每 0.5°，y 每 0.5 mm，瓶颈处每 0.1 mm；</li>
+<li>瓶底高度 y(u, φ)，其中 u = r / 瓶底外缘半径。</li>
+<li>可以用来往瓶里精确灌水，或计算任意液面以下的容积：满口 496.4 ml，瓶底凹进去 3.1 ml。</li>
+</ul>
+</li>
+<li><strong>怎么得到的</strong>：<ul>
+<li>原网格是渲染用的，带壁厚、内壁和标签层。我们从瓶轴向外打射线，采样外表面，得到高度图，再铺成一层三角壳。</li>
+<li>肋条、凹槽、方形圆角、瓶底凹面、瓶肩都保留，和原表面相差 0.1–0.5 mm。</li>
+<li>静止时，壳上任意两个不相邻的点–三角形、边–边距离都大于 0.5 mm（我们的接触距离）。</li>
+</ul>
+</li>
+<li><strong>坐标</strong>：瓶轴为 +y，过原点；瓶底外缘在 y = 0；两个平面朝 ±z，夹爪沿 z 方向夹。</li>
+</ul>
+<h3 id="23-assetsrobot">2.3 机械臂（<code>assets/robot/</code>）</h3>
+<ul>
+<li><strong>模型</strong>：Franka FR3 + Franka Hand，文件 <code>fr3_franka_hand.urdf</code>。<ul>
+<li>几何用的是官方 FR3 碰撞网格，长边细分到 ≤ 50 mm（只为接触精度）。</li>
+<li>视觉网格也指向这些碰撞网格。想要好看的外观，就换成官方 franka_description 或 MuJoCo Menagerie 的 FR3 视觉网格。</li>
+</ul>
+</li>
+<li><strong>TCP</strong>：<code>fr3_hand_tcp</code>，沿手的 z 轴距法兰 0.1034 m。指尖比 TCP 再往外 8.9 mm。</li>
+<li><strong>初始关节角</strong>：HOME = [0, −0.6, 0, −2.2, 0, 1.6, 0.785] rad，再用 IK 解到各场景的起始位姿。</li>
+<li><strong>夹爪</strong>：两指平行开合，开口 0–80 mm。</li>
+</ul>
+
+<h2 id="3">3. 通用约定</h2>
+<ul>
+<li><strong>单位和坐标</strong>：<ul>
+<li>单位 m、kg、s。</li>
+<li><strong>Y 轴向上</strong>，重力 (0, −9.81, 0)，地面 y = 0。</li>
+<li>URDF 是 Z 向上，加载时绕 x 轴转 −90°。</li>
+</ul>
+</li>
+<li><strong>机械臂底座</strong>：位于 <code>pos</code>，绕世界 y 轴转 <code>yaw</code>，即 <code>base_T = Ry(yaw) · Rx(−90°)</code> 再平移到 <code>pos</code>。<ul>
+<li>yaw = 0：机械臂正前方（URDF +x）指向世界 +x。</li>
+<li>yaw = 180°：指向 −x。</li>
+</ul>
+</li>
+<li><strong>动作控制</strong>：<ul>
+<li>每个场景给出 TCP 关键位姿序列（时间线）。段内位置按 min-jerk 插值，姿态做 slerp。</li>
+<li>每一步解 IK 得到 7 个关节目标，关节用刚度很高的位置驱动。</li>
+<li>夹爪按“目标开口”控制：开口以固定速度向目标变化，默认 80 mm/s；驱动有一定柔顺。</li>
+<li>我们没有设夹爪力上限。真实 Franka Hand 持续夹持力为 70 N。</li>
+</ul>
+</li>
+<li><strong>步长</strong>：dt = 5 ms，每秒录 25 帧。</li>
+<li><strong>我们的仿真器</strong>：Stiff-GIPC。在同一个隐式牛顿求解里，把以下几类对象和 IPC 无穿透接触一起求解：<ul>
+<li>三角壳和布料（FEM）；</li>
+<li>四面体 FEM；</li>
+<li>机械臂连杆（仿射刚体）；</li>
+<li>MPM 水。</li>
+</ul>
+</li>
+</ul>
+<p>硬件 NVIDIA A800 80 GB，每张卡跑一个运行。</p>
+
+<h2 id="4">4. 场景一：床上叠毛毯</h2>
+<p>截帧：<code>reference/contact_sheets/bed_F4N_20mm_4N.png</code>（旧弯曲）、<code>bed_F4N_20mm_4N_bendphys.png</code>（物理弯曲）、<code>bed_F4N_20mm_4N_bendphys_arc.png</code>（物理弯曲，圆弧）、<code>bed_F4N_20mm_4N_bendphys_arc_headtilt.png</code>（物理弯曲，圆弧，床头指不动、手掌微倾，目前最好）、<code>bed_F2N_20mm_2N_bendphys.png</code>（物理弯曲，右手滑脱）；侧视对比：<code>bed_side_view_line_vs_arc.png</code>（同一组参数，直线提起和圆弧各 7 个时刻的毛毯剖面）；视频：<code>reference/videos/bed_*.mp4</code>。</p><div class="fig-grid"><figure class="fig"><img src="../media/robotgym_handoff/bed_F4N_20mm_4N_bendphys.jpg?v=1028" alt="物理弯曲、竖直提起（4 N）：0.5 s、7.5 s 捏住、11 s 翻折、21.4 s 结束；床头那一半被拖动 9 cm" width="960" height="720" loading="lazy"><figcaption>物理弯曲、竖直提起（4 N）：0.5 s、7.5 s 捏住、11 s 翻折、21.4 s 结束；床头那一半被拖动 9 cm</figcaption></figure><figure class="fig"><img src="../media/robotgym_handoff/bed_F4N_20mm_4N_bendphys_arc_headtilt.jpg?v=1028" alt="物理弯曲、绕折线走圆弧、床头指不动且手掌微倾（4 N）：7.5 s 捏住、10.8 s 和 12.4 s 翻转中、21.4 s 结束；床头那一半只动了 0.7 mm（只走圆弧时 1.5 cm）" width="960" height="720" loading="lazy"><figcaption>物理弯曲、绕折线走圆弧、床头指不动且手掌微倾（4 N）：7.5 s 捏住、10.8 s 和 12.4 s 翻转中、21.4 s 结束；床头那一半只动了 0.7 mm（只走圆弧时 1.5 cm）</figcaption></figure></div>
+<h3 id="41">4.1 布置</h3>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>物体</th>
+<th>位置和参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>床</td>
+<td><code>bed_collision.obj</code>，静止。地面 y = 0；床居中，x = 0；被子的床尾端面在 z = 0，床头朝 −z（床头板约在 z = −2.0）。被子顶面高 0.456–0.496 m，有坡度，捏取处为 0.456</td>
+</tr>
+<tr>
+<td>毛毯</td>
+<td>1.90 (x) × 1.20 (z) m。t = 0 时平放在 y = 0.52，x 居中；床尾一侧的边在 z = +0.10（超出床尾 10 cm），床头一侧的边在 z = −1.10。前 2 s 自由落下，铺在床上</td>
+</tr>
+<tr>
+<td>右臂</td>
+<td>底座 (+1.12, 0.30, −0.47)，yaw 180°（面朝 −x），立在 0.36 × 0.36 m、高 0.30 m 的台子上</td>
+</tr>
+<tr>
+<td>左臂</td>
+<td>底座 (−1.12, 0.30, −0.47)，yaw 0°</td>
+</tr>
+<tr>
+<td>手的姿态</td>
+<td>垂直向下（手的 z 轴 = 世界 −y），两指沿世界 z 方向开合。夹出的褶子与毛毯床尾边平行</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="42">4.2 时间线</h3>
+<p>两臂同步，左臂的 x 取负。表中 s = 0.456 m，是捏取处的被子表面高度。</p>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>段</th>
+<th>时长 (s)</th>
+<th>右臂 TCP 目标</th>
+<th>手指</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>静置（毛毯落下铺好）</td>
+<td>2.0</td>
+<td>(0.62, s+0.15, −0.18)</td>
+<td>张开 60 mm</td>
+</tr>
+<tr>
+<td>下降</td>
+<td>2.0</td>
+<td>降到 y = s+0.0089+0.004，指尖离被面 4 mm</td>
+<td></td>
+</tr>
+<tr>
+<td>按压（力控）</td>
+<td>1.5</td>
+<td>继续以 5 mm/s 下降，直到两根手指受到的向上接触力合计 4 N。最低到指尖低于被面 4 mm</td>
+<td></td>
+</tr>
+<tr>
+<td>捏合</td>
+<td>2.5</td>
+<td>高度随力调整，使竖直力保持在 2–8 N（每步改 ±0.025 mm）</td>
+<td>以 30 mm/s 合到 1 mm</td>
+</tr>
+<tr>
+<td>提起</td>
+<td>2.0</td>
+<td>升到 y = s+0.22</td>
+<td></td>
+</tr>
+<tr>
+<td>翻折</td>
+<td>4.0</td>
+<td>移到 (0.62, s+0.20, −0.82)</td>
+<td></td>
+</tr>
+<tr>
+<td>放下</td>
+<td>2.0</td>
+<td>降到 y = s+0.05</td>
+<td></td>
+</tr>
+<tr>
+<td>松开</td>
+<td>1.0</td>
+<td></td>
+<td>张开到 60 mm</td>
+</tr>
+<tr>
+<td>抬手</td>
+<td>1.5</td>
+<td>升到 y = s+0.22</td>
+<td></td>
+</tr>
+<tr>
+<td>撤离</td>
+<td>1.5</td>
+<td>向外 0.10 m、向床尾 0.10 m</td>
+<td></td>
+</tr>
+<tr>
+<td>静止</td>
+<td>1.5</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<p>总长 21.5 s。捏取线在 z = −0.18，放下线在 z = −0.82，折线大约在毛毯中线 z ≈ −0.50。</p>
+<p><strong>弧线版</strong>（§4.4 标“弧线”的两组）：把“提起”和“翻折”换成一段 6 s 的“绕折线翻转”。手在 y–z 平面里绕 c = (s, −0.50) 走圆弧（c 在被面上，正对折线），角度和半径都按 min-jerk 插值。半径从起点的 0.32 m 降到顶点处的 0.265 m（顶点在被面上方 0.264 m；半径中间少了 <code>arc_sag</code> = 0.06 m），终点 (0.62, s+0.08, −0.82) 处为 0.33 m。手的姿态不变，后面从“放下”开始与上表相同。</p>
+<p><strong>倾斜单指捏版</strong>（§4.4 标“床头指不动、手掌微倾”的一组，<code>--pinch-mode head --pinch-tilt auto</code>，其余同弧线版）：
+- 落点：手先落在 z = −0.18 + 0.0295（往床尾偏 29.5 mm），这样张开 60 mm 时靠床头的指尖就在 z ≈ −0.18。对称合拢时它在 −0.21，要往床尾走 29.5 mm。
+- 捏合：手跟着往床头移动指缝减少量的一半，所以靠床头的手指不动，只有靠床尾的手指往床头走，合拢后两指中点在 z = −0.18。
+- 倾斜：每只手绕世界 x 轴转一个小角度 φ = atan((h_床头 − h_床尾) / 60 mm)，h 是两根张开的指尖正下方的被面高度（对 <code>bed_collision.obj</code> 竖直射线求交）。我们的被面得到右 +2.67°、左 +1.32°，两根指尖离被面一样高，力控下降时两根都压到布上。</p>
+<p><strong>为什么要用力控按压</strong>：被子顶面有坡度，而且我们把被子当成刚体。按固定深度下压时，一根指尖离布还有 7 mm，另一根已经压进去了；把下压量加到 1.0 mm，求解器又会卡住。改成“下降到感受到 2–4 N 再捏”以后，两只手都稳定地捏住了 20–40 个布料顶点。</p>
+<h3 id="43">4.3 材料（我们的取值）</h3>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>量</th>
+<th>值</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>毛毯面密度</td>
+<td>0.40 kg/m²</td>
+<td>抓绒或羊毛盖毯一般 0.3–0.5</td>
+</tr>
+<tr>
+<td>面内刚度</td>
+<td>E = 1e5 Pa（按 t = 1 mm 计），即 E·t = 100 N/m；ν = 0.45</td>
+<td></td>
+</tr>
+<tr>
+<td>弯曲刚度</td>
+<td>板刚度 D = E t³ / 12(1−ν²) = 1.04e-5 N·m（E = 1e5 Pa、t = 1 mm、ν = 0.45）。§4.4 标“物理”的三组用的就是这个值；标“旧”的三组<strong>实际只有约 1/50</strong></td>
+<td>旧的离散弯曲能多乘了一个边长因子（§10）。你应该用物理值：抓绒盖毯约 1e-6–1e-5 N·m</td>
+</tr>
+<tr>
+<td>接触厚度</td>
+<td>2 mm（IPC 接触距离 dhat）</td>
+<td></td>
+</tr>
+<tr>
+<td>摩擦</td>
+<td>手指 2.0、毛毯 0.5、床 0.3</td>
+<td>接触对取几何平均：手指–布约 1.0，布–床约 0.39</td>
+</tr>
+<tr>
+<td>布料自碰撞</td>
+<td>开</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="44">4.4 我们的结果</h3><div class="fig-grid g3"><figure class="fig" id="v-bed_F4N_20mm_4N_bendphys_arc_headtilt"><video src="../media/robotgym_fbx_bed_headtilt.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>圆弧翻折 · 只合拢床尾那根手指、手掌微倾（目前最好）</b><br>折过 99.7 %（床面上 100 %）· 床头被带动 0.7 mm · A800 上 118 min<br><span class="mono">bed_F4N_20mm_4N_bendphys_arc_headtilt.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F4N_15mm_4N_bendphys_arc_headtilt"><video src="../media/robotgym_handoff/bed_F4N_15mm_4N_bendphys_arc_headtilt.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>同上 · 毛毯 15 mm 网格</b><br>折过 99.1 %（床面上 100 %）· 床头被带动 0.2 mm · A800 上 125 min<br><span class="mono">bed_F4N_15mm_4N_bendphys_arc_headtilt.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F4N_20mm_4N_bendphys_arc_symtilt"><video src="../media/robotgym_handoff/bed_F4N_20mm_4N_bendphys_arc_symtilt.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>对照：圆弧翻折 · 两指对称合拢、手掌微倾</b><br>折过 99.0 %（床面上 100 %）· 床头被带动 12 mm · A800 上 121 min<br><span class="mono">bed_F4N_20mm_4N_bendphys_arc_symtilt.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F4N_20mm_4N_bendphys_arc"><video src="../media/robotgym_fbx_bed_arc.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>圆弧翻折 · 两指对称合拢 · 4 N、摩擦 2.0</b><br>折过 98.6 %（床面上 100 %）· 床头被带动 15 mm · A800 上 128 min<br><span class="mono">bed_F4N_20mm_4N_bendphys_arc.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F4N_15mm_4N_bendphys_arc"><video src="../media/robotgym_handoff/bed_F4N_15mm_4N_bendphys_arc.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>圆弧翻折 · 对称合拢 · 毛毯 15 mm 网格</b><br>折过 98.6 %（床面上 100 %）· 床头被带动 12 mm · A800 上 123 min<br><span class="mono">bed_F4N_15mm_4N_bendphys_arc.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F2N_20mm_2N_mu2_bendphys_arc"><video src="../media/robotgym_handoff/bed_F2N_20mm_2N_mu2_bendphys_arc.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>圆弧翻折 · 对称合拢 · 2 N、摩擦 2.0</b><br>折过 99.2 %（床面上 100 %）· 床头被带动 10 mm · A800 上 143 min<br><span class="mono">bed_F2N_20mm_2N_mu2_bendphys_arc.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F4N_20mm_4N_bendphys"><video src="../media/robotgym_fbx_bed_phys.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>竖直提起再翻 · 物理弯曲 · 4 N、摩擦 2.0</b><br>折过 99.9 %（床面上 100 %）· 床头被带动 90 mm · A800 上 141 min<br><span class="mono">bed_F4N_20mm_4N_bendphys.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F4N_15mm_4N_bendphys"><video src="../media/robotgym_handoff/bed_F4N_15mm_4N_bendphys.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>竖直提起 · 物理弯曲 · 毛毯 15 mm 网格</b><br>折过 99.9 %（床面上 100 %）· 床头被带动 80 mm · A800 上 143 min<br><span class="mono">bed_F4N_15mm_4N_bendphys.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F2N_20mm_2N_bendphys"><video src="../media/robotgym_fbx_bed_phys_2n.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>竖直提起 · 物理弯曲 · 2 N、摩擦 1.0（一侧滑脱）</b><br>折过 49.0 %（床面上 49 %）· 床头被带动 49 mm · A800 上 104 min<br><span class="mono">bed_F2N_20mm_2N_bendphys.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F2N_20mm_2N_mu2_bendphys"><video src="../media/robotgym_handoff/bed_F2N_20mm_2N_mu2_bendphys.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>竖直提起 · 物理弯曲 · 2 N、摩擦 2.0</b><br>折过 100.0 %（床面上 100 %）· 床头被带动 90 mm · A800 上 136 min<br><span class="mono">bed_F2N_20mm_2N_mu2_bendphys.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F4N_20mm_4N_mu1_bendphys"><video src="../media/robotgym_handoff/bed_F4N_20mm_4N_mu1_bendphys.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>竖直提起 · 物理弯曲 · 4 N、摩擦 1.0</b><br>折过 99.8 %（床面上 100 %）· 床头被带动 91 mm · A800 上 135 min<br><span class="mono">bed_F4N_20mm_4N_mu1_bendphys.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F4N_20mm_4N"><video src="../media/robotgym_handoff/bed_F4N_20mm_4N.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>竖直提起 · 旧弯曲（约软 50 倍）· 4 N、摩擦 2.0</b><br>折过 100.0 %（床面上 100 %）· 床头被带动 92 mm · A800 上 134 min<br><span class="mono">bed_F4N_20mm_4N.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F2N_20mm_2N"><video src="../media/robotgym_handoff/bed_F2N_20mm_2N.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>竖直提起 · 旧弯曲 · 2 N、摩擦 1.0</b><br>折过 100.0 %（床面上 100 %）· 床头被带动 90 mm · A800 上 152 min<br><span class="mono">bed_F2N_20mm_2N.mp4</span></figcaption></figure><figure class="fig" id="v-bed_F4N_15mm_4N"><video src="../media/robotgym_handoff/bed_F4N_15mm_4N.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>竖直提起 · 旧弯曲 · 毛毯 15 mm 网格</b><br>折过 100.0 %（床面上 100 %）· 床头被带动 82 mm · A800 上 167 min<br><span class="mono">bed_F4N_15mm_4N.mp4</span></figcaption></figure></div>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>运行（视频）</th>
+<th>弯曲</th>
+<th>轨迹</th>
+<th>毛毯网格</th>
+<th>按压力</th>
+<th>手指 μ</th>
+<th>折成比例（床面上）</th>
+<th>床头半边被拖动</th>
+<th>墙钟（模拟 21.5 s）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#v-bed_F4N_20mm_4N"><code>bed_F4N_20mm_4N.mp4</code></a></td>
+<td>旧（约 1/50）</td>
+<td>直线</td>
+<td>20 mm（5,856 顶点）</td>
+<td>4 N</td>
+<td>2.0</td>
+<td>100%（100%）</td>
+<td>+92 mm</td>
+<td>134 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F2N_20mm_2N"><code>bed_F2N_20mm_2N.mp4</code></a></td>
+<td>旧</td>
+<td>直线</td>
+<td>20 mm</td>
+<td>2 N</td>
+<td>1.0</td>
+<td>100%（100%）</td>
+<td>+90 mm</td>
+<td>152 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F4N_15mm_4N"><code>bed_F4N_15mm_4N.mp4</code></a></td>
+<td>旧</td>
+<td>直线</td>
+<td>15 mm（10,368 顶点）</td>
+<td>4 N</td>
+<td>2.0</td>
+<td>100%（100%）</td>
+<td>+82 mm</td>
+<td>167 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F4N_20mm_4N_bendphys"><code>bed_F4N_20mm_4N_bendphys.mp4</code></a></td>
+<td>物理</td>
+<td>直线</td>
+<td>20 mm</td>
+<td>4 N</td>
+<td>2.0</td>
+<td>99.9%（100%）</td>
+<td>+90 mm</td>
+<td>141 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F4N_15mm_4N_bendphys"><code>bed_F4N_15mm_4N_bendphys.mp4</code></a></td>
+<td>物理</td>
+<td>直线</td>
+<td>15 mm</td>
+<td>4 N</td>
+<td>2.0</td>
+<td>99.9%（100%）</td>
+<td>+80 mm</td>
+<td>143 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F2N_20mm_2N_bendphys"><code>bed_F2N_20mm_2N_bendphys.mp4</code></a></td>
+<td>物理</td>
+<td>直线</td>
+<td>20 mm</td>
+<td>2 N</td>
+<td>1.0</td>
+<td>49%（49%，右手滑脱）</td>
+<td>+49 mm</td>
+<td>104 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F2N_20mm_2N_mu2_bendphys"><code>bed_F2N_20mm_2N_mu2_bendphys.mp4</code></a></td>
+<td>物理</td>
+<td>直线</td>
+<td>20 mm</td>
+<td>2 N</td>
+<td>2.0</td>
+<td>100%（100%）</td>
+<td>+90 mm</td>
+<td>136 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F4N_20mm_4N_mu1_bendphys"><code>bed_F4N_20mm_4N_mu1_bendphys.mp4</code></a></td>
+<td>物理</td>
+<td>直线</td>
+<td>20 mm</td>
+<td>4 N</td>
+<td>1.0</td>
+<td>99.8%（100%）</td>
+<td>+91 mm</td>
+<td>135 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F4N_20mm_4N_bendphys_arc"><code>bed_F4N_20mm_4N_bendphys_arc.mp4</code></a></td>
+<td>物理</td>
+<td>弧线</td>
+<td>20 mm</td>
+<td>4 N</td>
+<td>2.0</td>
+<td>98.6%（100%）</td>
+<td><strong>+15 mm</strong></td>
+<td>128 min</td>
+</tr>
+<tr>
+<td>同上，原样重跑（无视频）</td>
+<td>物理</td>
+<td>弧线</td>
+<td>20 mm</td>
+<td>4 N</td>
+<td>2.0</td>
+<td>98.7%（100%）</td>
+<td>+14 mm</td>
+<td>115 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F4N_15mm_4N_bendphys_arc"><code>bed_F4N_15mm_4N_bendphys_arc.mp4</code></a></td>
+<td>物理</td>
+<td>弧线</td>
+<td>15 mm</td>
+<td>4 N</td>
+<td>2.0</td>
+<td>98.6%（100%）</td>
+<td><strong>+12 mm</strong></td>
+<td>123 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F2N_20mm_2N_mu2_bendphys_arc"><code>bed_F2N_20mm_2N_mu2_bendphys_arc.mp4</code></a></td>
+<td>物理</td>
+<td>弧线</td>
+<td>20 mm</td>
+<td>2 N</td>
+<td>2.0</td>
+<td>99.2%（100%）</td>
+<td>+10 mm</td>
+<td>143 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F4N_20mm_4N_bendphys_arc_headtilt"><code>bed_F4N_20mm_4N_bendphys_arc_headtilt.mp4</code></a></td>
+<td>物理</td>
+<td>弧线；床头指不动、手掌微倾</td>
+<td>20 mm</td>
+<td>4 N</td>
+<td>2.0</td>
+<td>99.7%（100%）</td>
+<td><strong>+0.7 mm</strong></td>
+<td>118 min</td>
+</tr>
+<tr>
+<td>同上，原样重跑（无视频）</td>
+<td>物理</td>
+<td>弧线；床头指不动、手掌微倾</td>
+<td>20 mm</td>
+<td>4 N</td>
+<td>2.0</td>
+<td>99.5%（100%）</td>
+<td>+0.5 mm</td>
+<td>128 min</td>
+</tr>
+<tr>
+<td>同上，2 N、μ 2.0（无视频）</td>
+<td>物理</td>
+<td>弧线；床头指不动、手掌微倾</td>
+<td>20 mm</td>
+<td>2 N</td>
+<td>2.0</td>
+<td>99.3%（100%）</td>
+<td>+0.1 mm</td>
+<td>115 min</td>
+</tr>
+<tr>
+<td>同上，4 N、μ 1.0（无视频）</td>
+<td>物理</td>
+<td>弧线；床头指不动、手掌微倾</td>
+<td>20 mm</td>
+<td>4 N</td>
+<td>1.0</td>
+<td>99.2%（100%）</td>
+<td>+0.8 mm</td>
+<td>120 min</td>
+</tr>
+<tr>
+<td>同上，2 N、μ 1.0（无视频）</td>
+<td>物理</td>
+<td>弧线；床头指不动、手掌微倾</td>
+<td>20 mm</td>
+<td>2 N</td>
+<td>1.0</td>
+<td>99.5%（100%）</td>
+<td>+0.02 mm</td>
+<td>125 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F4N_15mm_4N_bendphys_arc_headtilt"><code>bed_F4N_15mm_4N_bendphys_arc_headtilt.mp4</code></a></td>
+<td>物理</td>
+<td>弧线；床头指不动、手掌微倾</td>
+<td>15 mm</td>
+<td>4 N</td>
+<td>2.0</td>
+<td>99.1%（100%）</td>
+<td>+0.2 mm</td>
+<td>125 min</td>
+</tr>
+<tr>
+<td><a href="#v-bed_F4N_20mm_4N_bendphys_arc_symtilt"><code>bed_F4N_20mm_4N_bendphys_arc_symtilt.mp4</code></a>（对照）</td>
+<td>物理</td>
+<td>弧线；对称合拢、手掌微倾</td>
+<td>20 mm</td>
+<td>4 N</td>
+<td>2.0</td>
+<td>99.0%（100%）</td>
+<td>+12 mm</td>
+<td>121 min</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>折成比例</strong>：毛毯床尾那一半的顶点中，最后越过折线、落到床头一侧的比例。括号里只算床面上的顶点（静止时 |x| &lt; 0.79 m，被子侧面在 |x| = 0.795）。垂在床两侧的布在折痕附近翻不过折线，弧线两组差的 1.4% 全在这里。</li>
+<li><strong>拖动</strong>：床头那一半顶点 z 位移的中位数，正值表示被拖向床尾。</li>
+<li>约 18 s 后整体静止。</li>
+<li><strong>物理弯曲</strong>：4 N 的两组和旧弯曲的结果几乎一样，只是翻过去的毛毯更平整，褶子更大、更圆。所以床头被拖动 8–9 cm 和弯曲无关，是轨迹造成的（见下一条）。</li>
+<li><strong>2 N 那组失败了</strong>：<ul>
+<li>合拢后右手两指间只有 7 个布料顶点（旧弯曲时 13 个）：毛毯硬了，被挤进两指间的褶更小。</li>
+<li>刚开始提起（8.3–8.5 s），布就从右手滑掉了，只有左手把它那一角翻了过去，叠成一条斜线。</li>
+<li>真实的抓绒毯介于两种弯曲之间，所以 2 N、μ 1.0 的捏法是临界的。4 N、μ 2.0 两组都捏住了。</li>
+<li>后来补跑了另外两个组合：2 N、μ 2.0 和 4 N、μ 1.0 走直线都捏住了，2 N、μ 2.0 走弧线也捏住了。只有按压力和手指摩擦都偏低（2 N、μ 1.0）时才滑脱。</li>
+</ul>
+</li>
+<li><strong>重跑的差异</strong>：弧线 4 N 那组原样重跑了一次（我们引擎的 GPU 归约不是逐位确定的）。拖动 +14 对 +15 mm，折成比例 98.7% 对 98.6%，褶高相差不到 0.5 mm。
+<strong>拖动从哪来</strong>（逐帧算床头半边的 z 位移中位数，20 mm 网格、4 N）：</li>
+</ul>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>直线</th>
+<th>弧线</th>
+<th>弧线，床头指不动、手掌微倾</th>
+<th>弧线，对称合拢、手掌微倾（对照）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>毛毯落下铺好（0–2 s）</td>
+<td>+1 mm</td>
+<td>+1 mm</td>
+<td>+1 mm</td>
+<td>+1 mm</td>
+</tr>
+<tr>
+<td>捏合（5.8–8.0 s）</td>
+<td>+14 mm</td>
+<td>+14 mm</td>
+<td>+0.1 mm</td>
+<td>+12.8 mm</td>
+</tr>
+<tr>
+<td>提起（8.0–10.0 s）</td>
+<td>+79 mm</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>翻折（直线）/ 绕折线翻转（弧线）</td>
+<td>−6 mm</td>
+<td>−1 mm</td>
+<td>−1 mm</td>
+<td>−1.6 mm</td>
+</tr>
+<tr>
+<td>放下、松开、撤离</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>合计</td>
+<td>+88 mm</td>
+<td>+14 mm</td>
+<td>+0.3 mm</td>
+<td>+12.3 mm</td>
+</tr>
+</tbody>
+</table></div>
+<p>逐帧值只算床面上的顶点（|x| &lt; 0.8 m），所以合计比 §4.4 的指标小 1–2 mm。</p>
+<ul>
+<li>提起：竖直提到被面上方 0.22 m 时，手到折线（z = −0.50）的距离是 0.39 m，而手和折线之间那段布只有约 0.30 m（捏取线 z = −0.18 到折线，再减去被捏进褶里的约 3 cm）。布被拉紧，把床头那一半往床尾拽。</li>
+<li>弧线让手到折线的距离一直不超过这段布长，提起造成的拖动就没有了（对应 <code>code_reference/bed_blanket_fold.py</code> 的 <code>--fold-path arc --arc-sag 0.06</code>）。</li>
+<li>剩下的约 15 mm 几乎都来自捏合：两指对称合拢，靠床头的那根手指从 z = −0.21 走到 −0.18，压着布把床头那一半往床尾带了约一半的行程（14 mm）。</li>
+<li>让靠床头的手指不动（<code>--pinch-mode head</code>）：手先落在床尾一侧 29.5 mm 处，合拢时手跟着往床头移动指缝减少量的一半，只有靠床尾的手指在走，捏合结束时仍在 z = −0.18。<ul>
+<li>捏合时床头那一半只动了 0.3–0.5 mm（对称合拢时 15 mm），拖动确实没有了。</li>
+<li>但右手没捏住：右侧被面从床头往床尾低约 3 mm（60 mm 指距内），力控下降时只有靠床头的指尖压在布上，会动的那根悬空，挤不出褶（褶高右 0.7 mm、左 19.6 mm），翻折一开始布就滑掉了。</li>
+<li>这也解释了对称合拢为什么拖动床头一半：压着布的是靠床头的那根手指，它往床尾走就把布带过去。右侧拖了 18 mm，左侧 11 mm。</li>
+<li>再加上 <code>--pinch-tilt auto</code>（§4.2 倾斜单指捏版：每只手绕世界 x 轴转右 +2.67°、左 +1.32°，两根张开的指尖离被面一样高），两只手都捏住了，一直捏到松手。</li>
+<li>褶高右 18.6 mm、左 19.9 mm（对称合拢 16.8 / 18.7 mm），两指之间各有 5–7 个布料顶点（对称合拢 6–7 个）。</li>
+<li>捏合时床头那一半只动了 0.1 mm，最终拖动 +0.7 mm，折成比例 99.7%（床面上 100%）。这是我们目前最好的一组（<a href="#v-bed_F4N_20mm_4N_bendphys_arc_headtilt"><code>bed_F4N_20mm_4N_bendphys_arc_headtilt.mp4</code></a>）。</li>
+<li>补跑的四组（同参数重跑、15 mm 网格、2 N/μ 2.0、4 N/μ 1.0）结果一致：两只手都捏到松手，拖动 +0.1 到 +0.8 mm，捏合阶段都在 ±0.1 mm 以内。15 mm 网格的褶低一些（右 14.2、左 12.9 mm），两指之间的布料顶点更多（10–14 个）。</li>
+<li>对照组（<code>--pinch-mode sym --pinch-tilt auto</code>，对称合拢，手掌同样按坡度微倾：右 +1.77°、左 −0.99°）：两只手也都捏住了，但捏合时床头那一半又被带过去 12.8 mm，最终 +12 mm，和不倾斜的对称合拢一样。所以拖动来自压着布往床尾走的床头指；手掌微倾本身不减少拖动，它的作用是让会动的那根手指也压到布上。</li>
+<li>2 N/μ 1.0（直线对称捏法在这里一侧滑脱）10-27 跑完：两只手都捏到松手，拖动 +0.02 mm（捏合阶段 +0.1 mm），褶高右 18.0、左 19.6 mm，两指之间 6–7 个布料顶点。所以这个捏法在 2/4 N × μ 1.0/2.0 四个组合下都成功。</li>
+<li>褶高的算法：捏合结束时，两指中点水平 15 mm 以内最高的布料顶点，减去周围 50–90 mm 环带内布料高度的中位数。</li>
+<li>你的仿真器里如果被面也是刚体，请注意同样的问题；被面是软的就不会这么敏感。</li>
+</ul>
+</li>
+</ul>
+<h3 id="45">4.5 不足和可改进的地方</h3>
+<ol>
+<li><strong>被子是刚体</strong>：真实的被子是软的，指尖能压进去，捏布更容易也更真实。可以把被子做成软体，至少加一层软接触。</li>
+<li><strong>床头半边被拖动</strong>：竖直提起时 8–9 cm（手和折线之间的布被拉紧）。绕折线走圆弧后降到 1.2–1.5 cm，床面上的部分仍然全部折过去（§4.4）。剩下的来自两指对称合拢；改成只动靠床尾的手指、手掌顺着被面坡度微倾，让两根指尖都压在布上，降到 0.7 mm（重跑与换参数的五组 0.0–0.8 mm），两只手也都捏住了（§4.4 最后一条）。你的仿真器里也请先确认这两步各拖了多少。</li>
+<li><strong>弯曲刚度</strong>：旧弯曲约软 50 倍（§4.3），已经用物理弯曲重跑（§4.4）。折叠结果基本不变，褶子形态更自然。</li>
+<li><strong>捏取方式</strong>：从上往下压，再双指合拢捏出一道褶。真实机器人也常这样做，但成功率对下压力和摩擦敏感：物理弯曲下 2 N、μ 1.0 一侧滑脱；2 N、μ 2.0，4 N、μ 1.0 和 4 N、μ 2.0 都成功。床头指不动、手掌微倾的捏法在 2 N/μ 1.0、2 N/μ 2.0、4 N/μ 1.0、4 N/μ 2.0 四个组合下都成功（2 N/μ 1.0 拖动 +0.02 mm）。</li>
+</ol>
+
+<h2 id="5">5. 场景二：厨房海绵吸水、拧水</h2>
+<h3 id="51">5.1 布置</h3>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>物体</th>
+<th>位置和参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>厨房</td>
+<td><code>kitchen_collision.obj</code>，静止，μ = 0.5。原点在两个水槽中心连线的中点下方。台面顶 y = 0.9008；台面范围 x −0.869..0.331，z −1.804..0.599；机械臂一侧的台面前沿在 x = +0.331</td>
+</tr>
+<tr>
+<td>水槽 a（泡水）</td>
+<td>内口 x −0.2195..0.2193，z −0.3845..−0.0663。槽沿 y = 0.900，槽底 y = 0.7852（深 115 mm），底部圆角半径 12 mm。下水口在 (x −0.1312, z −0.2255)，半径 34 mm，上面有滤网，下面加了堵头</td>
+</tr>
+<tr>
+<td>水槽 b（拧水）</td>
+<td>内口 z 0.0665..0.3846，其余和 a 相同（下水口在 z = +0.2255）</td>
+</tr>
+<tr>
+<td>水龙头</td>
+<td>x −0.287..−0.111，z −0.095..0.042，y 0.899..1.243，在两槽之间偏后</td>
+</tr>
+<tr>
+<td>水</td>
+<td>水槽 a 里 50 mm 深，约 5.6 L</td>
+</tr>
+<tr>
+<td>海绵</td>
+<td>100 (x) × 35 (y) × 60 (z) mm 的长方体，长边沿 x。中心在 (0.03, 槽底+0.0215, −0.2254)，即槽 a 中间、避开下水口。四面体网格单元 6.25 mm</td>
+</tr>
+<tr>
+<td>机械臂</td>
+<td>底座 (0.53, 0.78, 0.0)，yaw 180°（面朝 −x，即面朝水槽）。立在 0.30 (x) × 0.36 (z) m、顶面 y = 0.778 的台子上，台子在台面前沿外 0.2 m</td>
+</tr>
+<tr>
+<td>手的姿态</td>
+<td>垂直向下，两指沿 z 方向开合，夹住海绵 60 mm 宽的那一边</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="52">5.2 时间线（默认：抓一次，挤三次）</h3>
+<p>TCP 对准海绵中心的高度抓取。</p>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>段</th>
+<th>时长 (s)</th>
+<th>TCP 目标</th>
+<th>手指开口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>静置</td>
+<td>1.5</td>
+<td>海绵正上方，高度让海绵底离槽沿 10 cm</td>
+<td>78 mm</td>
+</tr>
+<tr>
+<td>下降到槽 a</td>
+<td>3.0</td>
+<td>海绵中心</td>
+<td></td>
+</tr>
+<tr>
+<td>抓取</td>
+<td>2.0</td>
+<td></td>
+<td>44 mm（把 60 mm 轻压到 44 mm）</td>
+</tr>
+<tr>
+<td>浸泡</td>
+<td>1.0</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>提起</td>
+<td>2.0</td>
+<td>海绵底离槽沿 10 cm（中心 y ≈ 1.0175）</td>
+<td></td>
+</tr>
+<tr>
+<td>搬到槽 b 上方</td>
+<td>2.5</td>
+<td>(0.03, 约 0.9975, 0.2256)，海绵底离槽沿 8 cm</td>
+<td></td>
+</tr>
+<tr>
+<td>挤 1 / 保持 / 松开</td>
+<td>2.5 / 2.0 / 1.5</td>
+<td></td>
+<td>以 12 mm/s 挤到 24 mm，保持，再回到 44 mm</td>
+</tr>
+<tr>
+<td>挤 2</td>
+<td>同上</td>
+<td></td>
+<td>18 mm</td>
+</tr>
+<tr>
+<td>挤 3</td>
+<td>同上</td>
+<td></td>
+<td>12 mm</td>
+</tr>
+<tr>
+<td>搬回 / 放下 / 松开 / 撤离 / 静止</td>
+<td>2.5 / 2.0 / 1.5 / 2.0 / 1.0</td>
+<td>回到槽 a 放下</td>
+<td>张开到 78 mm</td>
+</tr>
+</tbody>
+</table></div>
+<p>总长约 39 s。</p>
+<p><strong>变体</strong>（参数都在 <code>code_reference/sponge_kitchen.py</code> 里）：</p>
+<ul>
+<li><strong>regrasp</strong>：沿海绵长边在 −30、−10、+10、+30 mm 四个位置各抓一次。每次都回槽 a 重新泡水，再搬过去挤，想把整块海绵都挤到。</li>
+<li><strong>soft</strong>：海绵 E = 2.5e4 Pa，依次挤到 22、16、10 mm。</li>
+<li><strong>thin25</strong>（失败，已停）：海绵厚度改成 25 mm，想让指垫盖住大部分厚度。<ul>
+<li>第 2 次挤到 18 mm 时，海绵从两指之间滑出去，整块掉进槽 b，里面还装着 92 ml 水。</li>
+<li>我们的日志只数“槽 b 范围内的水”，所以槽 b 的数字一下子从 8 ml 跳到 99.5 ml。这些水其实不是挤出来的。</li>
+<li>原因：抓取时指尖停在槽底上方约 8 mm，所以只夹住了 25 mm 海绵上面的 17 mm。夹到 18 mm（60 mm 宽压到 30%）时，海绵从指垫下方被挤了出去。</li>
+<li>软版（E = 2.5e4，挤到 22/16/10 mm）也一样。</li>
+<li>结论：海绵如果比“指垫高度 + 指尖离槽底的距离”还薄，就夹不牢。</li>
+</ul>
+</li>
+</ul>
+<h3 id="53">5.3 材料</h3>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>量</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>海绵</td>
+<td>E = 5e4 Pa（软版 2.5e4），ν = 0.35，干密度 120 kg/m³，孔隙率 0.85</td>
+</tr>
+<tr>
+<td>摩擦</td>
+<td>手指 1.0，海绵 1.0，厨房 0.5</td>
+</tr>
+<tr>
+<td>水</td>
+<td>ρ = 1000，体积模量 1e5 Pa（弱可压，真实水是 2.2e9）。MPM 网格 8 mm，每格 8 个粒子（粒子间距 4 mm）。没有表面张力</td>
+</tr>
+<tr>
+<td>接触距离</td>
+<td>1 mm</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>我们的海绵–水模型</strong>（写出来方便你判断要不要换成更物理的模型）：</p>
+<ul>
+<li>水粒子可以穿过海绵表面（关掉了海绵和水之间的接触）。在海绵内部，水受 Darcy 式拖曳（200 /s），跟着海绵一起动。</li>
+<li>每个四面体都有一个“容量”，就是它的孔隙体积。我们用开孔泡沫规则：V0 · max(0.02, min(J, λmin) − (1 − φ))。<ul>
+<li>J 是体积比，λmin 是最短边的拉伸比，φ 是孔隙率。</li>
+<li>这样单向夹扁时，即使总体积变化不大，孔也会被压没。</li>
+</ul>
+</li>
+<li>饱和度 s = 水的体积 / 容量，在顶点上平均。<ul>
+<li>s ≤ 1 时，水被“持住”：抵消重力，相当于毛细保持。</li>
+<li>s &gt; 1 时，超出的部分在宽 0.25 的区间内迅速放开，变成自由水往下流。</li>
+</ul>
+</li>
+<li><strong>局限</strong>：<ul>
+<li>挤出来的水会流进海绵里没被挤的部分，又被持住。</li>
+<li>没有真实的毛细压力，渗透率也不随含水量变化。</li>
+</ul>
+</li>
+</ul>
+<h3 id="54">5.4 我们的结果</h3><div class="fig-grid g3"><figure class="fig" id="v-kitchen_regrasp_E5e4_4cycles"><video src="../media/robotgym_fbx_kitchen_regrasp.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>换位再挤 4 个周期（目前最好）：每挤一次就放回槽 a，挪 20 mm 重新抓、泡一秒</b><br>槽 b 最后接到 48.2 ml · A800 上 999 min<br><span class="mono">kitchen_regrasp_E5e4_4cycles.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_regrasp_E2-5e4_4cycles"><video src="../media/robotgym_handoff/kitchen_regrasp_E2.5e4_4cycles.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>同上 · 软海绵（E = 2.5e4 Pa）</b><br>槽 b 最后接到 45.8 ml · A800 上 990 min<br><span class="mono">kitchen_regrasp_E2.5e4_4cycles.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_w50_E5e4_24-18-12"><video src="../media/robotgym_fbx_kitchen.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>默认：抓一次，在槽 b 上方挤三次（24 / 18 / 12 mm）</b><br>槽 b 最后接到 21.5 ml · A800 上 353 min<br><span class="mono">kitchen_w50_E5e4_24-18-12.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_w50_E5e4_24-18-12_griplow"><video src="../media/robotgym_handoff/kitchen_w50_E5e4_24-18-12_griplow.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>抓低 10 mm，挤三次</b><br>槽 b 最后接到 23.9 ml · A800 上 461 min<br><span class="mono">kitchen_w50_E5e4_24-18-12_griplow.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_w50_E2-5e4_22-16-10"><video src="../media/robotgym_handoff/kitchen_w50_E2.5e4_22-16-10.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>软海绵，挤得更扁（22 / 16 / 10 mm）</b><br>槽 b 最后接到 19.9 ml · A800 上 631 min<br><span class="mono">kitchen_w50_E2.5e4_22-16-10.mp4</span></figcaption></figure></div>
+<p>默认参数（50 mm 水、E = 5e4、挤到 24/18/12 mm），视频 <a href="#v-kitchen_w50_E5e4_24-18-12"><code>kitchen_w50_E5e4_24-18-12.mp4</code></a>。水量用 <code>metrics/handoff_metrics.py</code> 算，“海绵里”指海绵包围盒向内缩 1 mm 以内的水：</p>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>时刻</th>
+<th>阶段开始</th>
+<th>海绵里的水</th>
+<th>槽 b 里的水</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>6.5 s</td>
+<td>浸泡</td>
+<td>242 ml（饱和度约 1.4，见表下说明）</td>
+<td>0</td>
+</tr>
+<tr>
+<td>9.5 s</td>
+<td>提出水面，开始搬运</td>
+<td>140 ml（提起的 2 s 里约 100 ml 流回槽 a）</td>
+<td>0</td>
+</tr>
+<tr>
+<td>16.5 s</td>
+<td>第 1 次松开</td>
+<td>128 ml</td>
+<td>11.5 ml</td>
+</tr>
+<tr>
+<td>22.5 s</td>
+<td>第 2 次松开</td>
+<td>122 ml</td>
+<td>17.6 ml</td>
+</tr>
+<tr>
+<td>28.5 s</td>
+<td>第 3 次松开</td>
+<td>119 ml</td>
+<td>21.2 ml</td>
+</tr>
+<tr>
+<td>32.5 s</td>
+<td>搬回槽 a 之前</td>
+<td>118 ml</td>
+<td>21.5 ml（最终）</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>浸泡时的 242 ml 比孔隙容量多四到六成</strong>：引擎按海绵四面体数的水粒子（每个粒子最多数一次）给出同样的数，饱和度 1.4–1.6（<code>sponge_kitchen.py</code> 日志里的 <code>sat</code>）。我们的模型允许水粒子占满整块海绵（连骨架那 15 % 也算上），饱和度最多也只该到 1.18，所以浸没时海绵里的水被挤密了。之前写的“包括贴着海绵的水”不对。<ul>
+<li>原因（已用实验确认，未修）：每步压力求解之后，引擎把海绵里的水粒子拉回到它所在的海绵材料点上（毛细持水，<code>k_porous_follow</code>，强度 β = min(1, 多孔阻力 × dt)，默认 200 /s × 5 ms = 1），这一步不保体积，流进海绵的水不能再被压力推开。</li>
+<li>同一场景只跑 1.5 s（海绵泡在水里、还没抓）：β = 1 时饱和度 1.36，β = 0.25 时 1.26，关掉时 1.18（水粒子占满整块海绵，密度与周围的水相同）；超过容量后仍按 1/s 拉回的旧门控是 1.80。关掉拉回不是办法：提起时海绵就不再持水。</li>
+<li>提起后多出的部分 2 s 内流回槽 a，搬运和挤压时饱和度 0.75–0.9。你的仿真器里请检查浸没时海绵内的水是否守恒体积。</li>
+</ul>
+</li>
+<li>三次挤压一共只有 21.5 ml 进到槽 b（依次 11.5、6、4 ml），海绵里一直留着约 120 ml。</li>
+<li><strong>原因</strong>：FR3 的指垫只有约 20 mm 宽、20 mm 高，只能压扁 100 mm 长海绵中间的一条。挤出来的水流进下面和两边没被压的部分，又被持住了。</li>
+<li><strong>第一轮的教训</strong>：<ul>
+<li>三次挤完后，海绵在指间转了一个角度，长边垂到手指下方 58 mm。</li>
+<li>搬回时只比槽沿高 4 cm，海绵被槽沿挂住，求解器卡死。</li>
+<li>改成提起时海绵底高于槽沿 10 cm、拧水时高于槽沿 8 cm 后，就没再卡住。</li>
+</ul>
+</li>
+<li><strong>墙钟</strong>：模拟 39 s 用了 353 min（A800），约 9 min / 模拟秒。</li>
+<li><strong>更软、挤得更扁也没有挤出更多</strong>：</li>
+</ul>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>运行</th>
+<th>海绵 E</th>
+<th>三次挤到</th>
+<th>第 1 / 2 / 3 次松开后槽 b</th>
+<th>最终槽 b</th>
+<th>海绵里最后剩</th>
+<th>墙钟</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>默认（上表）</td>
+<td>5e4 Pa</td>
+<td>24 / 18 / 12 mm</td>
+<td>11.5 / 17.6 / 21.2 ml</td>
+<td>21.5 ml</td>
+<td>118 ml</td>
+<td>353 min</td>
+</tr>
+<tr>
+<td>软海绵（<a href="#v-kitchen_w50_E2-5e4_22-16-10"><code>kitchen_w50_E2.5e4_22-16-10.mp4</code></a>）</td>
+<td>2.5e4 Pa</td>
+<td>22 / 16 / 10 mm</td>
+<td>12.5 / 17.6 / 19.7 ml</td>
+<td>19.9 ml</td>
+<td>120 ml</td>
+<td>631 min</td>
+</tr>
+</tbody>
+</table></div>
+<p>第一次只多挤出 1 ml，之后反而更少，海绵里同样一直留着约 120 ml。说明瓶颈不在挤得够不够扁，而在挤出来的水又被没压到的部分吸住（上面的“原因”）。软海绵的求解慢了 1.8 倍。</p>
+<ul>
+<li><strong>抓低、换位再挤</strong>：</li>
+</ul>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>运行</th>
+<th>动作</th>
+<th>海绵 E</th>
+<th>挤到</th>
+<th>各次 / 各周期进槽 b</th>
+<th>最终槽 b</th>
+<th>墙钟（模拟时长）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#v-kitchen_w50_E5e4_24-18-12_griplow"><code>kitchen_w50_E5e4_24-18-12_griplow.mp4</code></a></td>
+<td>抓低 10 mm（<code>--grip-dy -0.010</code>，指尖离槽底 2.6 mm，指垫压在海绵下面 19 mm），挤三次</td>
+<td>5e4 Pa</td>
+<td>24 / 18 / 12 mm</td>
+<td>11.9 / 6.0 / 4.7 ml，搬回时又滴 1.3 ml</td>
+<td>23.9 ml</td>
+<td>461 min（38 s）</td>
+</tr>
+<tr>
+<td><a href="#v-kitchen_regrasp_E5e4_4cycles"><code>kitchen_regrasp_E5e4_4cycles.mp4</code></a></td>
+<td>换位再挤 4 个周期（<code>--regrasp=-0.03,-0.01,0.01,0.03</code>）：每个周期挤一次，放回槽 a，沿海绵挪 20 mm 重新抓、泡一秒、再搬过去挤</td>
+<td>5e4 Pa</td>
+<td>24 / 18 / 18 / 12 mm（每周期一次）</td>
+<td>约 13 / 12 / 10 / 13 ml</td>
+<td><strong>48.2 ml</strong></td>
+<td>999 min（93.5 s）</td>
+</tr>
+<tr>
+<td><a href="#v-kitchen_regrasp_E2-5e4_4cycles"><code>kitchen_regrasp_E2.5e4_4cycles.mp4</code></a>（软海绵换位再挤）</td>
+<td>同上</td>
+<td>2.5e4 Pa</td>
+<td>同上</td>
+<td>约 12 / 10 / 10 / 14 ml</td>
+<td>45.8 ml</td>
+<td>990 min（93.5 s）</td>
+</tr>
+</tbody>
+</table></div>
+<p>抓低只多了 2.4 ml，挤出的水并没有从底面流走。换位再挤每个周期都相当于“刚泡饱后的第一次挤”：同一位置连挤时第二、三次只出 6、4 ml，重新泡饱再挤又有 10–13 ml，四个周期 48 ml，超过 robotgym.io 原站的 33.5 ml。同一命令换一个水粒子随机种子（<code>--seed 1</code>），以及换位 + 抓低的组合，还在跑。</p>
+<h3 id="55">5.5 希望你做得更好的地方</h3>
+<ol>
+<li><strong>更物理的湿海绵</strong>：<ul>
+<li>能吸水（毛细上升），提起时会滴水；</li>
+<li>挤压时，被压部分的水大量流出，从海绵下方形成看得见的水流；</li>
+<li>松开后海绵回弹，又吸回少量水。</li>
+<li>可以考虑两相 MPM（海绵固相 + 水液相，带 Darcy 渗透和毛细压力），或 SPH + 多孔固体。</li>
+</ul>
+</li>
+<li><strong>挤出量</strong>：一次挤压把被夹部分的大部分水挤出来（每次 30 ml 以上），而且水明显地流进槽 b。</li>
+<li><strong>动作也可以改进</strong>：比如沿海绵多点挤压、中途不回槽 a 重新泡水，或者用手腕转动做真正的“拧”。动作改了要写明。</li>
+</ol>
+
+<h2 id="6">6. 场景三：捏水瓶（开口，装水）</h2>
+<p>截帧：
+- <code>reference/contact_sheets/bottle_451ml_gap18_yield0.5.png</code>：装水 451 ml，有少量洒出；
+- <code>reference/contact_sheets/bottle_432ml_gap18_yield0.1.png</code>：装水 432 ml，不洒。</p>
+<h3 id="61">6.1 布置</h3>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>物体</th>
+<th>位置和参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>桌面</td>
+<td>用地面 y = 0 当桌面（无限大平面）。水和桌面的摩擦系数 1.0</td>
+</tr>
+<tr>
+<td>水瓶</td>
+<td>瓶底中心在 (0.45, 0.001, 0)，瓶轴竖直，两个平面朝 ±z，瓶口敞开（没有盖子）</td>
+</tr>
+<tr>
+<td>机械臂</td>
+<td>底座 (−0.30, 0, 0)，yaw 0°（面朝 +x），直接放在桌面上</td>
+</tr>
+<tr>
+<td>手的姿态</td>
+<td>从侧面接近：手的 z 轴指向 +x 并向下倾 40°，两指沿 z 方向开合，夹住两个平面</td>
+</tr>
+<tr>
+<td>夹持高度</td>
+<td>手指中心在瓶身 y = 98 mm 处（标签区，平板中部）</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="62">6.2 时间线</h3>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>段</th>
+<th>时长 (s)</th>
+<th>TCP 目标</th>
+<th>手指开口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>静置</td>
+<td>1.5</td>
+<td>(0.30, 0.18, 0)</td>
+<td>78 mm</td>
+</tr>
+<tr>
+<td>降到夹持高度</td>
+<td>2.0</td>
+<td>(0.30, 0.098, 0)</td>
+<td></td>
+</tr>
+<tr>
+<td>接近</td>
+<td>2.5</td>
+<td>(0.44, 0.098, 0)，TCP 停在瓶轴前 1 cm</td>
+<td></td>
+</tr>
+<tr>
+<td>挤</td>
+<td>2.5（快捏版 0.8）</td>
+<td></td>
+<td>18 mm（最用力的一组 16 mm）</td>
+</tr>
+<tr>
+<td>保持</td>
+<td>1.5</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>松开</td>
+<td>1.5</td>
+<td></td>
+<td>78 mm</td>
+</tr>
+<tr>
+<td>撤回</td>
+<td>2.0</td>
+<td>(0.30, 0.098, 0)</td>
+<td></td>
+</tr>
+<tr>
+<td>静止</td>
+<td>1.5</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<p>挤压从 t = 6.0 s 开始，总长 15.0 s（挤压段为 0.8 s 时总长 13.3 s）。</p>
+<div class="note warn"><p><strong>我们的一个错误</strong>：之前标成“慢捏 2.5 s”和“快捏 0.8 s”的几组，手指实际都以默认的 80 mm/s 合拢，从 78 mm 到 18 mm 只用了 0.75 s。挤压段的时长只决定了合拢后保持多久。所以这几组其实都是快捏，区别只在于捏到 18 mm 还是 16 mm。</p>
+<p>后来补跑了真正的慢捏：手指以 24 mm/s 合拢，2.5 s 捏到底，其余条件都不变。速度是从录像里的手指开口量出来的，确实是 80 和 24 mm/s。432 ml、捏到 18 mm 时：</p>
+<ul>
+<li>快捏：有约 4 ml 水冲出瓶口，大部分落回瓶里；</li>
+<li>慢捏：最多只有 0.9 ml 高出瓶口，最后约 1 ml 在瓶外（瓶里水面的 99% 分位两组都最高到 194 mm，瓶口在 205 mm；区别在冲出瓶口的那一小股水）；</li>
+<li>两组最后瓶外都只有 0.7–1.0 ml，挤走的体积（83 ml）和松开后的凹陷（15 mm）都一样。</li>
+</ul><div class="fig-grid"><figure class="fig"><img src="../media/robotgym_handoff/bottle_451ml_gap18_yield0.5.jpg?v=1028" alt="451 ml：5.5 s 接近、8 s 捏住（水冒出瓶口）、9.5 s 保持、14.5 s 松开后（桌上 5.9 ml）" width="960" height="720" loading="lazy"><figcaption>451 ml：5.5 s 接近、8 s 捏住（水冒出瓶口）、9.5 s 保持、14.5 s 松开后（桌上 5.9 ml）</figcaption></figure><figure class="fig"><img src="../media/robotgym_handoff/bottle_432ml_gap18_yield0.1.jpg?v=1028" alt="432 ml：同样捏到 18 mm，水只顶进瓶颈，没有洒" width="960" height="720" loading="lazy"><figcaption>432 ml：同样捏到 18 mm，水只顶进瓶颈，没有洒</figcaption></figure></div>
+<p>451 ml、捏到 18 mm（屈服 0.5）时：</p>
+<ul>
+<li>快捏：14 ml 冲出瓶口，最后 6.1 ml 在瓶外；</li>
+<li>慢捏：9.1 ml 冲出瓶口，最后 2.3 ml 在瓶外。</li>
+</ul>
+<p>两组挤走的体积都是 83 ml，比瓶里的空气多 11–17 ml（快捏那组捏之前有 72 ml 空气，慢捏那组 66 ml，按 §6.4 的算法），所以慢捏也会溢出。快捏多出来的是水柱冲高的部分，落到瓶外的水是慢捏的 2.6 倍。</p>
+<p>451 ml、捏到 16 mm（屈服 0.1）时，挤走 91 ml，比空气多约 20 ml：快捏 17 ml 冲出瓶口、最后 14.8 ml 在瓶外；慢捏 12 ml、10.9 ml。</p>
+<p>也就是说，会不会洒由挤走的体积和瓶里的空气决定；速度决定水冲多高、洒到外面多少：会洒的两组（451 ml）里，慢捏冲出瓶口的水少约 1/3，最后在瓶外的少 26–62%；432 ml 时两种速度最后都只有约 1 ml 在瓶外。建议你“快”（约 0.75 s 捏扁）和“慢”（约 2.5 s）两种都做。</p>
+</div>
+<h3 id="63">6.3 材料</h3>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>量</th>
+<th>值</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PET 瓶壁</td>
+<td>E = 2.5 GPa，ν = 0.45，厚 0.3 mm，密度 1380 kg/m³（面密度 0.414 kg/m²）</td>
+<td>真实 500 ml 水瓶的瓶身壁厚约 0.15–0.3 mm</td>
+</tr>
+<tr>
+<td>弯曲</td>
+<td>物理板刚度 D = E t³ / 12(1−ν²) = 7.05e-3 N·m</td>
+<td>我们引擎原来的弯曲小了 230–410 倍（§10），修正后才用这个值</td>
+</tr>
+<tr>
+<td>塑性</td>
+<td>二面角塑性铰，屈服角 θy；塑性流动率 1.0</td>
+<td>θy ≈ 2 εy L / t ≈ 0.5 rad（εy ≈ 3%，L = 2.5 mm 网格边长）；取 0.1–0.2 会留下明显折痕</td>
+</tr>
+<tr>
+<td>水</td>
+<td>ρ = 1000，体积模量 1e5 Pa，表面张力 0.072 N/m（隐式）。MPM 网格 5 mm，每格 8 个粒子（间距 2.5 mm，每个粒子 0.0156 ml）</td>
+<td>我们的水阻尼远大于真实的水（§10）</td>
+</tr>
+<tr>
+<td>接触距离</td>
+<td>0.5 mm</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="64">6.4 我们的结果</h3><div class="fig-grid g3"><figure class="fig" id="v-bottle_451ml_gap16_yield0-1"><video src="../media/robotgym_fbx_bottle_spill.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>451 ml · 捏到 16 mm · 屈服 0.1（洒得最多）</b><br>挤走 91 ml，捏之前空气 72 ml · 冲出瓶口最多 17.3 ml，最后桌上 12.7 ml · A800 上 158 min<br><span class="mono">bottle_451ml_gap16_yield0.1.mp4</span></figcaption></figure><figure class="fig" id="v-bottle_451ml_gap16_yield0-1_24mms"><video src="../media/robotgym_handoff/bottle_451ml_gap16_yield0.1_24mms.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>同上 · 24 mm/s 慢捏</b><br>挤走 91 ml，捏之前空气 72 ml · 冲出瓶口最多 12.0 ml，最后桌上 9.0 ml · A800 上 172 min<br><span class="mono">bottle_451ml_gap16_yield0.1_24mms.mp4</span></figcaption></figure><figure class="fig" id="v-bottle_451ml_gap18_yield0-5"><video src="../media/robotgym_fbx_bottle_451_fast.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>451 ml · 捏到 18 mm · 屈服 0.5（松开后完全回弹）</b><br>挤走 83 ml，捏之前空气 72 ml · 冲出瓶口最多 13.8 ml，最后桌上 5.9 ml · A800 上 139 min<br><span class="mono">bottle_451ml_gap18_yield0.5.mp4</span></figcaption></figure><figure class="fig" id="v-bottle_451ml_gap18_yield0-5_24mms"><video src="../media/robotgym_fbx_bottle_451_slow.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>同上 · 24 mm/s 慢捏</b><br>挤走 83 ml，捏之前空气 66 ml · 冲出瓶口最多 9.1 ml，最后桌上 2.3 ml · A800 上 94 min<br><span class="mono">bottle_451ml_gap18_yield0.5_24mms.mp4</span></figcaption></figure><figure class="fig" id="v-bottle_451ml_gap18_yield0-2"><video src="../media/robotgym_handoff/bottle_451ml_gap18_yield0.2.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>451 ml · 捏到 18 mm · 屈服 0.2</b><br>挤走 83 ml，捏之前空气 72 ml · 冲出瓶口最多 14.3 ml，最后桌上 5.4 ml · A800 上 150 min<br><span class="mono">bottle_451ml_gap18_yield0.2.mp4</span></figcaption></figure><figure class="fig" id="v-bottle_432ml_gap18_yield0-1"><video src="../media/robotgym_handoff/bottle_432ml_gap18_yield0.1.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>432 ml · 捏到 18 mm · 屈服 0.1（不洒）</b><br>挤走 84 ml，捏之前空气 86 ml · 冲出瓶口最多 4.0 ml，最后桌上 0.0 ml · A800 上 24 min<br><span class="mono">bottle_432ml_gap18_yield0.1.mp4</span></figcaption></figure><figure class="fig" id="v-bottle_432ml_gap18_yield0-1_24mms"><video src="../media/robotgym_handoff/bottle_432ml_gap18_yield0.1_24mms.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>同上 · 24 mm/s 慢捏</b><br>挤走 83 ml，捏之前空气 89 ml · 冲出瓶口最多 0.9 ml，最后桌上 0.0 ml · A800 上 22 min<br><span class="mono">bottle_432ml_gap18_yield0.1_24mms.mp4</span></figcaption></figure><figure class="fig" id="v-bottle_434ml_gap20_ringshell_yield0-2"><video src="../media/robotgym_handoff/bottle_434ml_gap20_ringshell_yield0.2.mp4?v=1028" muted loop playsinline controls preload="metadata"></video><figcaption><b>434 ml · 带支撑环的壳 · 捏到 20 mm（不洒）</b><br>挤走 79 ml，捏之前空气 90 ml · 冲出瓶口最多 0.8 ml，最后桌上 0.0 ml · A800 上 29 min<br><span class="mono">bottle_434ml_gap20_ringshell_yield0.2.mp4</span></figcaption></figure></div>
+<p>除了标明 24 mm/s 的组，手指都以 80 mm/s 合拢。“空气”指捏之前那一帧液面以上、瓶口以下的体积：瓶内总容积减去液面以下的瓶内容积。液面取瓶轴 15 mm 以内粒子密度降到水体一半的高度（1 mm 分箱）；“实际水量”就是液面以下的瓶内容积。<code>reference/our_results.json</code> 里是 <code>surface_before_squeeze_mm</code> / <code>water_occupied_before_ml</code> / <code>air_before_squeeze_ml</code>。</p>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>视频</th>
+<th>装水（名义）</th>
+<th>静置液面 / 实际水量 / 空气</th>
+<th>捏到</th>
+<th>最小瓶宽（原 54.8 mm）</th>
+<th>挤走体积</th>
+<th>冲出瓶口</th>
+<th>最后在瓶外 / 桌上</th>
+<th>松开后残余凹陷</th>
+<th>墙钟</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bottle_434ml_gap20_ringshell_yield0.2</code></td>
+<td>433 ml</td>
+<td>147 mm / 410 ml / 90 ml</td>
+<td>20 mm</td>
+<td>25.0 mm</td>
+<td>79 ml</td>
+<td>0.8 ml（落回瓶里）</td>
+<td>0 / 0</td>
+<td>7.0 mm</td>
+<td>29 min</td>
+</tr>
+<tr>
+<td><code>bottle_432ml_gap18_yield0.1</code></td>
+<td>432 ml</td>
+<td>148 mm / 413 ml / 86 ml</td>
+<td>18 mm</td>
+<td>23.2 mm</td>
+<td>84 ml</td>
+<td>4.0 ml（落回瓶里）</td>
+<td>0.7 / 0</td>
+<td>15.2 mm</td>
+<td>24 min</td>
+</tr>
+<tr>
+<td><code>bottle_451ml_gap18_yield0.2</code></td>
+<td>451 ml</td>
+<td>153 mm / 428 ml / 72 ml</td>
+<td>18 mm</td>
+<td>23.0 mm</td>
+<td>83 ml</td>
+<td>14 ml</td>
+<td>5.9 / 5.4 ml</td>
+<td>9.8 mm</td>
+<td>150 min</td>
+</tr>
+<tr>
+<td><code>bottle_451ml_gap18_yield0.5</code></td>
+<td>451 ml</td>
+<td>153 mm / 428 ml / 72 ml</td>
+<td>18 mm</td>
+<td>23.1 mm</td>
+<td>83 ml</td>
+<td>14 ml</td>
+<td>6.1 / 5.9 ml</td>
+<td>0（完全回弹）</td>
+<td>139 min</td>
+</tr>
+<tr>
+<td><code>bottle_451ml_gap16_yield0.1</code></td>
+<td>451 ml</td>
+<td>153 mm / 428 ml / 72 ml</td>
+<td>16 mm</td>
+<td>21.0 mm</td>
+<td>91 ml</td>
+<td>17 ml（水柱高出瓶口 13 mm）</td>
+<td>14.8 / 12.7 ml</td>
+<td>16.6 mm</td>
+<td>158 min</td>
+</tr>
+<tr>
+<td>同上，原样重跑（无视频）</td>
+<td>451 ml</td>
+<td>154 mm / 431 ml / 69 ml</td>
+<td>16 mm</td>
+<td>20.9 mm</td>
+<td>91 ml</td>
+<td>18.1 ml</td>
+<td>14.3 / 12.8 ml</td>
+<td>17.0 mm</td>
+<td>120 min</td>
+</tr>
+<tr>
+<td>同上，4 mm 液体网格（无视频）</td>
+<td>455 ml</td>
+<td>157 mm / 440 ml / 60 ml</td>
+<td>16 mm</td>
+<td>20.8 mm</td>
+<td>92 ml</td>
+<td>26.7 ml</td>
+<td>19.5 / 17.7 ml</td>
+<td>17.0 mm</td>
+<td>244 min</td>
+</tr>
+<tr>
+<td><code>bottle_432ml_gap18_yield0.1_24mms</code>（24 mm/s）</td>
+<td>432 ml</td>
+<td>147 mm / 410 ml / 89 ml</td>
+<td>18 mm</td>
+<td>23.3 mm</td>
+<td>83 ml</td>
+<td>0.9 ml</td>
+<td>1.0 / 0 ml</td>
+<td>15.4 mm</td>
+<td>22 min</td>
+</tr>
+<tr>
+<td><code>bottle_451ml_gap18_yield0.5_24mms</code>（24 mm/s）</td>
+<td>451 ml</td>
+<td>155 mm / 434 ml / 66 ml</td>
+<td>18 mm</td>
+<td>23.0 mm</td>
+<td>83 ml</td>
+<td>9.1 ml</td>
+<td>2.3 / 2.3 ml</td>
+<td>0（完全回弹）</td>
+<td>94 min</td>
+</tr>
+<tr>
+<td><code>bottle_451ml_gap16_yield0.1_24mms</code>（24 mm/s）</td>
+<td>451 ml</td>
+<td>153 mm / 428 ml / 72 ml</td>
+<td>16 mm</td>
+<td>21.1 mm</td>
+<td>91 ml</td>
+<td>12 ml</td>
+<td>10.9 / 9.0 ml</td>
+<td>17.4 mm</td>
+<td>172 min</td>
+</tr>
+</tbody>
+</table></div>
+<p>第一组用的是带支撑环的壳（<code>pet_bottle_fbx_2p5mm</code>），其余都是去环的壳（<code>noring</code>）。</p>
+<p><strong>要点</strong></p>
+<ul>
+<li><strong>为什么前两组没洒</strong>：挤走的体积（79–84 ml）比瓶里的空气（86–90 ml）少。只有挤走的体积超过液面以上的空气，水才会出来。所以一定要报告实际液面和空气体积。</li>
+<li><strong>我们的水不守恒体积</strong>：<ul>
+<li>灌到瓶口（y = 205 mm）的 451 ml 名义水量，0.3 s 内液面就掉到 153 mm，实际只占 428–434 ml，少了 4–5%。</li>
+<li>挤压再松开后又少一些：完全回弹的那组，最后液面只有 144 mm。</li>
+<li>原因没查清。之前以为是 5 mm 网格在 55 mm 宽的瓶子里靠壁的单元处理不好，换网格复查不支持：同一只瓶子静置 2.5 s，按水面以下的瓶内容积算，5 mm、4 mm、3.3 mm 网格分别少 4.5%、3.5%、4.1%，不随网格变细而消失；瓶子中部的水本身被压密 0.8–1.7%（瓶轴 15 mm 以内、高 30–110 mm 的粒子密度），其余在靠壁和水面附近。</li>
+<li>请检查你的仿真器的体积守恒。</li>
+</ul>
+</li>
+<li><strong>重跑和 4 mm 网格（10-27）</strong>：<ul>
+<li>451 ml、捏到 16 mm 原样重跑：冲出瓶口 18.1 ml、最后瓶外 14.3 ml、桌上 12.8 ml，和第一次（17.3 / 14.8 / 12.7）只差约 1 ml。</li>
+<li>同一组换 4 mm 液体网格：26.7 / 19.5 / 17.7 ml，明显多。但它捏之前只有 60 ml 空气（5 mm 两次 72 / 69 ml）：4 mm 网格的水静置后少得少一些，播种又多 4.6 ml。三次挤走的都是 91–92 ml，超出空气的部分 32 ml 对 20 / 23 ml，冲出瓶口的水多了约 9 ml，超出空气的部分也多了 9–12 ml。</li>
+<li>对照组在跑：4 mm 网格、只灌到 185 mm（名义 446 ml），空气应回到约 70 ml。如果溢出量回到 5 mm 的水平，差别就来自空气，而不是网格本身。</li>
+<li>所以比较溢出量时，请同时报告捏之前瓶里的空气。</li>
+</ul>
+</li>
+<li><strong>满瓶我们没做成</strong>：<ul>
+<li>我们试过在瓶口上方多放一柱 60 ml 的水，让它在静置阶段流进瓶里，把瓶子灌满。</li>
+<li>结果水柱落下时约 29 ml 溅到了桌上，液面也只升到 167 mm。还没开始捏，桌上就有一摊水。</li>
+<li>另外，瓶颈里有水、桌上有水膜时，我们的求解器每步要 100–190 次牛顿迭代，一组要跑十几个小时。</li>
+<li>所以这三组都停掉了，没有结果。</li>
+</ul>
+</li>
+<li><strong>“慢”和“快”</strong>：见 §6.2 的警告。</li>
+</ul>
+<h3 id="65">6.5 希望你做得更好的地方</h3>
+<ol>
+<li><strong>装满和半瓶都要做</strong>：<ul>
+<li>装满的瓶子（液面在瓶颈，空气约 10–15 ml）一捏应该明显溢出或喷出几十毫升；</li>
+<li>半瓶时不出水。</li>
+</ul>
+</li>
+<li><strong>水的真实感</strong>：飞溅、水膜、水滴、表面张力。我们的水阻尼过大：晃动阻尼比 0.53，真实的水约 0.008。</li>
+<li><strong>瓶子的形变</strong>：方瓶的平板向内凹、两侧向外鼓；松开后的回弹或残余折痕要合理。真实 PET 瓶轻捏能回弹，用力捏会留折痕。</li>
+<li><strong>体积守恒</strong>：水量全程守恒，误差小于 1%。</li>
+</ol>
+<h3 id="66">6.6 我们踩过的坑（你的仿真器也可能遇到）</h3>
+<ul>
+<li><strong>单层壳里的支撑环</strong>：<ul>
+<li>瓶颈支撑环在实体模型里是实心的，变成单层壳后，就成了一个向瓶内开口、1.1 mm 宽的环形口袋。</li>
+<li>水灌进去会让求解器停滞：挤压时有 22–43 个粒子钻了进去。</li>
+<li>我们在仿真壳里去掉了这个环（<code>noring</code>），渲染时按瓶颈的刚体运动（Kabsch 拟合）把环画回去。</li>
+</ul>
+</li>
+<li><strong>灌水不能贴着瓶壁</strong>：初始粒子离壁的距离要大于接触距离，否则一开始就被弹飞。</li>
+<li><strong>圆瓶和方瓶不一样</strong>：圆柱瓶被捏扁后会形成稳定的内凹（弹性双稳态），即使是纯弹性材料也不回弹。这个 FBX 方瓶的平板会回弹，θy = 0.5 时完全回弹。</li>
+<li><strong>弯曲刚度</strong>：一定要用解析解标定（§10）。</li>
+</ul>
+
+<h2 id="7-metricshandoff_metricspy-numpy">7. 指标（<code>metrics/handoff_metrics.py</code>，只依赖 numpy）</h2>
+<p>把你仿真器里的状态（顶点、三角形、水的采样点和体积）导出成数组，再调用下面的函数。我们 §4–§6 的数字就是用这个脚本在我们的录像上算出来的，可以直接对比。</p>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>函数</th>
+<th>输入</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bed_fold(X0, X)</code></td>
+<td>毛毯平放时和结束时的顶点</td>
+<td><code>fold_pct</code>：床尾那一半越过折线的比例；<code>fold_pct_top</code>：同上，只算床面上的顶点（静止时 |x| &lt; 0.79 m）；<code>head_drag_mm</code>：床头那一半 z 位移的中位数</td>
+</tr>
+<tr>
+<td><code>bed_pinch(X, pad_centre)</code></td>
+<td>布料顶点、两指垫中点</td>
+<td>2 cm 内的布料顶点数，用来判断是否捏住</td>
+</tr>
+<tr>
+<td><code>kitchen_water(P, vol, sponge_mask)</code></td>
+<td>水的采样点及其体积（粒子，或含水单元的中心），可选“在海绵里”的标记</td>
+<td>槽 b、槽 a、海绵里、其他地方各有多少 ml</td>
+</tr>
+<tr>
+<td><code>bottle_state(V0, V, F, squeeze_y, P, vol)</code></td>
+<td>瓶壳静止和当前的顶点、三角形，水的采样点</td>
+<td>对边宽、凹陷、封口后的容积、挤走体积、瓶外水量、桌上水量、冲出瓶口的水量、液面高度</td>
+</tr>
+<tr>
+<td><code>headspace_ml(V0, F, water_ml_actual)</code></td>
+<td></td>
+<td>液面以上的空气体积</td>
+</tr>
+</tbody>
+</table></div>
+<p>厨房的槽 b 水量一定要扣掉还在海绵里的水（传入 <code>sponge_mask</code>），同时检查海绵是不是还夹在手里。我们的 thin25 就是海绵掉进槽 b 以后，把它自带的水算成了挤出来的水（§5.2）。</p>
+<p>另外请报告：每模拟 1 秒用多少墙钟时间、硬件、最大穿透深度（如果有）、是否发散或卡住。</p>
+
+<h2 id="8">8. 渲染参考（方便并排对比）</h2>
+<p>我们用 Mitsuba 3 路径追踪，960×720，每像素 96 次采样。相机参数（fov 为竖直视场角，单位弧度）：</p>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>eye</th>
+<th>target</th>
+<th>fov</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>床</td>
+<td>(2.3, 1.55, 1.15)</td>
+<td>(0.0, 0.40, −0.65)</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td>厨房</td>
+<td>(1.25, 1.45, −1.05)</td>
+<td>(0.0, 0.86, 0.0)</td>
+<td>0.70</td>
+</tr>
+<tr>
+<td>水瓶</td>
+<td>(0.62, 0.24, 0.46)</td>
+<td>(0.45, 0.11, 0.0)</td>
+<td>0.70</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>水面</strong>：从粒子出发，用各向异性核构造 SDF，再提取网格，按 IOR 1.33 的透明介质渲染。</li>
+<li><strong>瓶子</strong>：透明 PET，标签部分画成一条浅蓝色环带。</li>
+<li><strong>床和厨房</strong>：用 FBX 的全分辨率部件网格（<code>render/</code>）渲染，碰撞用的是 <code>*_collision.obj</code>。</li>
+</ul>
+
+<h2 id="9">9. 对比表（请填写）</h2>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>指标</th>
+<th>我们</th>
+<th>你</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>床</td>
+<td>折成比例（床面上）/ 床头拖动</td>
+<td>直线提起：99.8–100%（100%）/ +80 至 +92 mm（旧和物理弯曲都一样）；弧线：98.6–99.2%（100%）/ +10 至 +15 mm；弧线 + 床头指不动、手掌微倾：99.1–99.7%（100%）/ 0.0 至 +0.8 mm（6 组，含 2 N/μ 1.0）；弧线 + 对称合拢、手掌微倾：99.0%（100%）/ +12 mm；2 N、μ 1.0 物理弯曲直线：49%（一侧滑脱）</td>
+<td></td>
+</tr>
+<tr>
+<td>床</td>
+<td>墙钟（模拟 21.5 s）</td>
+<td>104–167 min（A800）</td>
+<td></td>
+</tr>
+<tr>
+<td>厨房</td>
+<td>三次挤压后槽 b 里的水 / 海绵剩余</td>
+<td>21.5 ml / 118 ml（软海绵、挤得更扁：19.9 / 120 ml；抓低 10 mm：23.9 / 120 ml）</td>
+<td></td>
+</tr>
+<tr>
+<td>厨房</td>
+<td>换位再挤 4 个周期后槽 b 里的水</td>
+<td>48.2 ml（软海绵 45.8 ml）</td>
+<td></td>
+</tr>
+<tr>
+<td>厨房</td>
+<td>单次挤压最多挤出</td>
+<td>11.5 ml（第 1 次）</td>
+<td></td>
+</tr>
+<tr>
+<td>水瓶 451 ml，捏到 16–18 mm</td>
+<td>挤走 / 瓶外 / 桌上</td>
+<td>83–91 ml / 6–15 ml / 5–13 ml（16 mm 原样重跑 91 / 14.3 / 12.8 ml；4 mm 网格 92 / 19.5 / 17.7 ml）</td>
+<td></td>
+</tr>
+<tr>
+<td>水瓶 451 ml</td>
+<td>捏之前瓶里的空气（§6.4 的算法）</td>
+<td>66–72 ml（4 mm 网格 60 ml）</td>
+<td></td>
+</tr>
+<tr>
+<td>水瓶</td>
+<td>水体积守恒误差</td>
+<td>静置 4–6%（4 mm、3.3 mm 网格仍 3.5–4%），挤后更大</td>
+<td></td>
+</tr>
+<tr>
+<td>水瓶 432 ml，捏到 18 mm，80 对 24 mm/s</td>
+<td>冲出瓶口 / 最后在瓶外</td>
+<td>4.0 / 0.7 ml 对 0.9 / 1.0 ml</td>
+<td></td>
+</tr>
+<tr>
+<td>水瓶 451 ml，捏到 18 mm，80 对 24 mm/s</td>
+<td>冲出瓶口 / 最后在瓶外</td>
+<td>13.8 / 6.1 ml 对 9.1 / 2.3 ml</td>
+<td></td>
+</tr>
+<tr>
+<td>水瓶 451 ml，捏到 16 mm，80 对 24 mm/s</td>
+<td>冲出瓶口 / 最后在瓶外</td>
+<td>17.3 / 14.8 ml 对 12.0 / 10.9 ml</td>
+<td></td>
+</tr>
+<tr>
+<td>水瓶满瓶</td>
+<td>溢出量</td>
+<td>没做成（§6.4）</td>
+<td></td>
+</tr>
+<tr>
+<td>全部</td>
+<td>墙钟 / 每模拟秒</td>
+<td>床约 7 min；水瓶 2–12 min；厨房约 9 min</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+
+<h2 id="10">10. 我们引擎里查到的问题（供参考，别踩同样的坑）</h2>
+<ol>
+<li><strong>弯曲能的尺度错误</strong>：<ul>
+<li>我们的离散二面角弯曲能和二次弯曲能都多乘了一个边长 |e|，等效板刚度约为 |e|[m] × D。</li>
+<li>结果：2.5–3 mm 网格的瓶子软了 230–410 倍，15–20 mm 网格的毛毯软了约 50 倍。</li>
+<li>标定方法：用圆柱的弯曲解析解。离散壳权重 3|e|²/A_e 在圆柱上给出 2.925/R²（沿网格方向）到 4.46/R²（沿对角线方向），修正后的权重是 (3/3.7)·|e|²/A_e。</li>
+<li>所以毛毯和瓶子的弯曲，你都要用物理值，并做一次标定。</li>
+</ul>
+</li>
+<li><strong>水</strong>：<ul>
+<li>体积不守恒（§6.4）；</li>
+<li>阻尼过大：晃动阻尼比 0.53，真实的水约 0.008；溃坝比实验慢 37%。</li>
+<li>想让水看起来真实，这两点最关键。</li>
+</ul>
+</li>
+<li><strong>布料夹持</strong>：IPC 的接触距离（布料 2 mm）会让手指和布之间始终留一个缝。我们捏布要靠“下压到感受到力”。如果你的仿真器支持更薄的接触厚度，或者能真实模拟摩擦夹持，会好很多。</li>
+</ol>
+
+<h2 id="11">11. 建议的工作顺序</h2>
+<ol>
+<li>读完本文，看 <code>reference/contact_sheets/</code> 和视频。</li>
+<li>加载 <code>assets/derived/</code> 里的几何，用 <code>bed_meta.json</code> 和 <code>kitchen_meta.json</code> 里的数字核对尺寸和位置。</li>
+<li>先做水瓶：场景最小，能最快验证液体和薄壳的耦合。再做床：布料和接触。最后做厨房：多孔介质最难。</li>
+<li>每个场景先“干跑”：不加水，或者布料不开自碰撞，只验证 IK 和轨迹不碰到场景。确认后再加物理。</li>
+<li>每次运行都用 <code>metrics/</code> 算指标，填进 §9 的表。</li>
+</ol>
+<h2 id="12">12. 选仿真器时要看的能力</h2>
+<div class="tblwrap"><table>
+<thead>
+<tr>
+<th>需要的能力</th>
+<th>床</th>
+<th>厨房</th>
+<th>水瓶</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>大块布料：自碰撞、与刚体的摩擦、被夹爪捏住</td>
+<td>✔</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>薄壳弹塑性：屈曲、塑性折痕</td>
+<td></td>
+<td></td>
+<td>✔</td>
+</tr>
+<tr>
+<td>液体：自由表面、飞溅、表面张力、体积守恒</td>
+<td></td>
+<td>✔</td>
+<td>✔</td>
+</tr>
+<tr>
+<td>液体和固体双向耦合：液体压力推壳、壳挤压液体</td>
+<td></td>
+<td>✔</td>
+<td>✔</td>
+</tr>
+<tr>
+<td>可变形多孔固体 + 液体：吸水和挤水</td>
+<td></td>
+<td>✔</td>
+<td></td>
+</tr>
+<tr>
+<td>机械臂：URDF、关节位置控制、平行夹爪摩擦夹持</td>
+<td>✔</td>
+<td>✔</td>
+<td>✔</td>
+</tr>
+<tr>
+<td>大型静态网格碰撞（床有 25 万个三角形）</td>
+<td>✔</td>
+<td>✔</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<p>一个仿真器做不全的话，每个场景可以用不同的仿真器，但要写明用了哪个。</p>
+</article>
+
+<footer><div class="container">
+  <span><a href="robotgym.html#fbx">← 三个操作任务 · 新资产重跑</a></span>
+  <span><a href="robotgym.html#wheel">用公开 wheel 重跑 →</a></span>
+  <span><a href="../">返回首页</a></span>
+</div></footer>
+</body>
+</html>
