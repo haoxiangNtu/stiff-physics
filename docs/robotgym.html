@@ -69,7 +69,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <tr><td><a href="#wheel">床与水瓶 · 用公开 wheel 重跑（10-27）</a></td><td>—</td><td>已发布的 Windows wheel（pygipc 0.0.1，RTX 5090）：运动学机械臂 + 碰撞面、四面体瓶壁、MPM 水、床面高度场</td><td>wheel 缺关节驱动、接触力、分对摩擦、运行中开关约束、多孔耦合</td><td><span class="tag ok">床：纯接触捏取两手都捏住，折过 97–99.6 %，床头被带动 21–35 mm（需关掉 semi_implicit）· 水瓶：半瓶不洒，满瓶溢出 38–41 ml</span> <span class="tag no">海绵没有做</span></td></tr>
 <!-- wheel-overview:end -->
 <!-- fbx-overview:begin -->
-<tr><td><a href="#fbx">三个任务 · 换新资产（10-26）</a></td><td>—</td><td>床与毛毯、厨房水槽、方形 PET 瓶（FBX，只做等比缩放）；床上的力控捏取；水瓶和毛毯改用物理尺度的弯曲</td><td>力控捏取；弯曲尺度开关 <span class="mono">GIPC_BEND_PHYS</span></td><td><span class="tag ok">三个任务都有结果 · 床：走圆弧、只动床尾那根手指并让手掌顺着被面微倾，床头只被带动 0.7 mm（重跑与换参数的四组都在 1 mm 以内）· 厨房：换位再拧四个周期 48.2 ml（原站 33.5 ml）</span></td></tr>
+<tr><td><a href="#fbx">三个任务 · 换新资产（10-26）</a></td><td>—</td><td>床与毛毯、厨房水槽、方形 PET 瓶（FBX，只做等比缩放）；床上的力控捏取；水瓶和毛毯改用物理尺度的弯曲</td><td>力控捏取；弯曲尺度开关 <span class="mono">GIPC_BEND_PHYS</span></td><td><span class="tag ok">三个任务都有结果 · 床：走圆弧、只动床尾那根手指并让手掌顺着被面微倾，床头只被带动 0.7 mm（重跑与换参数的五组都在 1 mm 以内）· 厨房：换位再拧四个周期 48.2 ml（原站 33.5 ml）</span></td></tr>
 <!-- fbx-overview:end -->
 </tbody></table></div>
 
@@ -86,7 +86,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <tr><td>床 · 圆弧翻折，约束抓取，捏取点往床头挪</td><td>折过 97.7 %，床头 19 mm；16 min</td><td>—</td></tr>
 <tr><td>床 · 圆弧翻折，纯接触捏取，wheel 默认求解设置</td><td>右手一提起布就滑掉，只折过 43–48 %（摩擦 0.6 和 1.0 都一样）</td><td>—</td></tr>
 <tr><td>水瓶 · 约 400 ml，快捏到 18 mm</td><td>瓶宽 22.8 mm，挤走 76 ml，不洒，松开后完全回弹；11.6 min</td><td>瓶宽 23.2 mm，挤走 84 ml，不洒（4 ml 冒到瓶口又落回）；24 min</td></tr>
-<tr><td>水瓶 · 满瓶（空气约 8 ml），快捏 80 mm/s</td><td>冲出瓶口最多 34 ml，最后 41 ml 在桌上；30 min</td><td rowspan="2">451 ml（空气约 75 ml）捏到 18 mm：快捏 14 ml 冲出瓶口、最后 6.1 ml 在瓶外；慢捏 9 ml、2.3 ml</td></tr>
+<tr><td>水瓶 · 满瓶（空气约 8 ml），快捏 80 mm/s</td><td>冲出瓶口最多 34 ml，最后 41 ml 在桌上；30 min</td><td rowspan="2">451 ml（空气约 70 ml）捏到 18 mm：快捏 14 ml 冲出瓶口、最后 6.1 ml 在瓶外；慢捏 9 ml、2.3 ml</td></tr>
 <tr><td>水瓶 · 满瓶，慢捏 24 mm/s</td><td>冲出瓶口最多 21 ml，最后 38 ml 在桌上；26 min</td></tr>
 <tr><td>水量误差（按静置液面）</td><td>半瓶 4.5 %，满瓶 0.8 %</td><td>4–6 %</td></tr>
 <tr><td>厨房海绵</td><td><span class="tag no">没有做</span> wheel 没有多孔耦合</td><td>见上文</td></tr>
@@ -175,13 +175,14 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <tr><td>同上 · 15 mm 网格</td><td>物理</td><td class="num">4 N</td><td class="num">2.0</td><td class="num">0.73 m</td><td class="num">99.1 %（床面上 100 %）</td><td class="num">0.2 mm</td><td class="num">125 min</td></tr>
 <tr><td>C · 同上</td><td>物理</td><td class="num">2 N</td><td class="num">2.0</td><td class="num">0.73 m</td><td class="num">99.3 %（床面上 100 %）</td><td class="num">0.1 mm</td><td class="num">115 min</td></tr>
 <tr><td>D · 同上</td><td>物理</td><td class="num">4 N</td><td class="num">1.0</td><td class="num">0.73 m</td><td class="num">99.2 %（床面上 100 %）</td><td class="num">0.8 mm</td><td class="num">120 min</td></tr>
+<tr><td>B · 同上</td><td>物理</td><td class="num">2 N</td><td class="num">1.0</td><td class="num">0.73 m</td><td class="num">99.5 %（床面上 100 %）</td><td class="num">0.02 mm</td><td class="num">125 min</td></tr>
 <tr><td>对照：对称合拢、手掌微倾</td><td>物理</td><td class="num">4 N</td><td class="num">2.0</td><td class="num">0.73 m</td><td class="num">99.0 %（床面上 100 %）</td><td class="num">1.2 cm</td><td class="num">121 min</td></tr>
 </tbody></table></div>
 <p>A、B 两组结果几乎一样，看起来这个捏法对压力和摩擦不敏感。但这两组的毛毯弯曲沿用上一版床单的取法，因为下面水瓶一节查出的尺度错误，实际只有标称值的约 1/50，毯子软得像一层膜。
 换成物理弯曲（板刚度 1.0×10⁻⁵ N·m，抓绒毯的量级）重跑：</p>
 <ul>
 <li><b>A 组几乎不变</b>：翻过去 99.9 %，床头一半被带动 9.0 cm（15 mm 网格 8.0 cm）。翻过去的毛毯更平整，褶子更大、更圆。</li>
-<li><b>B 组失败</b>：毯子硬了，被挤进两指间的褶更小，合拢后近处那只手的两指间只有 7 个布顶点（软的时候 13 个）。刚开始提起，布就从这只手里滑掉，只有远处那只手把它那一角翻了过去，叠成一条斜线。所以 2 N、摩擦 1.0 的轻捏其实是临界的。补跑的 C（2 N、摩擦 2.0）和 D（4 N、摩擦 1.0）都捏住了，压力和摩擦两项都偏低时才会滑脱。</li>
+<li><b>B 组失败</b>：毯子硬了，被挤进两指间的褶更小，合拢后近处那只手的两指间只有 7 个布顶点（软的时候 13 个）。刚开始提起，布就从这只手里滑掉，只有远处那只手把它那一角翻了过去，叠成一条斜线。所以 2 N、摩擦 1.0 的轻捏其实是临界的。补跑的 C（2 N、摩擦 2.0）和 D（4 N、摩擦 1.0）都捏住了，压力和摩擦两项都偏低时才会滑脱。换成后面的单指合拢、手掌微倾，这个角也捏住了。</li>
 </ul>
 <div class="fig-grid">
 <figure class="fig"><video src="../media/robotgym_fbx_bed_phys.mp4?v=1027f" muted loop playsinline controls preload="metadata"></video>
@@ -199,7 +200,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 先试了合拢时让靠床头的手指不动、只动靠床尾的一根：床头一半不再被带动（0.3–0.5 mm），但右手靠床尾的指尖悬在布上方，挤不出褶，翻折一开始布就滑掉了。
 再按落点处被面的坡度，把每只手绕横穿床的水平轴转一个小角度（右 2.7°、左 1.3°），让两根张开的指尖离被面一样高：两只手都挤出了约 19 mm 高的褶（对称合拢时 17–19 mm），一直捏到松手，
 床头一半只被带动 <b>0.7 mm</b>，床面上的部分 100 % 翻了过去（全部 99.7 %）。
-同参数重跑、15 mm 网格、C（2 N、摩擦 2.0）、D（4 N、摩擦 1.0）四组结果一致：两只手都捏到松手，床头一半被带动 0.1–0.8 mm，其中合拢阶段都在 ±0.1 mm 以内。对照组只把合拢改回对称，手掌同样微倾：合拢时床头一半又被带过去 12.8 mm，最后 1.2 cm，和不倾斜的对称合拢（1.0–1.5 cm）一样。所以拖动来自压着布往床尾走的那根手指，手掌微倾本身并不减少拖动；它的作用是让两根张开的指尖都碰到布，靠床头的手指不动时也能挤出褶。还剩最后一个角：2 N、摩擦 1.0（竖直提起的对称捏法在这里滑脱），正在跑。<span class="tag run">运行中</span></p>
+同参数重跑、15 mm 网格、C（2 N、摩擦 2.0）、D（4 N、摩擦 1.0）四组结果一致：两只手都捏到松手，床头一半被带动 0.1–0.8 mm，其中合拢阶段都在 ±0.1 mm 以内。对照组只把合拢改回对称，手掌同样微倾：合拢时床头一半又被带过去 12.8 mm，最后 1.2 cm，和不倾斜的对称合拢（1.0–1.5 cm）一样。所以拖动来自压着布往床尾走的那根手指，手掌微倾本身并不减少拖动；它的作用是让两根张开的指尖都碰到布，靠床头的手指不动时也能挤出褶。最后一个角 2 N、摩擦 1.0（竖直提起的对称捏法在这里滑脱）10-27 也跑完了：两只手同样捏到松手，床头一半只被带动 0.02 mm，合拢阶段 +0.1 mm。所以这个捏法在 2 / 4 N、摩擦 1.0 / 2.0 的四种组合下都捏得住。</p>
 <figure class="fig"><video src="../media/robotgym_fbx_bed_headtilt.mp4?v=1027f" muted loop playsinline controls preload="metadata"></video>
 <figcaption><b>A · 物理弯曲 · 圆弧 · 单指合拢、手掌微倾</b>（4 N、指垫摩擦 2.0）— 靠床头的手指不动，只有靠床尾的一根合拢，床头那一半几乎不动（0.7 mm）；A800 上 118 分钟。</figcaption></figure>
 <p>USD（机械臂、底座、毛毯逐帧顶点；<b>不含床模型</b>，床是第三方模型）：
@@ -256,11 +257,16 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 </tbody></table></div>
 <p>屈服角是每条铰链的转角，跟网格尺寸有关：PET 的屈服应变约 3 %，在 0.3 mm 壁厚、2.5 mm 网格上对应 θ<sub>y</sub> ≈ 2ε<sub>y</sub>L/t ≈ 0.5 rad；0.1–0.2 rad 相当于在 0.6–1.2 % 应变就开始屈服，
 所以视频里的凹痕比真瓶子留得多一点；屈服 0.5 的一组松开后完全弹回。</p>
-<p><b>什么时候会洒。</b>只有挤走的容积超过液面以上的空气，水才会出来。434 ml 静置后水面 148 mm，上面还有约 90 ml 空气（肩部和瓶颈很窄，水面离瓶口还有 5 cm），挤走 78–85 ml，水只被顶进瓶颈；装到 451 ml，水面 153 mm、空气约 75 ml，挤走 83–91 ml，就有 14–17 ml 冲出瓶口、6–13 ml 落到桌上。装水量写的是名义值：我们的水静置后体积会少 4–6 %（451 ml 实际只占 424–431 ml）。之前写这是 5 mm 网格在 55 mm 宽的瓶子里靠壁那一圈处理不好造成的，10-27 换网格复查不支持这个说法：同一只瓶子静置 2.5 s，按水面以下的瓶内容积算，5 mm、4 mm、3.3 mm 网格分别少 4.5 %、3.5 %、4.1 %，并不随网格变细而消失；其中瓶子中部的水本身被压密了 0.8–1.7 %，其余部分的原因还没查清。</p>
+<p><b>什么时候会洒。</b>只有挤走的容积超过液面以上的空气，水才会出来。434 ml 静置后水面 148 mm，上面还有约 90 ml 空气（肩部和瓶颈很窄，水面离瓶口还有 5 cm），挤走 78–85 ml，水只被顶进瓶颈；装到 451 ml，水面 153 mm、空气约 70 ml，挤走 83–91 ml，就有 14–17 ml 冲出瓶口、6–13 ml 落到桌上。装水量写的是名义值：我们的水静置后体积会少 4–6 %（451 ml 实际只占 424–431 ml）。之前写这是 5 mm 网格在 55 mm 宽的瓶子里靠壁那一圈处理不好造成的，10-27 换网格复查不支持这个说法：同一只瓶子静置 2.5 s，按水面以下的瓶内容积算，5 mm、4 mm、3.3 mm 网格分别少 4.5 %、3.5 %、4.1 %，并不随网格变细而消失；其中瓶子中部的水本身被压密了 0.8–1.7 %，其余部分的原因还没查清。</p>
 <p><b>捏得快慢的影响。</b>同样的瓶子和水量，只把手指合拢速度从 80 mm/s 降到 24 mm/s（2.5 s 捏到底）：
 432 ml 时挤走的容积还没超过空气，快捏约 4 ml 冲出瓶口又落回去，慢捏最多 0.9 ml 冒出瓶口，最后瓶外都只有约 1 ml（瓶里的水面两组都最高到 194 mm，瓶口在 205 mm）；
-451 ml 捏到 18 mm 时挤走的容积比空气多约 8 ml，快捏 14 ml 冲出瓶口、最后 6.1 ml 在瓶外，慢捏 9 ml 冒出、最后 2.3 ml 在瓶外；捏到 16 mm（多出约 16 ml）时快捏 17 ml、14.8 ml，慢捏 12 ml、10.9 ml。
+451 ml 捏到 18 mm 时挤走的容积比空气多约 11 ml，快捏 14 ml 冲出瓶口、最后 6.1 ml 在瓶外，慢捏 9 ml 冒出、最后 2.3 ml 在瓶外；捏到 16 mm（多出约 20 ml）时快捏 17 ml、14.8 ml，慢捏 12 ml、10.9 ml。
 所以洒不洒由挤走的容积和瓶里的空气决定，速度决定水冲多高、洒到外面多少。</p>
+<p><b>重跑与 4 mm 网格（10-27）。</b>451 ml、捏到 16 mm 这一组用同一条命令原样重跑：最多 18.1 ml 冲出瓶口，桌上 12.8 ml（第一次 17.3 ml、12.7 ml）。
+换成 4 mm 液体网格（A800 上 244 分钟，5 mm 是 120–158 分钟）：最多 26.7 ml 冲出瓶口，桌上 17.7 ml。但这一组捏之前瓶里的空气也更少：4 mm 网格的水静置后体积少得少一些（3.5 %，5 mm 是 4.5–5.1 %），播种又多了 4.6 ml，空气只剩 60.0 ml，5 mm 的两次是 71.6 / 68.7 ml。
+三次挤走的容积都是 91–92 ml，超出空气的部分是 31.7 ml 对 19.8 / 22.7 ml：冲出瓶口的水多了约 9 ml，超出空气的部分也多了 9–12 ml。
+空气按捏之前的水面算：瓶内总容积减去水面以下的容积，水面取瓶轴附近粒子密度降到一半的高度（上面几段的空气也按这个算）。
+对照组正在跑：4 mm 网格、只装到 185 mm，让空气回到约 70 ml。如果洒出的量回到 5 mm 的水平，差别就来自空气，而不是网格本身。<span class="tag run">运行中</span></p>
 <div class="fig-grid">
 <figure class="fig"><video src="../media/robotgym_fbx_bottle_451_fast.mp4?v=1027f" muted loop playsinline controls preload="metadata"></video>
 <figcaption><b>451 ml、捏到 18 mm，80 mm/s</b>（屈服 0.5）— 14 ml 冲出瓶口，最后 6.1 ml 在瓶外；松开后瓶子完全弹回。A800 上 139 分钟。</figcaption></figure>
