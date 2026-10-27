@@ -66,7 +66,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <tr><td>五个任务 · 触觉版</td><td>—</td><td>每根手指一块 VBTS 凝胶垫（FEM），与场景在同一个 IPC 求解；输出压入深度图、切向位移场、法向力</td><td>凝胶自身接触开关；MAS 下逐顶点接触力的顺序</td><td><span class="tag ok">已完成 · 五个任务</span></td></tr>
 <!-- tactile-overview:end -->
 <!-- wheel-overview:begin -->
-<tr><td><a href="#wheel">床与水瓶 · 用公开 wheel 重跑（10-27）</a></td><td>—</td><td>已发布的 Windows wheel（pygipc 0.0.1，RTX 5090）：运动学机械臂 + 碰撞面、四面体瓶壁、MPM 水、床面高度场</td><td>wheel 缺关节驱动、接触力、分对摩擦、运行中开关约束、多孔耦合</td><td><span class="tag ok">床：约束抓取折过 97.7 %，床头被带动 19 mm（纯接触捏取会滑脱）· 水瓶：半瓶不洒，满瓶溢出 38–41 ml</span> <span class="tag no">海绵没有做</span></td></tr>
+<tr><td><a href="#wheel">床与水瓶 · 用公开 wheel 重跑（10-27）</a></td><td>—</td><td>已发布的 Windows wheel（pygipc 0.0.1，RTX 5090）：运动学机械臂 + 碰撞面、四面体瓶壁、MPM 水、床面高度场</td><td>wheel 缺关节驱动、接触力、分对摩擦、运行中开关约束、多孔耦合</td><td><span class="tag ok">床：纯接触捏取两手都捏住，折过 97–99.6 %，床头被带动 21–35 mm（需关掉 semi_implicit）· 水瓶：半瓶不洒，满瓶溢出 38–41 ml</span> <span class="tag no">海绵没有做</span></td></tr>
 <!-- wheel-overview:end -->
 <!-- fbx-overview:begin -->
 <tr><td><a href="#fbx">三个任务 · 换新资产（10-26）</a></td><td>—</td><td>床与毛毯、厨房水槽、方形 PET 瓶（FBX，只做等比缩放）；床上的力控捏取；水瓶和毛毯改用物理尺度的弯曲</td><td>力控捏取；弯曲尺度开关 <span class="mono">GIPC_BEND_PHYS</span></td><td><span class="tag ok">三个任务都有结果 · 床：走圆弧、只动床尾那根手指并让手掌顺着被面微倾，床头只被带动 0.7 mm（重跑与换参数的四组都在 1 mm 以内）· 厨房：换位再拧四个周期 48.2 ml（原站 33.5 ml）</span></td></tr>
@@ -81,9 +81,10 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <div class="tblwrap"><table>
 <thead><tr><th>任务</th><th>wheel（RTX 5090）</th><th>第 5 节（开发分支，A800）</th></tr></thead>
 <tbody>
-<tr class="hl"><td>床 · 圆弧翻折，约束抓取，捏取点往床头挪</td><td>折过 97.7 %，床头一半被带动 19 mm；16 min</td><td>圆弧、只合拢床尾那根手指、手掌微倾：99.7 %，0.7 mm；118 min</td></tr>
-<tr><td>床 · 圆弧翻折，纯接触捏取</td><td>右手一提起布就滑掉，只折过 43 %（床头 27 mm）；15 min</td><td>圆弧、对称合拢：98.6 %，1.5 cm；128 min</td></tr>
-<tr><td>床 · 竖直提起再翻过去，纯接触捏取</td><td>同样右手滑脱，47 %（床头 60 mm）；16 min</td><td>竖直提起：床头一半被拽过来 8–9 cm</td></tr>
+<tr class="hl"><td>床 · 圆弧翻折，纯接触捏取，对称合拢（严格牛顿，摩擦 1.0）</td><td>两只手都捏到松手，折过 99.6 %，床头一半被带动 35 mm；20 min</td><td>圆弧、对称合拢：98.6 %，1.5 cm；128 min</td></tr>
+<tr class="hl"><td>床 · 圆弧翻折，纯接触捏取，只合拢床尾那根手指（严格牛顿，摩擦 0.6）</td><td>两只手都捏到松手，折过 97.0 %，床头 21 mm；21 min</td><td>同样做法再加手掌微倾：99.7 %，0.7 mm；118 min</td></tr>
+<tr><td>床 · 圆弧翻折，约束抓取，捏取点往床头挪</td><td>折过 97.7 %，床头 19 mm；16 min</td><td>—</td></tr>
+<tr><td>床 · 圆弧翻折，纯接触捏取，wheel 默认求解设置</td><td>右手一提起布就滑掉，只折过 43–48 %（摩擦 0.6 和 1.0 都一样）</td><td>—</td></tr>
 <tr><td>水瓶 · 约 400 ml，快捏到 18 mm</td><td>瓶宽 22.8 mm，挤走 76 ml，不洒，松开后完全回弹；11.6 min</td><td>瓶宽 23.2 mm，挤走 84 ml，不洒（4 ml 冒到瓶口又落回）；24 min</td></tr>
 <tr><td>水瓶 · 满瓶（空气约 8 ml），快捏 80 mm/s</td><td>冲出瓶口最多 34 ml，最后 41 ml 在桌上；30 min</td><td rowspan="2">451 ml（空气约 75 ml）捏到 18 mm：快捏 14 ml 冲出瓶口、最后 6.1 ml 在瓶外；慢捏 9 ml、2.3 ml</td></tr>
 <tr><td>水瓶 · 满瓶，慢捏 24 mm/s</td><td>冲出瓶口最多 21 ml，最后 38 ml 在桌上；26 min</td></tr>
@@ -91,10 +92,10 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <tr><td>厨房海绵</td><td><span class="tag no">没有做</span> wheel 没有多孔耦合</td><td>见上文</td></tr>
 </tbody></table></div>
 <div class="fig-grid">
-<figure class="fig"><video src="../media/robotgym_wheel_bed_best_attach.mp4?v=1027w" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>wheel · 床，约束抓取</b>（圆弧翻折，捏取点往床头挪）— 合拢后两指间的 6 个布顶点跟着手走，放下时解除；折过 97.7 %，床头一半被带动 19 mm。RTX 5090 上 16 分钟（三组同时跑在一张卡上）。</figcaption></figure>
-<figure class="fig"><video src="../media/robotgym_wheel_bed_arc_contact.mp4?v=1027w" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>wheel · 床，纯接触捏取</b>（圆弧翻折）— 两只手都捏出了褶，但一提起近处那只手就滑掉，只翻过去一半；15 分钟。</figcaption></figure>
+<figure class="fig"><video src="../media/robotgym_wheel_bed_contact_strict.mp4?v=1027s" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>wheel · 床，纯接触捏取</b>（圆弧翻折，对称合拢，严格牛顿，摩擦 1.0）— 两只手都捏到放下，整条毛毯对折，折过 99.6 %，床头一半被带动 35 mm。RTX 5090 上 20 分钟（三组同时跑在一张卡上）。</figcaption></figure>
+<figure class="fig"><video src="../media/robotgym_wheel_bed_shift_strict.mp4?v=1027s" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>wheel · 床，只合拢床尾那根手指</b>（纯接触，严格牛顿）— 床头那根手指不动，床头一半只被带动 21 mm，折过 97.0 %；21 分钟。</figcaption></figure>
 <figure class="fig"><video src="../media/robotgym_wheel_bottle_full_fast.mp4?v=1027w" muted loop playsinline controls preload="metadata"></video>
 <figcaption><b>wheel · 满瓶快捏</b>（80 mm/s 合到 18 mm）— 水从瓶口喷出，最后 41 ml 落在桌上；RTX 5090 上 30 分钟。</figcaption></figure>
 <figure class="fig"><video src="../media/robotgym_wheel_bottle_full_slow.mp4?v=1027w" muted loop playsinline controls preload="metadata"></video>
@@ -107,7 +108,9 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <thead><tr><th>wheel 现在的情况</th><th>影响</th><th>这次的做法</th></tr></thead>
 <tbody>
 <tr><td>没有 URDF 导入、关节驱动，读不到接触力</td><td>机械臂不能按关节驱动；做不了力控按压</td><td>在 Python 里解 FR3 的正逆运动学，会碰到东西的连杆作为“跟随软约束目标移动的碰撞面”；按压改成按指尖下方的床面高度把手倾斜、定高（指尖离床面 1.5 mm）</td></tr>
-<tr><td>只有一个全局摩擦系数</td><td>指垫和布、布和床的摩擦一样，20 mm 网格的毛毯捏不住</td><td>毛毯用 15 mm 网格。纯接触捏取时右手一提就滑掉（第一版床面上能捏住，换成下面改正后的床面就滑，原因还没查清），所以床的最好结果用“约束抓取”：合拢后把两指间的 6 个布顶点用软约束跟着手走，到放下时解除</td></tr>
+<tr><td>只有一个全局摩擦系数</td><td>指垫和布、布和床的摩擦一样，20 mm 网格的毛毯捏不住</td><td>毛毯用 15 mm 网格，摩擦取 0.6–1.0。另做了一版“约束抓取”作对照：合拢后把两指间的 6 个布顶点用软约束跟着手走，到放下时解除</td></tr>
+<tr><td>默认 <span class="mono">semi_implicit=true</span>：牛顿迭代 6 次后只要线搜索步长变小就提前结束，不等收敛</td><td>捏住布的摩擦没解够：纯接触捏取时右手一提就滑掉，摩擦从 0.6 加到 1.0 也一样（折过 43–48 %）</td><td>设 <span class="mono">semi_implicit=False</span>（严格牛顿）后两只手都能捏到放下，墙钟多约 25 %。简单场景（水柱塌落、自由落体）里两种设置结果一样，只有接触多的场景有差别</td></tr>
+<tr><td>被挤出瓶口的水会停在瓶口上方、挂在瓶外壁上，过 1–2 s 才慢慢落下 <span class="tag run">在查</span></td><td>水瓶视频里涌出的水看起来像果冻；瓶外和桌上的水量不受影响</td><td>水的参数是真实值（密度 1000、黏度 10⁻³ Pa·s、重力开启）；同样参数下空中的水柱 0.06 s 就塌、水团按自由落体下落，只在瓶子场景里变慢。附近没有支撑它的固体；改严格牛顿、改子步都不变。正在试把壁面摩擦降到 0.1、把水的网格从 5 mm 细到 2.5 mm（瓶壁只有 0.8 mm，壁两侧的水共用同一层网格节点）</td></tr>
 <tr><td>软约束一经注册就一直生效，布局在初始化时固定</td><td>不能在运行中“抓住 / 松开”</td><td>抓取和松开时各存一次状态（<span class="mono">world.dump</span>），重建带或不带这组约束的场景再 <span class="mono">recover</span>，每次 0.3 s</td></tr>
 <tr><td>布料弯曲是以平板为静止形状的二次能，强度不等于 E t³/12(1−ν²)</td><td>曲面壳（瓶子）保持不住形状，静置 0.2 s 瓶身就鼓了 1.6 mm；平布要标定</td><td>悬臂条标定：15 mm 网格实测为名义值的 40.9 倍、20 mm 为 54.7 倍，毛毯按此换算到 5.6×10⁻⁶ N·m。瓶壁改为从原表面向外长出的一层 0.8 mm 四面体（内表面就是原瓶，容积不变），用名义模量：弯曲约偏硬 20 倍、膜约偏软 7 倍，没有塑性，所以松开后完全回弹、不留凹痕</td></tr>
 <tr><td>初始几何有相交就拒绝开始</td><td>床的碰撞三角面里被罩、床单、床架互相穿插</td><td>床的碰撞面换成高度场：在原碰撞面上按 5 mm 网格取最高点，再取 ±5 mm 内的最大值，保证把渲染用的原模型整个包住（第一版用 8 mm、不取最大值，侧面和床尾比原模型缩进 3.5–4.7 mm，渲染时毛毯看起来陷进床垫边缘，仿真本身并没有穿透；上表的床结果都是改正后重跑的：毛毯在每一帧都离碰撞面至少 0.49 mm，和渲染用的原模型比没有一处陷进去超过 0.5 mm，渲染时再沿法向抬 1.5 mm 给零厚度的布一点厚度）</td></tr>
