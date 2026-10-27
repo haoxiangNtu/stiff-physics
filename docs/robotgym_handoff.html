@@ -84,7 +84,7 @@ figure { margin: 0; }
 <td>捏水瓶</td>
 <td><code>塑料水瓶.fbx</code> + 水</td>
 <td>一台 FR3 从侧面夹住开口水瓶并捏扁</td>
-<td>瓶宽从 55 mm 捏到 21–25 mm，挤走 79–91 ml。只装 433–451 ml 时，最多洒出 15 ml（4 mm 液体网格 20 ml：捏之前瓶里空气少了约 10 ml，§6.4）</td>
+<td>瓶宽从 55 mm 捏到 21–25 mm，挤走 79–91 ml。只装 433–451 ml 时，最多洒出 15 ml（4 mm 液体网格 20 ml，因为捏之前瓶里空气少了约 10 ml；少灌一些、空气补回到 69 ml 后是 12.5 ml，§6.4）</td>
 </tr>
 </tbody>
 </table></div><div class="fig-grid g3"><figure class="fig"><video src="../media/robotgym_fbx_bed_headtilt.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>圆弧翻折 · 只合拢床尾那根手指、手掌微倾（目前最好）</b><br>折过 99.7 %（床面上 100 %）· 床头被带动 0.7 mm · A800 上 118 min<br><span class="mono">bed_F4N_20mm_4N_bendphys_arc_headtilt.mp4</span></figcaption></figure><figure class="fig"><video src="../media/robotgym_fbx_kitchen_regrasp.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>换位再挤 4 个周期（目前最好）：每挤一次就放回槽 a，挪 20 mm 重新抓、泡一秒</b><br>槽 b 最后接到 48.2 ml · A800 上 999 min<br>10-28 重渲：画出正在下落的水滴，挤水时右下角是槽 b 特写（§8）<br><span class="mono">kitchen_regrasp_E5e4_4cycles.mp4</span></figcaption></figure><figure class="fig"><video src="../media/robotgym_fbx_bottle_spill.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>451 ml · 捏到 16 mm · 屈服 0.1（洒得最多）</b><br>挤走 91 ml，捏之前空气 72 ml · 冲出瓶口最多 17.3 ml，最后桌上 12.7 ml · A800 上 158 min<br><span class="mono">bottle_451ml_gap16_yield0.1.mp4</span></figcaption></figure></div>
@@ -1374,6 +1374,18 @@ md5  00003c949b49652ca594a288646af110  塑料水瓶.fbx
 <td>244 min</td>
 </tr>
 <tr>
+<td>同上，4 mm 液体网格、只灌到 185 mm（无视频，对照）</td>
+<td>446 ml</td>
+<td>154 mm / 431 ml / 69 ml</td>
+<td>16 mm</td>
+<td>21.1 mm</td>
+<td>92 ml</td>
+<td>21.3 ml</td>
+<td>12.5 / 11.0 ml</td>
+<td>16.8 mm</td>
+<td>199 min</td>
+</tr>
+<tr>
 <td><code>bottle_432ml_gap18_yield0.1_24mms</code>（24 mm/s）</td>
 <td>432 ml</td>
 <td>147 mm / 410 ml / 89 ml</td>
@@ -1425,7 +1437,7 @@ md5  00003c949b49652ca594a288646af110  塑料水瓶.fbx
 <li><strong>重跑和 4 mm 网格（10-27）</strong>：<ul>
 <li>451 ml、捏到 16 mm 原样重跑：冲出瓶口 18.1 ml、最后瓶外 14.3 ml、桌上 12.8 ml，和第一次（17.3 / 14.8 / 12.7）只差约 1 ml。</li>
 <li>同一组换 4 mm 液体网格：26.7 / 19.5 / 17.7 ml，明显多。但它捏之前只有 60 ml 空气（5 mm 两次 72 / 69 ml）：4 mm 网格的水静置后少得少一些，播种又多 4.6 ml。三次挤走的都是 91–92 ml，超出空气的部分 32 ml 对 20 / 23 ml，冲出瓶口的水多了约 9 ml，超出空气的部分也多了 9–12 ml。</li>
-<li>对照组在跑：4 mm 网格、只灌到 185 mm（名义 446 ml），空气应回到约 70 ml。如果溢出量回到 5 mm 的水平，差别就来自空气，而不是网格本身。</li>
+<li>对照组（10-28 跑完）：4 mm 网格、只灌到 185 mm（名义 446 ml），捏之前空气 68.7 ml，和 5 mm 原样重跑那次相同；挤走 92 ml，冲出瓶口 21.3 ml，最后瓶外 12.5 ml、桌上 11.0 ml。所以 4 mm 满灌那组多出来的大部分来自空气少（冲出瓶口 26.7 → 21.3 ml，瓶外 19.5 → 12.5 ml）。空气相同时，4 mm 比 5 mm 多冲出 3–4 ml（21.3 对 17.3 / 18.1 ml），最后在瓶外的反而少约 2 ml（12.5 对 14.8 / 14.3 ml）：网格本身的影响在 4 ml 以内，两个量的方向也相反。</li>
 <li>所以比较溢出量时，请同时报告捏之前瓶里的空气。</li>
 </ul>
 </li>
@@ -1586,13 +1598,13 @@ md5  00003c949b49652ca594a288646af110  塑料水瓶.fbx
 <tr>
 <td>水瓶 451 ml，捏到 16–18 mm</td>
 <td>挤走 / 瓶外 / 桌上</td>
-<td>83–91 ml / 6–15 ml / 5–13 ml（16 mm 原样重跑 91 / 14.3 / 12.8 ml；4 mm 网格 92 / 19.5 / 17.7 ml）</td>
+<td>83–91 ml / 6–15 ml / 5–13 ml（16 mm 原样重跑 91 / 14.3 / 12.8 ml；4 mm 网格 92 / 19.5 / 17.7 ml，4 mm 网格、空气补回到 69 ml 时 92 / 12.5 / 11.0 ml）</td>
 <td></td>
 </tr>
 <tr>
 <td>水瓶 451 ml</td>
 <td>捏之前瓶里的空气（§6.4 的算法）</td>
-<td>66–72 ml（4 mm 网格 60 ml）</td>
+<td>66–72 ml（4 mm 网格满灌 60 ml，灌到 185 mm 时 69 ml）</td>
 <td></td>
 </tr>
 <tr>
