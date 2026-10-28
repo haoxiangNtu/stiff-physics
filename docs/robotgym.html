@@ -86,8 +86,9 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <tr><td>床 · 圆弧翻折，约束抓取，捏取点往床头挪</td><td>折过 97.7 %，床头 19 mm；16 min</td><td>—</td></tr>
 <tr><td>床 · 圆弧翻折，纯接触捏取，wheel 默认求解设置</td><td>右手一提起布就滑掉，只折过 43–48 %（摩擦 0.6 和 1.0 都一样）</td><td>—</td></tr>
 <tr><td>水瓶 · 约 400 ml，快捏到 18 mm</td><td>瓶宽 22.8 mm，挤走 76 ml，不洒，松开后完全回弹；26 min</td><td>瓶宽 23.2 mm，挤走 84 ml，不洒（4 ml 冒到瓶口又落回）；24 min</td></tr>
-<tr><td>水瓶 · 满瓶（空气约 9 ml），快捏 80 mm/s</td><td>瓶宽 22.3 mm，挤走 78 ml；冲出瓶口最多 38 ml，最后 47 ml 在桌上；47 min</td><td rowspan="3">451 ml（空气约 70 ml）捏到 18 mm：快捏 14 ml 冲出瓶口、最后 6.1 ml 在瓶外；慢捏 9 ml、2.3 ml</td></tr>
+<tr><td>水瓶 · 满瓶（空气约 9 ml），快捏 80 mm/s</td><td>瓶宽 22.3 mm，挤走 78 ml；冲出瓶口最多 38 ml，最后 47 ml 在桌上；47 min</td><td rowspan="4">451 ml（空气约 70 ml）捏到 18 mm：快捏 14 ml 冲出瓶口、最后 6.1 ml 在瓶外；慢捏 9 ml、2.3 ml</td></tr>
 <tr><td>水瓶 · 满瓶快捏，水网格 2.5 mm</td><td>瓶宽 22.3 mm，挤走 80 ml；冲出瓶口最多 36 ml，最后 69 ml 在桌上；171 min</td></tr>
+<tr><td>水瓶 · 满瓶快捏，水网格 2 mm（不补水）</td><td>瓶宽 22.1 mm，挤走 80.5 ml；冲出瓶口最多 34 ml，最后 51.7 ml 在桌上；230 min（算到 12 s）</td></tr>
 <tr><td>水瓶 · 满瓶，慢捏 24 mm/s</td><td>冲出瓶口最多 21 ml，最后 38 ml 在桌上；26 min（这一组还是 semi_implicit 默认设置跑的）</td></tr>
 <tr><td>水量误差（按静置液面）</td><td>半瓶 4.5 %，满瓶 0.8 %</td><td>4–6 %</td></tr>
 <tr><td>厨房海绵</td><td><span class="tag no">没有做</span> wheel 没有多孔耦合</td><td>见上文</td></tr>
@@ -101,6 +102,8 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <figcaption><b>wheel · 满瓶快捏</b>（80 mm/s 合到 18 mm，严格牛顿，5 mm 水网格）— 水从瓶口喷出，最后 47 ml 落在桌上；冲出瓶口的水在瓶口上方堆成水包、1–2 s 后才落下（网格太粗，见下表）。RTX 5090 上 47 分钟。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bottle_full_fast.usdc">robotgym_wheel_bottle_full_fast.usdc（178 MB）</a></figcaption></figure>
 <figure class="fig"><video src="../media/robotgym_wheel_bottle_full_fast_dx25.mp4?v=1028r" muted loop playsinline controls preload="metadata"></video>
 <figcaption><b>wheel · 满瓶快捏，水网格 2.5 mm</b>（25.5 万粒子，全程 15 s）— 和左边同样的设置，只把水的网格细一倍：瓶宽 22.3 mm，挤走 80 ml，冲出瓶口最多 36 ml，瓶口挂住的水少得多，最后 69 ml 在桌上（5 mm 网格 47 ml）；RTX 5090 上 171 分钟。wheel 的水没有表面张力，落到桌上会一直摊开，最后是不到 1 mm 厚、约 770 cm² 的一层（粒子数不变，水量守恒）；按原设置重建水面时这层薄水会被一点点抹掉，看起来像在消失，所以这个视频重建时把每个粒子画大了一些，桌上的水洼连续、不再消失，但看起来比实际厚。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bottle_full_fast_dx25.usdc">robotgym_wheel_bottle_full_fast_dx25.usdc（595 MB，隔帧 12.5 fps）</a></figcaption></figure>
+<figure class="fig"><video src="../media/robotgym_wheel_bottle_full_fast_dx20.mp4?v=1029" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>wheel · 满瓶快捏，水网格 2 mm</b>（约 50 万粒子，算到 12 s）— 网格再细一档；这一组没有补 20 ml 水，瓶里空气约 24 ml（2.5 mm 那组约 6 ml），所以冲出瓶口最多 34 ml、最后 51.7 ml 在桌上，比 2.5 mm 那组少主要是因为空气多。瓶宽 22.1 mm，挤走 80.5 ml。5 ms 时间步在开始捏时牛顿不收敛，改用 2.5 ms；RTX 5090 上 230 分钟。桌上的水同样按放大的粒子半径重建（见左）。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bottle_full_fast_dx20.usdc">robotgym_wheel_bottle_full_fast_dx20.usdc（884 MB，隔帧 12.5 fps）</a></figcaption></figure>
 <figure class="fig"><video src="../media/robotgym_wheel_bottle_full_slow.mp4?v=1027w" muted loop playsinline controls preload="metadata"></video>
 <figcaption><b>wheel · 满瓶慢捏</b>（24 mm/s，2.5 s 合拢）— 以溢流为主，冲出瓶口最多 21 ml，最后 38 ml 在桌上；26 分钟。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bottle_full_slow.usdc">robotgym_wheel_bottle_full_slow.usdc（178 MB）</a></figcaption></figure>
 <figure class="fig"><video src="../media/robotgym_wheel_bottle_half.mp4?v=1028s" muted loop playsinline controls preload="metadata"></video>
