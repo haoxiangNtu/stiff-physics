@@ -441,7 +441,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <p class="lead">robotgym.io 首页用三个任务展示它的物理栈；我们用同一个 IPC 求解器把它们各做了一遍。10-26 起换成一套新模型重做：一张双人床和一条毛毯、一只方形 PET 矿泉水瓶、一个带双槽水盆的厨房岛台（FBX 模型，只做整体等比缩放、不改形状，尺寸以机械臂为参照）。
     床上改成力控捏取；水瓶和毛毯改用物理尺度的壳弯曲。重跑时查出引擎的弯曲能量多乘了一条边长，旧设置下的壳软了 50–400 倍，第一版里与此相关的说法已在下面更正。
     每个任务都有路径追踪视频，床的 USD 动画可下载（不含床模型）。
-    <a class="more" href="docs/robotgym.html#fbx">阅读新资产重跑的方法与数据 →</a> · <a class="more" href="docs/robotgym_handoff.html">交给其他仿真器复现用的任务书（含全部 27 段视频）→</a> · <a class="more" href="docs/robotgym.html">全部轮次、差异与数值陷阱 →</a> · <a class="more" href="docs/nuka.html">下一步：对照 Nuka-Physics 的进度与路线图 →</a></p>
+    <a class="more" href="docs/robotgym.html#fbx">阅读新资产重跑的方法与数据 →</a> · <a class="more" href="docs/robotgym_handoff.html">交给其他仿真器复现用的任务书（含全部 28 段视频）→</a> · <a class="more" href="docs/robotgym.html">全部轮次、差异与数值陷阱 →</a> · <a class="more" href="docs/nuka.html">下一步：对照 Nuka-Physics 的进度与路线图 →</a></p>
   </div>
   <figure class="fig">
     <video src="media/robotgym_fbx_bed_headtilt.mp4?v=1027f" muted loop playsinline controls preload="metadata"></video>
@@ -455,8 +455,8 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <figcaption><b>捏瘪方形水瓶</b> — 500 ml 方瓶（原模型 × 1.22，标准 28 mm 瓶口），0.3 mm PET 壳、物理尺度弯曲，水是引擎内的 MPM 水、与壳双向耦合。装 451 ml，两指以 80 mm/s 捏到 16 mm：挤走 91 ml，比瓶里的空气（约 70 ml）多，17 ml 冲出瓶口，最后桌上 12.7 ml（原样重跑 18 ml、12.8 ml；4 mm 液体网格、空气相同时 21 ml、11.0 ml）。装 434 ml、捏到 20 mm 时挤走的比空气少，水不洒。一张 A800 上 158 分钟。<a href="docs/robotgym.html#fbx-bottle">什么时候会洒 →</a></figcaption>
   </figure>
   <figure class="fig">
-    <video src="media/robotgym_fbx_kitchen_regrasp.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video>
-    <figcaption><b>厨房海绵吸水拧水</b> — 真实尺寸的厨房岛台（原模型 × 1.0），左盆堵上排水口、放 50 mm 深的水（5.6 L）。FR3 在左盆里抓起海绵泡饱，越过台面在右盆上方拧；放回左盆，沿海绵换一个位置再抓、再泡、再拧，共四个周期，右盆接到 48.2 ml（原站 33.5 ml）；每个周期都抓低 10 mm 时 67.2 ml（视频渲染中）。只抓一个位置连拧三次是 21.5 ml。下落的水滴单独画成水珠，拧水时右下角是右盆特写。93.5 s，一张 A800 上 16.6 小时。<a href="docs/robotgym.html#fbx-kitchen">为什么一次拧不出多少 →</a></figcaption>
+    <video src="media/robotgym_fbx_kitchen_regrasp_griplow.mp4?v=1028" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>厨房海绵吸水拧水</b> — 真实尺寸的厨房岛台（原模型 × 1.0），左盆堵上排水口、放 50 mm 深的水（5.6 L）。FR3 在左盆里抓起海绵泡饱，越过台面在右盆上方拧；放回左盆，沿海绵换一个位置再抓、再泡、再拧，共四个周期，每次都抓低 10 mm：右盆接到 67.2 ml（原站 33.5 ml）。不抓低是 48.2 ml，只抓一个位置连拧三次是 21.5 ml。下落的水滴单独画成水珠，拧水时右下角是右盆特写。93.5 s，一张 A800 上 19 小时。<a href="docs/robotgym.html#fbx-kitchen">为什么一次拧不出多少 →</a></figcaption>
   </figure>
   </div>
   <p style="margin-top:2rem"><b>第一版（10-21）</b>：原站同款的简化场景，床单铺在一块薄板上、圆形 PET 瓶、盆和杯子。

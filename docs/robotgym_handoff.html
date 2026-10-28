@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>三个操作任务的复现任务书（新资产版）</title>
-<meta name="description" content="把床上叠毛毯、厨房海绵吸水拧水、捏水瓶三个 FR3 操作场景交给另一套物理仿真器复现时用的任务书：布置、尺寸、时间线、材料、指标、对比表，以及我们每次运行的结果和 27 段路径追踪视频。">
+<meta name="description" content="把床上叠毛毯、厨房海绵吸水拧水、捏水瓶三个 FR3 操作场景交给另一套物理仿真器复现时用的任务书：布置、尺寸、时间线、材料、指标、对比表，以及我们每次运行的结果和 28 段路径追踪视频。">
 <link rel="stylesheet" href="docs.css">
 <style>
 .fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
@@ -44,7 +44,7 @@ figure { margin: 0; }
 
 <div class="note"><b>交接包不公开</b>
 文中的 <span class="mono">assets/</span>、<span class="mono">code_reference/</span>、<span class="mono">metrics/</span>、<span class="mono">reference/</span> 是交接包里的目录。
-交接包里有原始 FBX 模型，不能公开分发，所以不在网上提供。<span class="mono">reference/videos/</span> 里的 27 段视频都放在本页：
+交接包里有原始 FBX 模型，不能公开分发，所以不在网上提供。<span class="mono">reference/videos/</span> 里的 28 段视频都放在本页：
 每个场景“我们的结果”一节的开头是这个场景的全部视频，点表格里的视频文件名会跳到对应的视频。</div>
 
 <div class="toc"><b>目录</b>
@@ -87,7 +87,7 @@ figure { margin: 0; }
 <td>瓶宽从 55 mm 捏到 21–25 mm，挤走 79–91 ml。只装 433–451 ml 时，最多洒出 15 ml（4 mm 液体网格 20 ml，因为捏之前瓶里空气少了约 10 ml；少灌一些、空气补回到 69 ml 后是 12.5 ml，§6.4）</td>
 </tr>
 </tbody>
-</table></div><div class="fig-grid g3"><figure class="fig"><video src="../media/robotgym_fbx_bed_headtilt.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>圆弧翻折 · 只合拢床尾那根手指、手掌微倾（目前最好）</b><br>折过 99.7 %（床面上 100 %）· 床头被带动 0.7 mm · A800 上 118 min<br><span class="mono">bed_F4N_20mm_4N_bendphys_arc_headtilt.mp4</span></figcaption></figure><figure class="fig"><video src="../media/robotgym_fbx_kitchen_regrasp.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>换位再挤 4 个周期（目前最好）：每挤一次就放回槽 a，挪 20 mm 重新抓、泡一秒</b><br>槽 b 最后接到 48.2 ml · A800 上 999 min<br>10-28 重渲：画出正在下落的水滴，挤水时右下角是槽 b 特写（§8）<br><span class="mono">kitchen_regrasp_E5e4_4cycles.mp4</span></figcaption></figure><figure class="fig"><video src="../media/robotgym_fbx_bottle_spill.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>451 ml · 捏到 16 mm · 屈服 0.1（洒得最多）</b><br>挤走 91 ml，捏之前空气 72 ml · 冲出瓶口最多 17.3 ml，最后桌上 12.7 ml · A800 上 158 min<br><span class="mono">bottle_451ml_gap16_yield0.1.mp4</span></figcaption></figure></div>
+</table></div><div class="fig-grid g3"><figure class="fig"><video src="../media/robotgym_fbx_bed_headtilt.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>圆弧翻折 · 只合拢床尾那根手指、手掌微倾（目前最好）</b><br>折过 99.7 %（床面上 100 %）· 床头被带动 0.7 mm · A800 上 118 min<br><span class="mono">bed_F4N_20mm_4N_bendphys_arc_headtilt.mp4</span></figcaption></figure><figure class="fig"><video src="../media/robotgym_fbx_kitchen_regrasp_griplow.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>换位再挤 4 个周期、每次都抓低 10 mm（目前最好）</b><br>槽 b 最后接到 67.2 ml · A800 上 1142 min<br>画出正在下落的水滴，挤水时右下角是槽 b 特写（§8）<br><span class="mono">kitchen_regrasp_E5e4_4cycles_griplow.mp4</span></figcaption></figure><figure class="fig"><video src="../media/robotgym_fbx_bottle_spill.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>451 ml · 捏到 16 mm · 屈服 0.1（洒得最多）</b><br>挤走 91 ml，捏之前空气 72 ml · 冲出瓶口最多 17.3 ml，最后桌上 12.7 ml · A800 上 158 min<br><span class="mono">bottle_451ml_gap16_yield0.1.mp4</span></figcaption></figure></div>
 <h3 id="02">0.2 用户的硬性要求</h3>
 <ol>
 <li>必须用这四个 FBX 模型，只能等比缩放，不能改变形状。</li>
@@ -952,7 +952,7 @@ md5  00003c949b49652ca594a288646af110  塑料水瓶.fbx
 </ul>
 </li>
 </ul>
-<h3 id="54">5.4 我们的结果</h3><div class="fig-grid g3"><figure class="fig" id="v-kitchen_regrasp_E5e4_4cycles"><video src="../media/robotgym_fbx_kitchen_regrasp.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>换位再挤 4 个周期（目前最好）：每挤一次就放回槽 a，挪 20 mm 重新抓、泡一秒</b><br>槽 b 最后接到 48.2 ml · A800 上 999 min<br>10-28 重渲：画出正在下落的水滴，挤水时右下角是槽 b 特写（§8）<br><span class="mono">kitchen_regrasp_E5e4_4cycles.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_regrasp_E2-5e4_4cycles"><video src="../media/robotgym_handoff/kitchen_regrasp_E2.5e4_4cycles.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>同上 · 软海绵（E = 2.5e4 Pa）</b><br>槽 b 最后接到 45.8 ml · A800 上 990 min<br><span class="mono">kitchen_regrasp_E2.5e4_4cycles.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_w50_E5e4_24-18-12"><video src="../media/robotgym_fbx_kitchen.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>默认：抓一次，在槽 b 上方挤三次（24 / 18 / 12 mm）</b><br>槽 b 最后接到 21.5 ml · A800 上 353 min<br>10-28 重渲：画出正在下落的水滴，挤水时右下角是槽 b 特写（§8）<br><span class="mono">kitchen_w50_E5e4_24-18-12.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_w50_E5e4_24-18-12_griplow"><video src="../media/robotgym_handoff/kitchen_w50_E5e4_24-18-12_griplow.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>抓低 10 mm，挤三次</b><br>槽 b 最后接到 23.9 ml · A800 上 461 min<br><span class="mono">kitchen_w50_E5e4_24-18-12_griplow.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_w50_E2-5e4_22-16-10"><video src="../media/robotgym_handoff/kitchen_w50_E2.5e4_22-16-10.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>软海绵，挤得更扁（22 / 16 / 10 mm）</b><br>槽 b 最后接到 19.9 ml · A800 上 631 min<br><span class="mono">kitchen_w50_E2.5e4_22-16-10.mp4</span></figcaption></figure></div>
+<h3 id="54">5.4 我们的结果</h3><div class="fig-grid g3"><figure class="fig" id="v-kitchen_regrasp_E5e4_4cycles_griplow"><video src="../media/robotgym_fbx_kitchen_regrasp_griplow.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>换位再挤 4 个周期、每次都抓低 10 mm（目前最好）</b><br>槽 b 最后接到 67.2 ml · A800 上 1142 min<br>画出正在下落的水滴，挤水时右下角是槽 b 特写（§8）<br><span class="mono">kitchen_regrasp_E5e4_4cycles_griplow.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_regrasp_E5e4_4cycles"><video src="../media/robotgym_fbx_kitchen_regrasp.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>换位再挤 4 个周期：每挤一次就放回槽 a，挪 20 mm 重新抓、泡一秒</b><br>槽 b 最后接到 48.2 ml · A800 上 999 min<br>10-28 重渲：画出正在下落的水滴，挤水时右下角是槽 b 特写（§8）<br><span class="mono">kitchen_regrasp_E5e4_4cycles.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_regrasp_E2-5e4_4cycles"><video src="../media/robotgym_handoff/kitchen_regrasp_E2.5e4_4cycles.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>同上 · 软海绵（E = 2.5e4 Pa）</b><br>槽 b 最后接到 45.8 ml · A800 上 990 min<br><span class="mono">kitchen_regrasp_E2.5e4_4cycles.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_w50_E5e4_24-18-12"><video src="../media/robotgym_fbx_kitchen.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>默认：抓一次，在槽 b 上方挤三次（24 / 18 / 12 mm）</b><br>槽 b 最后接到 21.5 ml · A800 上 353 min<br>10-28 重渲：画出正在下落的水滴，挤水时右下角是槽 b 特写（§8）<br><span class="mono">kitchen_w50_E5e4_24-18-12.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_w50_E5e4_24-18-12_griplow"><video src="../media/robotgym_handoff/kitchen_w50_E5e4_24-18-12_griplow.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>抓低 10 mm，挤三次</b><br>槽 b 最后接到 23.9 ml · A800 上 461 min<br><span class="mono">kitchen_w50_E5e4_24-18-12_griplow.mp4</span></figcaption></figure><figure class="fig" id="v-kitchen_w50_E2-5e4_22-16-10"><video src="../media/robotgym_handoff/kitchen_w50_E2.5e4_22-16-10.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video><figcaption><b>软海绵，挤得更扁（22 / 16 / 10 mm）</b><br>槽 b 最后接到 19.9 ml · A800 上 631 min<br><span class="mono">kitchen_w50_E2.5e4_22-16-10.mp4</span></figcaption></figure></div>
 <p>默认参数（50 mm 水、E = 5e4、挤到 24/18/12 mm），视频 <a href="#v-kitchen_w50_E5e4_24-18-12"><code>kitchen_w50_E5e4_24-18-12.mp4</code></a>。水量用 <code>metrics/handoff_metrics.py</code> 算，“海绵里”指海绵包围盒向内缩 1 mm 以内的水：</p>
 <div class="tblwrap"><table>
 <thead>
@@ -1098,7 +1098,7 @@ md5  00003c949b49652ca594a288646af110  塑料水瓶.fbx
 <td>990 min（93.5 s）</td>
 </tr>
 <tr>
-<td>换位再挤，换水粒子随机种子（视频渲染中）</td>
+<td>换位再挤，换水粒子随机种子（无视频）</td>
 <td>同上，<code>--seed 1</code></td>
 <td>5e4 Pa</td>
 <td>24 / 18 / 18 / 12 mm（每周期一次）</td>
@@ -1107,7 +1107,7 @@ md5  00003c949b49652ca594a288646af110  塑料水瓶.fbx
 <td>1246 min（93.5 s）</td>
 </tr>
 <tr>
-<td>换位 + 抓低（视频渲染中）</td>
+<td><a href="#v-kitchen_regrasp_E5e4_4cycles_griplow"><code>kitchen_regrasp_E5e4_4cycles_griplow.mp4</code></a>（换位 + 抓低）</td>
 <td>换位再挤 4 个周期，每个周期都抓低 10 mm（<code>--grip-dy -0.010</code>）</td>
 <td>5e4 Pa</td>
 <td>24 / 18 / 18 / 12 mm（每周期一次）</td>
@@ -1123,7 +1123,7 @@ md5  00003c949b49652ca594a288646af110  塑料水瓶.fbx
 <li><strong>挤出的水是一颗一颗掉下去的</strong>（10-28 查）：<ul>
 <li>液体网格 8 mm，每个水粒子 0.064 ml，相当于直径 5 mm 的一滴。默认运行在挤水和保持阶段，空中平均有 3.5–4.8 颗在往下掉，最多 19 颗；换位再挤平均 6.5–7.2 颗，最多 31 颗。97–98 % 是单独一颗，最大的一团 4 颗，连不成水流（§5.5 第 1 条）。</li>
 <li>槽 b 底上的水比网格薄得多：21.5 ml 摊在 439 × 318 mm 的槽底，平均只有 0.15 mm。它在我们的仿真里摊成单颗粒子，均匀铺满槽底；真实的水会聚成几摊，或者流向下水口。</li>
-<li>我们的水面重建会丢掉少于 4 颗粒子的小团，再把小于约 1 cm 的细节抹平，所以原来的视频里看不到下落的水滴。<a href="#v-kitchen_w50_E5e4_24-18-12"><code>kitchen_w50_E5e4_24-18-12.mp4</code></a> 和 <a href="#v-kitchen_regrasp_E5e4_4cycles"><code>kitchen_regrasp_E5e4_4cycles.mp4</code></a> 在 10-28 重渲：正在往下掉的水按粒子体积画成水珠，挤水阶段右下角加了槽 b 的特写（§8）。另外三段厨房视频还是原来的渲染。</li>
+<li>我们的水面重建会丢掉少于 4 颗粒子的小团，再把小于约 1 cm 的细节抹平，所以原来的视频里看不到下落的水滴。<a href="#v-kitchen_w50_E5e4_24-18-12"><code>kitchen_w50_E5e4_24-18-12.mp4</code></a> 和 <a href="#v-kitchen_regrasp_E5e4_4cycles"><code>kitchen_regrasp_E5e4_4cycles.mp4</code></a> 在 10-28 重渲，<a href="#v-kitchen_regrasp_E5e4_4cycles_griplow"><code>kitchen_regrasp_E5e4_4cycles_griplow.mp4</code></a> 也是这样渲的：正在往下掉的水按粒子体积画成水珠，挤水阶段右下角加了槽 b 的特写（§8）。另外三段厨房视频还是原来的渲染。</li>
 </ul>
 </li>
 </ul>
@@ -1568,7 +1568,7 @@ md5  00003c949b49652ca594a288646af110  塑料水瓶.fbx
 </table></div>
 <ul>
 <li><strong>水面</strong>：从粒子出发，用各向异性核构造 SDF，再提取网格，按 IOR 1.33 的透明介质渲染。</li>
-<li><strong>下落的水滴</strong>（只用于 <a href="#v-kitchen_w50_E5e4_24-18-12"><code>kitchen_w50_E5e4_24-18-12.mp4</code></a> 和 <a href="#v-kitchen_regrasp_E5e4_4cycles"><code>kitchen_regrasp_E5e4_4cycles.mp4</code></a>）：水面重建画不出单颗粒子，所以把正在往下掉的小水团单独画成水珠：相距 1.5 倍粒子间距以内的粒子连成一团，少于 30 颗、速度超过 0.25 m/s 的团里，每颗粒子画一个直径 5 mm 的水球（体积与粒子相同）。槽底那层慢慢移动的单颗粒子（低于 0.25 m/s）不画。挤水、保持、松开阶段在右下角加一个 400 × 300 的特写小窗：eye (0.03, 1.20, −0.25)，target (0.03, 0.89, 0.225)，fov 0.42。</li>
+<li><strong>下落的水滴</strong>（只用于 <a href="#v-kitchen_w50_E5e4_24-18-12"><code>kitchen_w50_E5e4_24-18-12.mp4</code></a>、<a href="#v-kitchen_regrasp_E5e4_4cycles"><code>kitchen_regrasp_E5e4_4cycles.mp4</code></a> 和 <a href="#v-kitchen_regrasp_E5e4_4cycles_griplow"><code>kitchen_regrasp_E5e4_4cycles_griplow.mp4</code></a>）：水面重建画不出单颗粒子，所以把正在往下掉的小水团单独画成水珠：相距 1.5 倍粒子间距以内的粒子连成一团，少于 30 颗、速度超过 0.25 m/s 的团里，每颗粒子画一个直径 5 mm 的水球（体积与粒子相同）。槽底那层慢慢移动的单颗粒子（低于 0.25 m/s）不画。挤水、保持、松开阶段在右下角加一个 400 × 300 的特写小窗：eye (0.03, 1.20, −0.25)，target (0.03, 0.89, 0.225)，fov 0.42。</li>
 <li><strong>瓶子</strong>：透明 PET，标签部分画成一条浅蓝色环带。</li>
 <li><strong>床和厨房</strong>：用 FBX 的全分辨率部件网格（<code>render/</code>）渲染，碰撞用的是 <code>*_collision.obj</code>。</li>
 </ul>
