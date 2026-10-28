@@ -109,6 +109,42 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <figure class="fig"><video src="../media/robotgym_wheel_bottle_half.mp4?v=1028s" muted loop playsinline controls preload="metadata"></video>
 <figcaption><b>wheel · 半瓶快捏</b>（约 400 ml，严格牛顿）— 挤走 76 ml，少于瓶里约 100 ml 的空气，水不出来；26 分钟。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bottle_half.usdc">robotgym_wheel_bottle_half.usdc（155 MB）</a></figcaption></figure>
 </div>
+<h3 id="wheel-bed-material">床单材料和网格对比<span class="date">10-29</span></h3>
+<p>毛毯看起来偏硬，于是在“纯接触捏取、对称合拢、严格牛顿、摩擦 1.0”这组上，每次只改一处材料或网格，各跑一遍（8 组同时跑在一张 RTX 5090 上，每组约 1 小时）。弯曲刚度 D 是物理值，脚本按 wheel 的标定换算到各网格（15 mm 网格实测是名义值的 40.9 倍，越密倍数越小）；拉伸刚度写成 E·t（膜刚度）。“最高处”是对折放下后布离床面的最高点，“折叠区”是床头一侧布高度的 90 % 分位，越低说明布越塌、越贴床。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>改了什么</th><th>网格</th><th>弯曲 D（N·m）</th><th>膜刚度 E·t（N/m）</th><th>面密度（kg/m²）</th><th>折过</th><th>床头带动（mm）</th><th>最高处（mm）</th><th>折叠区（mm）</th></tr></thead>
+<tbody>
+<tr><td>现有（上面的视频）</td><td>15 mm</td><td>5.6×10⁻⁶</td><td>100</td><td>0.40</td><td>99.6 %</td><td>35.0</td><td>120</td><td>40.7</td></tr>
+<tr><td>弯曲 ÷3</td><td>15 mm</td><td>1.9×10⁻⁶</td><td>100</td><td>0.40</td><td>99.7 %</td><td>34.4</td><td>138</td><td>46.3</td></tr>
+<tr><td>弯曲 ÷10</td><td>15 mm</td><td>5.6×10⁻⁷</td><td>100</td><td>0.40</td><td>99.2 %</td><td>34.5</td><td>121</td><td>45.5</td></tr>
+<tr><td>拉伸 ÷3.3</td><td>15 mm</td><td>5.6×10⁻⁶</td><td>30</td><td>0.40</td><td>98.5 %</td><td>32.8</td><td>79</td><td>30.7</td></tr>
+<tr><td>拉伸 ÷3.3、弯曲 ÷3</td><td>15 mm</td><td>1.9×10⁻⁶</td><td>30</td><td>0.40</td><td>98.7 %</td><td>33.2</td><td>77</td><td>32.0</td></tr>
+<tr><td>面密度 ×2</td><td>15 mm</td><td>5.6×10⁻⁶</td><td>100</td><td>0.80</td><td>49.0 %（滑脱）</td><td>21.6</td><td>—</td><td>—</td></tr>
+<tr><td>10 mm 网格</td><td>10 mm</td><td>5.6×10⁻⁶</td><td>100</td><td>0.40</td><td>97.8 %</td><td>29.6</td><td>74</td><td>32.1</td></tr>
+<tr><td>10 mm，弯曲 ÷3</td><td>10 mm</td><td>1.9×10⁻⁶</td><td>100</td><td>0.40</td><td>48.3 %（滑脱）</td><td>19.3</td><td>—</td><td>—</td></tr>
+<tr class="hl"><td>7.5 mm 网格</td><td>7.5 mm</td><td>5.6×10⁻⁶</td><td>100</td><td>0.40</td><td>97.9 %</td><td>35.4</td><td>56</td><td>27.7</td></tr>
+</tbody></table></div>
+<p><b>结论：布看起来硬，主要是网格太粗，不是弯曲刚度太大。</b>把弯曲刚度降到 1/3、1/10，折边一点也没塌（最高处 121–138 mm，和现有的 120 mm 一样）；而把网格加密到 10 mm、7.5 mm，或者把膜刚度降到 1/3.3，最高处降到 56–79 mm，布贴床、褶皱更像毛毯。这是三角形布料的“膜锁死”：网格粗时，线性三角形要弯就得同时被拉长，膜刚度又远大于弯曲刚度，于是整块布像纸板一样弯不下去；网格越密、膜越软，锁死越轻。7.5 mm 网格（约 4.1 万个顶点）最接近真毛毯，8 组挤在一张卡上时墙钟和 15 mm 网格差不多（都是约 1 小时）。面密度 ×2 和“10 mm 网格 + 弯曲 ÷3”两组只翻过去一半：一只手在提起后滑脱（布更重，或者更软的布从指间被挤出去）。</p>
+<figure class="fig"><img src="../media/robotgym_wheel_bed_material_grid.jpg?v=1029" alt="9 组床单对折后的画面" loading="lazy">
+<figcaption>9 组对折放下后（t = 21.4 s）的画面，同一机位。</figcaption></figure>
+<div class="fig-grid">
+<figure class="fig"><video src="../media/robotgym_wheel_bed_m15_soft3.mp4?v=1029" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>弯曲 ÷3</b>（网格 15 mm，D 1.9×10⁻⁶ N·m，E·t 100 N/m，0.40 kg/m²）— 折过 99.7 %，床头带动 34.4 mm。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bed_m15_soft3.usdc">robotgym_wheel_bed_m15_soft3.usdc（77 MB）</a></figcaption></figure>
+<figure class="fig"><video src="../media/robotgym_wheel_bed_m15_soft10.mp4?v=1029" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>弯曲 ÷10</b>（网格 15 mm，D 5.6×10⁻⁷ N·m，E·t 100 N/m，0.40 kg/m²）— 折过 99.2 %，床头带动 34.5 mm。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bed_m15_soft10.usdc">robotgym_wheel_bed_m15_soft10.usdc（77 MB）</a></figcaption></figure>
+<figure class="fig"><video src="../media/robotgym_wheel_bed_m15_E3e4.mp4?v=1029" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>拉伸 ÷3.3</b>（网格 15 mm，D 5.6×10⁻⁶ N·m，E·t 30 N/m，0.40 kg/m²）— 折过 98.5 %，床头带动 32.8 mm。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bed_m15_E3e4.usdc">robotgym_wheel_bed_m15_E3e4.usdc（77 MB）</a></figcaption></figure>
+<figure class="fig"><video src="../media/robotgym_wheel_bed_m15_E3e4_soft3.mp4?v=1029" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>拉伸 ÷3.3、弯曲 ÷3</b>（网格 15 mm，D 1.9×10⁻⁶ N·m，E·t 30 N/m，0.40 kg/m²）— 折过 98.7 %，床头带动 33.2 mm。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bed_m15_E3e4_soft3.usdc">robotgym_wheel_bed_m15_E3e4_soft3.usdc（77 MB）</a></figcaption></figure>
+<figure class="fig"><video src="../media/robotgym_wheel_bed_m15_heavy.mp4?v=1029" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>面密度 ×2</b>（网格 15 mm，D 5.6×10⁻⁶ N·m，E·t 100 N/m，0.80 kg/m²）— 折过 49.0 %（滑脱），床头带动 21.6 mm。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bed_m15_heavy.usdc">robotgym_wheel_bed_m15_heavy.usdc（77 MB）</a></figcaption></figure>
+<figure class="fig"><video src="../media/robotgym_wheel_bed_m10.mp4?v=1029" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>10 mm 网格</b>（网格 10 mm，D 5.6×10⁻⁶ N·m，E·t 100 N/m，0.40 kg/m²）— 折过 97.8 %，床头带动 29.6 mm。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bed_m10.usdc">robotgym_wheel_bed_m10.usdc（160 MB）</a></figcaption></figure>
+<figure class="fig"><video src="../media/robotgym_wheel_bed_m10_soft3.mp4?v=1029" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>10 mm，弯曲 ÷3</b>（网格 10 mm，D 1.9×10⁻⁶ N·m，E·t 100 N/m，0.40 kg/m²）— 折过 48.3 %（滑脱），床头带动 19.3 mm。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bed_m10_soft3.usdc">robotgym_wheel_bed_m10_soft3.usdc（160 MB）</a></figcaption></figure>
+<figure class="fig"><video src="../media/robotgym_wheel_bed_m7p5.mp4?v=1029" muted loop playsinline controls preload="metadata"></video>
+<figcaption><b>7.5 mm 网格</b>（网格 7.5 mm，D 5.6×10⁻⁶ N·m，E·t 100 N/m，0.40 kg/m²）— 折过 97.9 %，床头带动 35.4 mm。<br>USD：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-wheel-2026-10/robotgym_wheel_bed_m7p5.usdc">robotgym_wheel_bed_m7p5.usdc（275 MB）</a></figcaption></figure>
+</div>
 <h3 id="wheel-gaps">wheel 缺什么，这次怎么绕过去</h3>
 <div class="tblwrap"><table>
 <thead><tr><th>wheel 现在的情况</th><th>影响</th><th>这次的做法</th></tr></thead>
