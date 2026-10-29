@@ -253,7 +253,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bed_blanket_fold_phys.usdc">robotgym_bed_blanket_fold_phys.usdc（A · 物理弯曲，38 MB）</a>、
 <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bed_blanket_fold_arc.usdc">robotgym_bed_blanket_fold_arc.usdc（A · 物理弯曲 · 圆弧，39 MB）</a>、
 <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bed_blanket_fold_headtilt.usdc">robotgym_bed_blanket_fold_headtilt.usdc（A · 物理弯曲 · 圆弧 · 单指合拢、手掌微倾，39 MB）</a>。
-厨房和水瓶的 USD 在确认模型授权之后提供。</p>
+厨房的 USD 见下文<a href="#fbx-kitchen">厨房</a>一节；水瓶的 USD 在确认模型授权之后提供。</p>
 
 <h3 id="fbx-bottle">水瓶：顺带查出壳弯曲刚度的单位错了</h3>
 <p>新瓶子先按上一版的设置跑（PET 2.5 GPa、壁厚 0.3 mm、塑性铰链屈服角 0.2 rad），结果每捏一次要几个小时，松手后凹痕几乎原样留着。追下去发现两件事：</p>
@@ -335,7 +335,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <p class="small">（10-27 更正：之前把 240 ml 写成“海绵连同贴着它的水”。引擎只数落在海绵四面体里的水粒子，每个粒子最多数一次；这个数比孔隙能装的多四到六成（引擎报的饱和度 1.4–1.6）。模型里水粒子可以占满整块海绵，连骨架那 15 % 也算上，饱和度最多也只到 1.18，所以浸没时海绵里的水被挤密了。原因在持水这一步：每步压力求解之后，引擎把海绵里的水粒子拉回到它所在的海绵材料点上（毛细持水），这一步不保体积，流进海绵的水不能再被压力推开。同一场景只跑 1.5 s、海绵泡在水里，改拉回的强度（多孔阻力 × 时间步，默认 200 /s × 5 ms = 1）：强度 1 时饱和度 1.36，0.25 时 1.26，关掉时 1.18，正好是水粒子占满整块海绵、密度与周围的水相同；超过容量后仍按 1/s 拉回的旧门控是 1.80。这一项还没修（关掉拉回，提起时海绵就不再持水）。提出水面后多出来的部分 2 s 内流回左盆，搬运和拧水时的饱和度是 0.75–0.9。）</p>
 <figure class="fig">
 <video src="../media/robotgym_fbx_kitchen.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>厨房海绵吸水拧水</b> — 39 s（时间步 5 ms，一张 A800 上 353 分钟）：从左盆抓起海绵、泡一秒、提出水面、越过台面、在右盆上方拧三次、放回左盆。厨房是原模型（× 1.0）。下落的水滴单独画成水珠，拧水时右下角是右盆特写（10-28 重渲，见下）。</figcaption>
+<figcaption><b>厨房海绵吸水拧水</b> — 39 s（时间步 5 ms，一张 A800 上 353 分钟）：从左盆抓起海绵、泡一秒、提出水面、越过台面、在右盆上方拧三次、放回左盆。厨房是原模型（× 1.0）。下落的水滴单独画成水珠，拧水时右下角是右盆特写（10-28 重渲，见下）。<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_kitchen_3wrings.usdc">USD（1.03 GB）</a></figcaption>
 </figure>
 <p><b>视频里看不到滴水（10-28 重渲）。</b>挤出来的水是一颗一颗掉下去的：液体网格 8 mm，每个水粒子 0.064 ml，相当于直径 5 mm 的一滴；拧水和保持阶段空中平均有 3.5–4.8 颗在往下掉（换位再拧 6.5–7.2 颗），97–98 % 是单独一颗，最大的一团 4 颗，连不成水流。
 把粒子重建成水面的那一步会丢掉少于 4 颗的小团，再把小于约 1 cm 的细节抹平，所以单颗的水滴一颗也画不出来（21.3 s 那一帧空中有 19 颗，原视频里一颗也没有）；原机位离右盆 1.8 m，就算画出来每颗也只有约 3 个像素。
@@ -351,12 +351,17 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 </ul>
 <figure class="fig">
 <video src="../media/robotgym_fbx_kitchen_regrasp.mp4?v=1028d" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>换位再拧四个周期</b> — 93.5 s（时间步 5 ms，一张 A800 上 16.6 小时）：每个周期在右盆上方拧一次，放回左盆，沿海绵挪 20 mm 重新抓、泡、拧；右盆共接到 48.2 ml。下落的水滴和右下角的特写同上（10-28 重渲）。</figcaption>
+<figcaption><b>换位再拧四个周期</b> — 93.5 s（时间步 5 ms，一张 A800 上 16.6 小时）：每个周期在右盆上方拧一次，放回左盆，沿海绵挪 20 mm 重新抓、泡、拧；右盆共接到 48.2 ml。下落的水滴和右下角的特写同上（10-28 重渲）。<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_kitchen_regrasp.usdc">USD（1.25 GB）</a></figcaption>
 </figure>
 <figure class="fig">
 <video src="../media/robotgym_fbx_kitchen_regrasp_griplow.mp4?v=1028" muted loop playsinline controls preload="metadata"></video>
-<figcaption><b>换位 + 抓低，四个周期</b> — 93.5 s（时间步 5 ms，一张 A800 上 19 小时）：每个周期都抓低 10 mm，其余同上；右盆共接到 67.2 ml（依次 13.8、16.8、16.4、20.1 ml）。抓低以后海绵在特写里偏上，只露出底部。</figcaption>
+<figcaption><b>换位 + 抓低，四个周期</b> — 93.5 s（时间步 5 ms，一张 A800 上 19 小时）：每个周期都抓低 10 mm，其余同上；右盆共接到 67.2 ml（依次 13.8、16.8、16.4、20.1 ml）。抓低以后海绵在特写里偏上，只露出底部。<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_kitchen_regrasp_griplow.usdc">USD（1.25 GB）</a></figcaption>
 </figure>
+<p>USD（<b>含厨房模型</b>：台面、两只水盆、滤网和龙头；机械臂和厨房是变换动画，海绵是逐帧顶点，水是 Points，每个粒子一个点）：
+<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_kitchen_regrasp.usdc">robotgym_kitchen_regrasp.usdc（换位再拧四个周期，1.25 GB）</a>、
+<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_kitchen_regrasp_griplow.usdc">robotgym_kitchen_regrasp_griplow.usdc（换位 + 抓低，1.25 GB）</a>、
+<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_kitchen_3wrings.usdc">robotgym_kitchen_3wrings.usdc（抓一次拧三次，1.03 GB）</a>。
+四个周期的两段按每秒 25 帧有 2.5 GB，超过 GitHub 单个文件的上限，所以每隔一帧取一帧（每秒 12.5 帧）。</p>
 <p><b>薄海绵（25 mm）没成功。</b>想让指垫盖住更多厚度，结果第二次拧到 18 mm 时，海绵从两指下方被挤了出去，带着自己的 92 ml 水掉进右盆。抓取时指尖停在盆底上方约 8 mm，只夹住了海绵上面的 17 mm。</p>
 <p><b>第一轮的教训。</b>拧过几次后海绵在两指间转了一个角度，100 mm 长的一边垂下来，最低点比指尖低 58 mm。第一轮搬运时海绵底面只比盆沿高 4 cm，垂下的海绵被拖过固定的盆沿和台面，求解卡住；
 第二轮把搬运高度提到盆沿上方 10 cm、拧水高度提到 8 cm，就没再卡住。</p>
@@ -705,6 +710,9 @@ FR3 从侧面伸过来，两指在瓶身中部（离桌面 9.5 cm）以 80 mm/s 
 <tr><td>床上叠毛毯 · 物理弯曲（第 5 节，A，不含床）</td><td class="num">21.5 s</td><td class="num">538</td><td class="num">38 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bed_blanket_fold_phys.usdc">robotgym_bed_blanket_fold_phys.usdc</a></td></tr>
 <tr><td>床上叠毛毯 · 物理弯曲 · 圆弧（第 5 节，A，不含床）</td><td class="num">21.5 s</td><td class="num">538</td><td class="num">39 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bed_blanket_fold_arc.usdc">robotgym_bed_blanket_fold_arc.usdc</a></td></tr>
 <tr><td>床上叠毛毯 · 物理弯曲 · 圆弧 · 单指合拢、手掌微倾（第 5 节，A，不含床）</td><td class="num">21.5 s</td><td class="num">538</td><td class="num">39 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bed_blanket_fold_headtilt.usdc">robotgym_bed_blanket_fold_headtilt.usdc</a></td></tr>
+<tr><td>厨房海绵 · 抓一次拧三次（第 5 节，含厨房模型）</td><td class="num">39.0 s</td><td class="num">976</td><td class="num">1034 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_kitchen_3wrings.usdc">robotgym_kitchen_3wrings.usdc</a></td></tr>
+<tr><td>厨房海绵 · 换位再拧四个周期（第 5 节，含厨房模型，每秒 12.5 帧）</td><td class="num">94.5 s</td><td class="num">1182</td><td class="num">1252 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_kitchen_regrasp.usdc">robotgym_kitchen_regrasp.usdc</a></td></tr>
+<tr><td>厨房海绵 · 换位 + 抓低，四个周期（第 5 节，含厨房模型，每秒 12.5 帧）</td><td class="num">94.5 s</td><td class="num">1182</td><td class="num">1253 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_kitchen_regrasp_griplow.usdc">robotgym_kitchen_regrasp_griplow.usdc</a></td></tr>
 <!-- tactile-dl:begin -->
 <tr><td>床单对折 · 触觉版</td><td class="num">24.0 s</td><td class="num">601</td><td class="num">41 MB + 65 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bedsheet_tactile.usdc">robotgym_bedsheet_tactile.usdc</a><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bedsheet_tactile_data.npz">robotgym_bedsheet_tactile_data.npz</a></td></tr>
 <tr><td>捏瘪水瓶 · 慢捏 · 触觉版</td><td class="num">15.0 s</td><td class="num">376</td><td class="num">156 MB + 12 MB</td><td><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_slow_tactile.usdc">robotgym_bottle_slow_tactile.usdc</a><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-2026-10/robotgym_bottle_slow_tactile_data.npz">robotgym_bottle_slow_tactile_data.npz</a></td></tr>
