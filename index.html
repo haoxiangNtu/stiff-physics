@@ -439,14 +439,14 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <div class="section-intro">
     <div class="kicker kicker--sdk">Engine · MPM · Cutting</div>
     <h2>机械臂切黄瓜：MPM 弹性体的切割与断裂</h2>
-    <p class="lead">FR3 握着主厨刀，在砧板上从黄瓜的细端直压切下三片 15 mm 的片。黄瓜是 37 万个 MPM 粒子组成的弹塑性体，刀、砧板和机械臂是 IPC 刚体，在同一个 Newton 求解里耦合。
+    <p class="lead">FR3 握着主厨刀，在砧板上从黄瓜的细端直压切下三片 15 mm 的片。黄瓜是 88 万个 MPM 粒子组成的弹塑性体，刀、砧板和机械臂是 IPC 刚体，在同一个 Newton 求解里耦合。
     为此给引擎补了三处：线性粒子传输、塑性与延性损伤（只允许碰到过刀的粒子断裂）、粒子摩擦。先在测试台上跑了 63 组对照，再在完整场景里比较刀刃和断裂方式。刀和黄瓜都按原模型使用，没有改形状。
     <a class="more" href="docs/cutting.html">阅读场景、引擎改动、测试台与对照 →</a></p>
   </div>
   <figure class="fig">
-    <video src="media/cucumber_cut.mp4?v=1030" muted loop playsinline controls preload="metadata"></video>
-    <figcaption><b>原刀 · 三刀直压</b> — 每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板，每刀开始前按黄瓜被推开后的位置重新瞄准。切完后碎料占 0.9%；切到一半时，三刀的刀力分别是 18、38、45 N。
-    仿真 14.3 s，一张 A800 上 99 分钟。左上角为切口近景。<a href="docs/cutting.html#full">与磨尖刃口的对照 →</a>
+    <video src="media/cucumber_cut.mp4?v=1030b" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>原刀 · 三刀直压</b> — 每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板，每刀开始前按黄瓜被推开后的位置重新瞄准。粒子间距 0.75 mm；切完后碎料占 0.8%；切到一半时，三刀的刀力分别是 20、35、42 N。
+    仿真 14.3 s，一张 A800 上 3.9 小时。左上角为切口近景。<a href="docs/cutting.html#full">与磨尖刃口、不同粒子间距的对照 →</a>
     MPM 切割的改动在引擎开发分支上，尚未进入公开发布的 wheel。黄瓜和刀的模型受授权限制，这里只提供视频。</figcaption>
   </figure>
 </div></section>
