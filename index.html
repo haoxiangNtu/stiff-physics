@@ -440,14 +440,22 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <div class="kicker kicker--sdk">Engine · MPM · Cutting</div>
     <h2>机械臂切黄瓜：MPM 弹性体的切割与断裂</h2>
     <p class="lead">FR3 握着主厨刀，在砧板上从黄瓜的细端直压切下三片 15 mm 的片。黄瓜是 88 万个 MPM 粒子组成的弹塑性体，刀、砧板和机械臂是 IPC 刚体，在同一个 Newton 求解里耦合。
-    为此给引擎补了三处：线性粒子传输、塑性与延性损伤（只允许碰到过刀的粒子断裂）、粒子摩擦。先在测试台上跑了 63 组对照，再在完整场景里比较刀刃和断裂方式。刀和黄瓜都按原模型使用，没有改形状。
+    为此给引擎补了四处：线性粒子传输、塑性与延性损伤（只允许碰到过刀的粒子断裂）、粒子摩擦，以及 11 月 1 日加的刀中面裂纹（双场 CPIC）。
+    最后这一处把刀的中面当作一张超前刃口 1 mm 的裂纹面，网格不再在刀两侧之间传递力；原刀模约 1 mm 的圆角刃尖此前总在切面上留下坑洼，现在切出的切面与磨尖的刀相近。
+    先在测试台上跑了 94 组对照，再在完整场景里比较。刀和黄瓜都按原模型使用，没有改形状。
     <a class="more" href="docs/cutting.html">阅读场景、引擎改动、测试台与对照 →</a></p>
   </div>
   <figure class="fig">
-    <video src="media/cucumber_cut.mp4?v=1030b" muted loop playsinline controls preload="metadata"></video>
-    <figcaption><b>原刀 · 三刀直压</b> — 每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板，每刀开始前按黄瓜被推开后的位置重新瞄准。粒子间距 0.75 mm；切完后碎料占 0.8%；切到一半时，三刀的刀力分别是 20、35、42 N。
-    仿真 14.3 s，一张 A800 上 3.9 小时。左上角为切口近景。<a href="docs/cutting.html#full">与磨尖刃口、不同粒子间距的对照 →</a>
+    <video src="media/cucumber_cut.mp4?v=1101" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>原刀 · 三刀直压 · 刀中面裂纹</b> — 每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板，每刀开始前按黄瓜被推开后的位置重新瞄准。粒子间距 0.75 mm；切完后碎料占 1.3%，几乎都是切面最外的一两层粒子；
+    切到一半时，三刀的刀力分别是 15、30、35 N（裂纹面的分离不消耗能量，刀力里没有断裂韧度这一项）。同一配置跑了两次，刀力相差 2% 以内。
+    仿真 14.3 s，一张 A800 上 2.9 小时。左上角为切口近景。<a href="docs/cutting.html#full">与改动前、不同粒子间距的对照 →</a>
     MPM 切割的改动在引擎开发分支上，尚未进入公开发布的 wheel。黄瓜和刀的模型受授权限制，这里只提供视频。</figcaption>
+  </figure>
+  <figure class="fig">
+    <video src="media/cucumber_cut_cpic.mp4?v=1101" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>加刀中面裂纹前后，切口近景（1 mm 间距）</b> — 左列改动前，右列加了刀中面裂纹，下排是同一配置的重跑；刀模和动作都不变。
+    改动后切面平整，表皮碎点和缝底撕开的果肉都没有了；压到砧板时的最大刀力从 137–153 N 降到 34–42 N。<a href="docs/cutting.html#full">完整对照 →</a></figcaption>
   </figure>
 </div></section>
 
