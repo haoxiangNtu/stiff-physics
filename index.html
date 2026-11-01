@@ -441,16 +441,16 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <h2>机械臂切黄瓜：MPM 弹性体的切割与断裂</h2>
     <p class="lead">FR3 握着主厨刀，在砧板上从黄瓜的细端直压切片。黄瓜是 88 万个 MPM 粒子组成的弹性体，刀、砧板和机械臂是 IPC 刚体，在同一个 Newton 求解里耦合。
     为此给引擎补了四处：线性粒子传输、损伤（只允许碰到过刀的粒子断裂）、粒子摩擦，以及刀中面裂纹（双场 CPIC，把刀的中面当作一张超前刃口 1 mm 的裂纹面）。
-    11 月 1 日下午去掉了果肉的塑性（此前果肉在 3% 应变就开始流动，看上去像橡皮泥），渲染改用原模型沿仿真裂纹面切开、随粒子移动的切块网格，并把片切到 5 mm。
+    11 月 1 日下午去掉了果肉的塑性（此前果肉在 3% 应变就开始流动，看上去像橡皮泥），渲染改用原模型沿仿真裂纹面切开、随粒子移动的切块网格，并把片切到 5 mm。11 月 2 日改为按黄瓜切面的实测位置瞄准、补偿切的过程中黄瓜的滑动，三片厚度一致（约 6 mm）。
     刀和黄瓜都按原模型使用，没有改形状。
     <a class="more" href="docs/cutting.html">阅读场景、引擎改动、测试台与对照 →</a></p>
   </div>
   <figure class="fig">
-    <video src="media/cucumber_cut.mp4?v=1101p" muted loop playsinline controls preload="metadata"></video>
-    <figcaption><b>原刀 · 四刀直压 · 纯弹性果肉 · 计划 5 mm 的薄片</b> — 每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板，先切掉细端，再切三片；每刀开始前按黄瓜被推开后的位置重新瞄准。
-    粒子间距 0.75 mm，果肉 E = 2 MPa；切下的薄片平躺叠在砧板上，碎料 0.22%。黄瓜被刀推着滑动，三片实际是 3.1 / 6.0 / 4.6 mm。
-    仿真 18.1 s，一张 A800 上 5 小时。左上角是跟着刀走的切口近景；切面上的籽是贴图。
-    这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_5mm_slices.usdc">cucumber_cut_5mm_slices.usdc（671 MB）</a>；1 mm 间距、三片 15 mm 的视频和 USD 见详情页。
+    <video src="media/cucumber_cut.mp4?v=1102a" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>原刀 · 四刀直压 · 纯弹性果肉 · 三片约 6 mm</b> — 每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板，先切掉细端，再切三片。
+    黄瓜没有扶住，刀往下切时会把它沿砧板推开，所以按切面的实测位置瞄准，并多留 4.5 mm 抵消这段滑动；三片在中轴处是 6.1 / 6.3 / 6.2 mm。
+    粒子间距 0.75 mm，果肉 E = 2 MPa；切下的薄片平躺叠在砧板上，碎料 0.29%。仿真 18.1 s，一张 A800 上 4.3 小时。左上角是跟着刀走的切口近景；切面上的籽是贴图。
+    这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices.usdc">cucumber_cut_6mm_slices.usdc（675 MB）</a>；1 mm 间距、三片 15 mm 的视频和 USD 见详情页。
     MPM 切割的改动在引擎开发分支上，尚未进入公开发布的 wheel。<a href="docs/cutting.html#full">薄片、硬度与渲染的对照 →</a></figcaption>
   </figure>
   <figure class="fig">
