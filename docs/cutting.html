@@ -51,13 +51,13 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
   <figcaption><b>原刀 · 四刀直压 · 纯弹性果肉 · 计划 5 mm 的薄片</b> — FR3 握着原尺寸的主厨刀，每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板：先切掉细端，再切三片计划 5 mm 的片；
   每刀开始前按黄瓜被推开后的位置重新瞄准。883,562 个 MPM 粒子（间距 0.75 mm），纯弹性果肉（E = 2 MPa），只允许碰到过刀的粒子断裂；刀的中面作为超前刃口 1 mm 的裂纹面；刀模没有改。
   切下的薄片平躺在砧板上叠在一起。黄瓜被刀推着沿砧板滑动，三片在中轴处实际是 3.1 / 6.0 / 4.6 mm（第四节）。仿真 18.1 s，一张 A800 上 5 小时。
-  左上角是跟着刀走的切口近景。黄瓜用原模型的切块网格渲染（第五节），切面上的籽和果肉层次是贴图。</figcaption>
+  左上角是跟着刀走的切口近景。黄瓜用原模型的切块网格渲染（第五节），切面上的籽和果肉层次是贴图。<br>
+  这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_5mm_slices.usdc">cucumber_cut_5mm_slices.usdc（671 MB）</a>（机械臂、刀、砧板、切块网格的黄瓜，以及每 0.4 s 一帧的 MPM 粒子；说明见 <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-cutting-2026-11">release 页</a>）</figcaption>
 </figure>
 <figure class="fig">
   <video src="../media/cucumber_cut_closeup.mp4?v=1101p" muted loop playsinline controls preload="metadata"></video>
   <figcaption><b>同一次运行的切口近景</b> — 镜头跟着刀所在的平面移动，刀始终侧对镜头。
-  USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_5mm_slices.usdc">这次运行（671 MB）</a> <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_1mm_15mm_slices.usdc">1 mm 间距、三片 15 mm（308 MB）</a>，
-  含机械臂、刀、砧板、切块网格的黄瓜和每 0.4 s 一帧的 MPM 粒子，说明见 <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-cutting-2026-11">release 页</a>。</figcaption>
+  与上一个视频是同一次运行，USD 动画相同：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_5mm_slices.usdc">cucumber_cut_5mm_slices.usdc（671 MB）</a></figcaption>
 </figure>
 </section>
 
@@ -240,6 +240,11 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 <tr><td>0.75 mm</td><td class="num">5 MPa</td><td class="num">4 mm</td><td class="num">0.15%</td><td class="num">42 / 16 / 62 / 17 N</td><td class="num">153 N</td><td class="num">5</td><td class="num">296 min</td></tr>
 <tr><td>0.75 mm</td><td class="num">5 MPa</td><td class="num">3 mm</td><td class="num">0.13%</td><td class="num">42 / 16 / 31 / 5 N</td><td class="num">87 N</td><td class="num">5</td><td class="num">249 min</td></tr>
 </tbody></table></div>
+<figure class="fig">
+  <video src="../media/cucumber_cut_1mm.mp4?v=1101q" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>1 mm 间距、三片 15 mm（E = 2 MPa，表中第一行）</b> — 纯弹性果肉 + 切块网格；372,600 个粒子，仿真 14.3 s，一张 A800 上 96 分钟。四宫格右下角就是这次运行的最后一帧；左上角为跟着刀走的切口近景。<br>
+  这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_1mm_15mm_slices.usdc">cucumber_cut_1mm_15mm_slices.usdc（308 MB）</a></figcaption>
+</figure>
 <ul>
 <li><b>切面。</b>换成纯弹性果肉后，碎料从 0.7–1.3% 降到 0.13–0.31%，切面平整。1 mm 间距下“第二刀比第三刀大”的现象没有了，刀力随黄瓜变粗逐刀增大。</li>
 <li><b>切下的块被推得更远。</b>弹性果肉不再把刀楔的挤压“吃掉”：1 mm 间距时最外那段黄瓜头被推开约 24 mm 并倒下（塑性果肉时是 5–6 mm）；
