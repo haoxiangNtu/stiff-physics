@@ -38,7 +38,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <p class="lead">FR3 握着一把主厨刀，在木砧板上从一根黄瓜的细端切片。黄瓜是 MPM 粒子组成的弹性体，刀、砧板和机械臂是 IPC 刚体，
 所有物体在同一个 Newton 求解里耦合，没有交替迭代。为了让刀切得开、切口不再粘回去，给引擎补了四处：线性粒子传输、损伤（只允许碰到过刀的粒子断裂）、粒子与刚体之间的摩擦，
 以及把刀的中面当作一张裂纹面（双场 CPIC）。11 月 1 日下午又做了三件事：去掉果肉的塑性（此前果肉在 3% 应变就开始流动，看上去像橡皮泥）；渲染改用原模型沿仿真里的裂纹面切开、
-随粒子移动的“切块网格”；试了更薄的片（5 / 4 / 3 mm）和更硬的果肉（E = 5 MPa）。下面给出场景参数、每处改动的原因和验证、切割测试台和完整场景的对照，以及路径追踪视频和 USD 动画。
+随粒子移动的“切块网格”；试了更薄的片（5 / 4 / 3 mm）和更硬的果肉（E = 5 MPa）。11 月 2 日起不扶黄瓜、只移动切割位置：按黄瓜切面的实测位置瞄准，并补偿切的过程中黄瓜的滑动，三片厚度一致。下面给出场景参数、每处改动的原因和验证、切割测试台和完整场景的对照，以及路径追踪视频和 USD 动画。
 刀和黄瓜都按原模型使用，没有改形状。</p>
 
 <div class="toc"><b>目录</b>
@@ -225,15 +225,15 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 第二到第四刀开始前，在仿真里量出黄瓜切面的位置（切面附近、离中轴 6 mm 以内的粒子，相当于相机看到的端面），刀落在切面外“计划片厚 + 补偿量”处，
 补偿量用来抵消切的过程中黄瓜的滑动，每刀用同一个值。下表都是 0.75 mm 间距、E = 2 MPa、四刀直压，片厚按初始构型在中轴处量。</p>
 <div class="tblwrap"><table>
-<thead><tr><th>计划片厚</th><th class="num">补偿量</th><th class="num">三片实际厚度</th><th class="num">切到一半的刀力（各刀）</th><th class="num">全程最大力</th><th class="num">碎料</th><th class="num">用时</th></tr></thead>
+<thead><tr><th class="num">计划片厚</th><th class="num">补偿量</th><th class="num">三片实际厚度</th><th class="num">切到一半的刀力（各刀）</th><th class="num">全程最大力</th><th class="num">碎料</th><th class="num">用时</th></tr></thead>
 <tbody>
-<tr><td>5 mm</td><td class="num">4.0 mm</td><td class="num">6.8 / 5.4 / 4.6 mm</td><td class="num">18 / 20 / 24 / 24 N</td><td class="num">64 N</td><td class="num">0.29%</td><td class="num">268 min</td></tr>
-<tr><td>5 mm</td><td class="num"><b>4.5 mm（页首视频）</b></td><td class="num"><b>6.1 / 6.3 / 6.2 mm</b></td><td class="num">17 / 20 / 36 / 24 N</td><td class="num">79 N</td><td class="num">0.29%</td><td class="num">260 min</td></tr>
-<tr><td>5 mm</td><td class="num">5.0 mm</td><td class="num">6.2 / 6.6 / 6.0 mm</td><td class="num">18 / 20 / 22 / 20 N</td><td class="num">40 N</td><td class="num">0.21%</td><td class="num">285 min</td></tr>
-<tr><td>5 mm</td><td class="num">5.5 mm</td><td class="num">7.7 / 7.2 / 7.7 mm</td><td class="num">18 / 30 / 22 / 22 N</td><td class="num">81 N</td><td class="num">0.21%</td><td class="num">271 min</td></tr>
-<tr><td>4 mm</td><td class="num">4.5 mm</td><td class="num">4.5 / 2.8 / 1.1 mm</td><td class="num">18 / 15 / 12 / 8 N</td><td class="num">35 N</td><td class="num">0.17%</td><td class="num">262 min</td></tr>
-<tr><td>4 mm</td><td class="num">5.0 mm</td><td class="num">6.3 / 5.7 / 4.5 mm</td><td class="num">18 / 24 / 30 / 17 N</td><td class="num">69 N</td><td class="num">0.25%</td><td class="num">256 min</td></tr>
-<tr><td>3 mm</td><td class="num">5.0 mm</td><td class="num">约 3.4 / 0.6 mm，第三片没切下（按粒子数估算）</td><td class="num">16 / 13 / 6 / 2 N</td><td class="num">25 N</td><td class="num">0.09%</td><td class="num">246 min</td></tr>
+<tr><td class="num">5 mm</td><td class="num">4.0 mm</td><td class="num">6.8 / 5.4 / 4.6 mm</td><td class="num">18 / 20 / 24 / 24 N</td><td class="num">64 N</td><td class="num">0.29%</td><td class="num">268 min</td></tr>
+<tr><td class="num">5 mm</td><td class="num"><b>4.5 mm（页首视频）</b></td><td class="num"><b>6.1 / 6.3 / 6.2 mm</b></td><td class="num">17 / 20 / 36 / 24 N</td><td class="num">79 N</td><td class="num">0.29%</td><td class="num">260 min</td></tr>
+<tr><td class="num">5 mm</td><td class="num">5.0 mm</td><td class="num">6.2 / 6.6 / 6.0 mm</td><td class="num">18 / 20 / 22 / 20 N</td><td class="num">40 N</td><td class="num">0.21%</td><td class="num">285 min</td></tr>
+<tr><td class="num">5 mm</td><td class="num">5.5 mm</td><td class="num">7.7 / 7.2 / 7.7 mm</td><td class="num">18 / 30 / 22 / 22 N</td><td class="num">81 N</td><td class="num">0.21%</td><td class="num">271 min</td></tr>
+<tr><td class="num">4 mm</td><td class="num">4.5 mm</td><td class="num">4.5 / 2.8 / 1.1 mm</td><td class="num">18 / 15 / 12 / 8 N</td><td class="num">35 N</td><td class="num">0.17%</td><td class="num">262 min</td></tr>
+<tr><td class="num">4 mm</td><td class="num">5.0 mm</td><td class="num">6.3 / 5.7 / 4.5 mm</td><td class="num">18 / 24 / 30 / 17 N</td><td class="num">69 N</td><td class="num">0.25%</td><td class="num">256 min</td></tr>
+<tr><td class="num">3 mm</td><td class="num">5.0 mm</td><td class="num">约 3.4 / 0.6 / 0 mm</td><td class="num">16 / 13 / 6 / 2 N</td><td class="num">25 N</td><td class="num">0.09%</td><td class="num">246 min</td></tr>
 </tbody></table></div>
 <figure class="fig">
   <img src="../media/cucumber_cut_comp.jpg?v=1102a" alt="四宫格：补偿量 4.0、4.5、5.0、5.5 mm 时切下的三片" loading="lazy">
@@ -248,7 +248,7 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 第一片的另一面是第一刀的切面（倾斜 7°），上下缘相差约 3 mm（页首视频：上缘 7.6 mm、下缘 4.6 mm；上一版是上缘 4.7 mm、下缘 1.4 mm）。</li>
 <li><b>让刀跟着黄瓜走不行。</b>也试过在刀插在黄瓜里时让刀跟着黄瓜的位移沿轴向移动：刀身本身就在推黄瓜，刀一跟，黄瓜被推得更远，第一刀就把黄瓜推出了 87 mm，已放弃。
 不扶住黄瓜，刀和黄瓜之间的相对滑动就去不掉，楔形也就去不掉。</li>
-<li><b>能切多薄。</b>计划 4 mm 的两组是 4.5 / 2.8 / 1.1 mm 和 6.3 / 5.7 / 4.5 mm，片厚随刀数递减；计划 3 mm 时第二片只削下一层，第四刀没有切下东西。
+<li><b>能切多薄。</b>计划 4 mm 的两组是 4.5 / 2.8 / 1.1 mm 和 6.3 / 5.7 / 4.5 mm，片厚随刀数递减；计划 3 mm 时第二片只削下一层，第四刀没有切下东西（表中这一组的片厚按粒子数估算）。
 不扶黄瓜、0.75 mm 间距时，能稳定切出的是 6 mm 左右的片，再薄就对每刀的滑动太敏感。</li>
 </ul>
 
