@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>夹爪捏麻将：Xense 夹爪与视触觉凝胶垫</title>
+<meta name="description" content="Xense 平行夹爪带两块视触觉凝胶垫，捏起一张刻字麻将牌、提起 40 mm 再放回；贴着刻字面的凝胶垫从形变图里读出字形。用公开的 stiff-physics 0.8.5.5 wheel 加复现包即可复现，附脚本、资产和用到的引擎功能。">
+<link rel="stylesheet" href="docs.css">
+<style>
+.fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
+  margin: 1.2rem 0 1.5rem; padding: .6rem; box-shadow: var(--fig-shadow); }
+.fig img, .fig video { border-radius: .4rem; width: 100%; height: auto; display: block; background: #fff; }
+.fig figcaption { color: var(--sub); text-align: center; padding: .6rem .5rem .1rem; font-size: .86rem; line-height: 1.6; }
+.fig figcaption b { color: var(--ink); font-weight: 600; }
+figure { margin: 0; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+pre { overflow-x: auto; }
+@media (max-width: 600px) {
+  .navbar .container { height: auto; min-height: 60px; flex-wrap: wrap; gap: 6px 14px; padding-block: 10px; }
+  .navbar__title { flex-basis: 100%; }
+  .navbar a.item { white-space: nowrap; font-size: .8rem; }
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="modalities.html">触觉模态</a>
+  <a class="item" href="cutting.html">机械臂切黄瓜</a>
+  <a class="item" href="outputs.html">技术详解</a>
+  <a class="item" href="../#xense-mahjong">返回演示 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / 夹爪捏麻将</div>
+<div class="kicker">Tactile · Gripper · Reproduction</div>
+<h1>夹爪捏麻将：Xense 夹爪与视触觉凝胶垫</h1>
+<p class="lead">此前用 Allegro 手复现过 Taccel 的图 1（两指捏起刻“中”字的麻将牌，凝胶垫的形变图里读出字形）。这次换成一台真实型号的平行夹爪：
+Xense 夹爪按厂商 URDF 装配，两根手指的感测窗上各贴一块有限元凝胶垫。夹爪合拢、按凝胶垫自己测到的接触力把抓握力稳定在 10 N，把麻将牌提起 40 mm、停住、放回、松开；
+贴着刻字面的那块凝胶垫读出“中”字。夹爪、凝胶垫、麻将牌和桌面都在 StiffGIPC 的同一个 Newton 求解里耦合，接触是 IPC。
+<b>用公开发布的 stiff-physics 0.8.5.5 wheel 加下面的复现包即可复现</b>，不需要改引擎。</p>
+
+<div class="toc"><b>目录</b>
+  <a href="#result">结果视频</a><a href="#scene">一、场景</a><a href="#repro">二、复现</a><a href="#engine">三、用到的引擎功能</a><a href="#numbers">四、结果</a><a href="#limits">五、限制</a>
+</div>
+
+<section id="result">
+<figure class="fig">
+  <video src="../media/xense_mahjong.mp4?v=1103a" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>Xense 夹爪 · 两块视触觉凝胶垫 · 捏起刻字麻将牌（0.5 倍速）</b> — 左边从夹爪开口一侧看；右边从左到右依次是：左垫（贴刻字面）的 RGB 触觉图（红色箭头是标记点位移，放大 8 倍）、左垫的形变图、右垫（贴空白背面）的 RGB 触觉图；
+  下方是两块垫的法向力（红、蓝）和麻将牌的高度（绿）。抓握力设定 10 N，凝胶垫只压进约 0.14 mm，字形就清楚地出现在形变图里。</figcaption>
+</figure>
+<figure class="fig">
+  <img src="../media/xense_mahjong_readout.png?v=1103a" alt="左垫 RGB、形变图、读出与真值对比、右垫 RGB" loading="lazy">
+  <figcaption><b>字形读出（抓得最紧的一帧）</b> — 从左到右：左垫 RGB、形变图、读出与真值对比（白 = 读对，蓝 = 漏读，红 = 多读）、右垫 RGB（空白对照）。
+  在凝胶垫盖住牌面的区域里对形变图做 Otsu 阈值，没被压下去的地方就是刻字的笔画；真值是把刻字掩码按记录下来的垫和牌的位姿投影到垫的像素上。
+  IoU 0.72，读出的像素全部落在真值内（precision 1.00），漏读集中在笔画边缘；同一个阈值在空白背面的右垫上误报 0 个像素。</figcaption>
+</figure>
+</section>
+
+<h2 id="scene">一、场景</h2>
+<p>夹爪朝下，两指沿世界 z 方向开合；麻将牌（20 × 26 × 12 mm，正面凹刻 0.9 mm 深、13 mm 大的“中”字）竖立在桌上，刻字面朝左指。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>物体</th><th>模型</th><th>来源</th></tr></thead>
+<tbody>
+<tr><td>手部组合件</td><td>刚体（ABD）：法兰转接件 + T 形安装板 + 夹爪本体 + 腕部 D435i 外壳，0.83 kg</td><td>厂商 URDF <code>xense_gripper_with_mount_camera.urdf</code> 的正运动学；质量、质心、惯量取 URDF 的 <code>&lt;inertial&gt;</code></td></tr>
+<tr><td>左右手指</td><td>刚体，各 0.07 kg，经平移关节接在手部组合件上</td><td>URDF 的 <code>slider_left</code> / <code>slider_right</code>，两个关节给同一个合拢量，等价于 URDF 里的 mimic</td></tr>
+<tr><td>升降</td><td>固定锚点 → 手部组合件的竖直平移关节</td><td>代替机械臂，把夹爪提起、放下</td></tr>
+<tr><td>凝胶垫 ×2</td><td>有限元：24.0 × 16.0 × 2.5 mm，6064 个顶点、24929 个四面体，E = 0.2 MPa，ν = 0.4，摩擦 1.0；背面钉在手指的感测窗上</td><td>感测窗是 Xense 手指内侧那块 16.6 × 28.4 mm 的平面（从 STL 量出）</td></tr>
+<tr><td>麻将牌</td><td>自由刚体，15 g，与凝胶垫的摩擦系数 0.8</td><td>程序生成的刻字网格（与 Allegro 版相同）</td></tr>
+</tbody></table></div>
+<p>时间线（dt = 5 ms，共 5.1 s）：</p>
+<ol>
+<li>0–0.2 s：静置。</li>
+<li>0.2–0.9 s：以 5 mm/s 合拢，碰到之后转为力控，把两块垫的平均法向力稳定在设定值。</li>
+<li>0.9–1.3 s：夹紧。</li>
+<li>1.3–2.5 s：以 40 mm/s 提起 40 mm。</li>
+<li>2.5–3.1 s：停住。</li>
+<li>3.1–4.3 s：放回。</li>
+<li>4.3–5.1 s：松开。</li>
+</ol>
+<p>触觉图像按 Taccel 的相机模型从凝胶垫顶点算出：</p>
+<ul>
+<li>深度：表面的正交高度场，像素 0.079375 mm，302 × 202 像素。</li>
+<li>形变图：深度减去未接触时的深度。</li>
+<li>RGB：Taccel 公开的法向 → 颜色网络。</li>
+<li>7 × 7 个标记点。</li>
+</ul>
+
+<h2 id="repro">二、复现</h2>
+<p><b>下载：</b><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-xense-mahjong-2026-11/xense_mahjong_repro.zip">xense_mahjong_repro.zip（9.5 MB）</a>
+（<a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-xense-mahjong-2026-11">release 页</a>）。包里有：</p>
+<ul>
+<li>脚本；</li>
+<li>Xense 夹爪的 URDF 包（URDF、STL、清单、校验和）；</li>
+<li>已经算好的简化碰撞网格、凝胶垫四面体网格和刻字麻将牌；</li>
+<li>触觉传感层的源码。</li>
+</ul>
+<p>脚本也可以直接在网页上看：</p>
+<ul>
+<li><a href="../media/xense_mahjong/xense_mahjong.py">xense_mahjong.py</a>：场景、关节、力控和记录。</li>
+<li><a href="../media/xense_mahjong/xense_assets.py">xense_assets.py</a>：URDF 正运动学、感测窗测量、简化网格、凝胶垫和麻将牌。</li>
+<li><a href="../media/xense_mahjong/render_xense_mahjong.py">render_xense_mahjong.py</a>：触觉图像、字形评分和视频。</li>
+</ul>
+<p><b>环境：</b></p>
+<ul>
+<li>Linux x86-64，NVIDIA GPU（sm_80 / sm_89 / sm_120），Python 3.11 或 3.12。</li>
+<li><a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/v0.8.5.5">stiff-physics 0.8.5.5</a> 的 wheel，以及系统库 <code>sudo apt install liburdfdom-dev</code>。</li>
+<li><code>pip install numpy scipy trimesh</code>。</li>
+<li>只有生成触觉图像和视频时才需要：<code>torch</code>、<code>pyrender</code>、ffmpeg，以及 Taccel 仓库里的 <code>taccel/data</code>（<code>n2rgb.pth</code>、<code>6k_ref.png</code>，MIT 许可）。</li>
+</ul>
+<pre><code>pip install stiff_physics-0.8.5.5-cp311-cp311-linux_x86_64.whl numpy scipy trimesh
+unzip xense_mahjong_repro.zip &amp;&amp; cd xense_mahjong_repro
+# 仿真：一张 A800 上约 14 分钟
+python examples/xense_mahjong/xense_mahjong.py --out out/f10 --grip-force 10
+# 触觉图像、字形评分和视频
+PYOPENGL_PLATFORM=egl python examples/xense_mahjong/render_xense_mahjong.py out/f10/xense_mahjong.npz \
+    --taccel-data /path/to/Taccel/taccel/data</code></pre>
+<p>可选参数：</p>
+<ul>
+<li><code>--char 發</code>：换一张牌，需要 CJK 字体和 tetgen 重新生成资产。</li>
+<li><code>--grip-force</code>：抓握力设定，单位 N；URDF 里的 effort 是 20 N。</li>
+<li><code>--gel-E</code>：凝胶模量，单位 Pa。</li>
+<li><code>--mu</code>：凝胶与牌的摩擦系数。</li>
+</ul>
+<p>输出：</p>
+<ul>
+<li><code>xense_mahjong.npz</code>：每帧的刚体位姿、两块垫的顶点、法向力和关节行程。</li>
+<li><code>readout.png</code> / <code>readout.json</code>：字形评分和空白对照。</li>
+<li><code>xense_mahjong.mp4</code>：视频。</li>
+</ul>
+<p><b>本页的结果就是用公开 wheel 和这个复现包跑出来的</b>，与开发版引擎的结果逐帧一致（第四节）。</p>
+
+<h2 id="engine">三、用到的引擎功能</h2>
+<p>这个例子没有改引擎。它用到的引擎功能都已在 0.8.5.5 的 wheel 里：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>功能</th><th>接口</th><th>在这里的用途</th></tr></thead>
+<tbody>
+<tr><td>从顶点和面直接建刚体</td><td><code>load_mesh_from_data(..., body_type="ABD")</code></td><td>手部组合件、两根手指、麻将牌、锚点</td></tr>
+<tr><td>按给定值设置质量与惯量</td><td><code>set_abd_body_inertia</code>、<code>set_abd_body_density</code></td><td>夹爪用 URDF 的 <code>&lt;inertial&gt;</code>，麻将牌用密度</td></tr>
+<tr><td>程序化平移关节 + 位置伺服</td><td><code>add_prismatic_joint</code>、<code>set_prismatic_target</code>、<code>get_prismatic_current_distance</code></td><td>两指开合（同一合拢量 = mimic）和升降</td></tr>
+<tr><td>有限元凝胶垫钉在刚体上</td><td><code>add_fem_pin_to_abd</code>（触觉层的 <code>GelBody.add_pinned</code>）</td><td>凝胶垫背面跟随手指</td></tr>
+<tr><td>逐顶点接触力（牛顿）</td><td><code>get_vertex_contact_forces(False, "total")</code></td><td>每块垫的法向力，是力控的反馈</td></tr>
+<tr><td>绝对接触距离</td><td><code>Config(absolute_dhat=1e-4)</code></td><td>0.1 mm 的接触层，比 0.9 mm 的刻字深度小得多</td></tr>
+<tr><td>碰撞排除</td><td><code>add_collision_exclusion</code>、<code>add_ground_collision_skip</code></td><td>凝胶垫不和自己的手指、手部组合件、另一块垫碰撞</td></tr>
+</tbody></table></div>
+<p><b>触觉传感层</b>（<code>stiff_physics.sensors</code>，纯 Python，从 Taccel 移植）还不在 0.8.5.5 的 wheel 里，复现包把它放在
+<code>examples/xense_mahjong/_vendor/sensors</code>。如果已安装的 stiff-physics 没有这个模块，例子会自动改用随包的这一份。它包括：</p>
+<ul>
+<li>凝胶垫资产（四面体网格、背面和感测面顶点、标记点）；</li>
+<li>把凝胶垫加进引擎的 <code>GelBody</code>；</li>
+<li>深度相机、形变和标记点位移；</li>
+<li>RGB 网络的封装。</li>
+</ul>
+<p>搭这个场景时遇到两个坑，记在这里：</p>
+<ul>
+<li><b>质量不能从不封闭的网格算。</b>为了碰撞检测快，夹爪用了简化网格（夹爪本体原 STL 有 24.9 万个三角形），简化后不封闭。引擎从它算出的体积和惯量没有意义：
+在 0.8.5.5 里第一步能量就是 NaN，所有物体不动；开发版里给它们 <code>set_abd_body_mass</code> 会让整个求解卡住（每步 2 s，什么都不动）。
+改用 URDF 给的质量、质心和惯量（<code>set_abd_body_inertia</code>）后两个版本都正常，结果一致。</li>
+<li><b>凝胶垫整面压住时很硬。</b>Taccel 默认的 0.5 MPa 凝胶垫被整面压住时约 200 N/mm（薄层受约束），10 N 只压进约 0.05 mm；
+第一版力控（增益 2e-5 m/N）因此在 7 N 和 17 N 之间来回跳。改用视触觉硅胶常见的 0.2 MPa、增益 3e-6 m/N、接近速度 5 mm/s 后，力稳定在设定值 ±0.1 N。</li>
+</ul>
+
+<h2 id="numbers">四、结果</h2>
+<div class="tblwrap"><table>
+<thead><tr><th class="num">抓握力设定</th><th class="num">夹持时两垫法向力</th><th class="num">凝胶最大压入</th><th class="num">字形 IoU</th><th class="num">precision / recall</th><th class="num">空白对照误报</th><th class="num">提起 / 停住时滑移</th></tr></thead>
+<tbody>
+<tr><td class="num">10 N</td><td class="num">10.1 / 10.0 N</td><td class="num">0.14 mm</td><td class="num">0.72</td><td class="num">1.00 / 0.72</td><td class="num">0 / 51,308 像素</td><td class="num">39.8 mm / 0.004 mm</td></tr>
+<tr><td class="num">15 N</td><td class="num">15.1 / 15.0 N</td><td class="num">0.21 mm</td><td class="num">0.72</td><td class="num">1.00 / 0.72</td><td class="num">0 / 51,308 像素</td><td class="num">39.8 mm / 0.004 mm</td></tr>
+</tbody></table></div>
+<p>两组都用公开 wheel 跑出（10 N 839 s，15 N 1379 s）。抓得更紧，凝胶压得更深，但字形读出几乎不变：笔画处的凝胶也被压下去一些，阈值随之上移。核对：同一个复现包分别用公开的 0.8.5.5 wheel 和开发版引擎各跑一次（10 N），1020 步里所有刚体和凝胶垫顶点的位置相差不超过 0.002 mm，垫的法向力相差不超过 0.15 N；用时分别是 839 s 和 859 s（一张 A800）。</p>
+
+<h2 id="limits">五、限制</h2>
+<ul>
+<li>凝胶垫加在手指感测窗那块突出 2 mm 的平面上；厂商 STL 里没有单独的凝胶，这块平面本身没有去掉。凝胶模量取 0.2 MPa 是视触觉硅胶的常见范围，不是 Xense 传感器的实测值。</li>
+<li>RGB 触觉图用的是 Taccel 公开的网络和参考图（缩放到这块垫 302 × 202 的分辨率），是 Taccel 那款传感器的外观模型，没有按 Xense 传感器标定；形变图和标记点位移不依赖它。</li>
+<li>图像按“面对刻字面的人看到的方向”显示；真实相机在凝胶背后，看到的是镜像。</li>
+<li>漏读的约 30% 集中在笔画边缘：感测面的三角网格约 0.5 mm，深度图又做了 1 像素的平滑，比 1.3 mm 宽的笔画细节粗。</li>
+<li>夹爪没有接在机械臂上，升降由一个竖直平移关节代替。URDF 的 45 mm 行程在约 42.4 mm 处两指就会相撞，关节限位不能代替接触。</li>
+</ul>
+</article>
+
+<footer><div class="container">
+  <span><a href="../">← 返回首页</a></span>
+  <span><a href="cutting.html">机械臂切黄瓜 →</a></span>
+</div></footer>
+</body>
+</html>

@@ -210,6 +210,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <a class="item" href="#sdk">SDK 对齐</a>
   <a class="item opt" href="#hands">灵巧手</a>
   <a class="item opt" href="#data">数据与验证</a>
+  <a class="item opt" href="#xense-mahjong">夹爪捏麻将</a>
   <a class="item opt" href="#liquid">液体</a>
   <a class="item opt" href="#mpm">流固耦合</a>
   <a class="item opt" href="#cutting">切黄瓜</a>
@@ -376,6 +377,22 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   </figure>
 </div></section>
 
+<section class="block" id="xense-mahjong"><div class="container">
+  <div class="section-intro">
+    <div class="kicker kicker--data">Tactile · Gripper · Reproduction</div>
+    <h2>夹爪捏麻将：Xense 夹爪与视触觉凝胶垫</h2>
+    <p class="lead">把上面用 Allegro 手做的麻将实验换成一台真实型号的平行夹爪：Xense 夹爪按厂商 URDF 装配，两根手指的感测窗上各贴一块有限元凝胶垫。
+    夹爪合拢后按凝胶垫自己测到的接触力把抓握力稳定在 10 N，把牌提起 40 mm、停住、放回、松开；贴着刻字面的凝胶垫读出“中”字（IoU 0.72，空白背面的对照误报 0 像素）。
+    <b>用公开的 stiff-physics 0.8.5.5 wheel 加复现包即可复现，不需要改引擎</b>；复现包里有脚本、夹爪 URDF、算好的网格和触觉传感层源码。
+    <a class="more" href="docs/xense_mahjong.html">阅读场景、复现步骤与用到的引擎功能 →</a></p>
+  </div>
+  <figure class="fig">
+    <video src="media/xense_mahjong.mp4?v=1103a" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>Xense 夹爪 · 两块视触觉凝胶垫 · 捏起刻字麻将牌（0.5 倍速）</b> — 右侧依次是左垫（刻字面）的 RGB 触觉图与标记点位移、左垫形变图、右垫（空白背面）的 RGB 触觉图，下方是两块垫的法向力和牌的高度。
+    下载：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-xense-mahjong-2026-11/xense_mahjong_repro.zip">xense_mahjong_repro.zip（9.5 MB）</a> · <a href="docs/xense_mahjong.html#repro">怎么复现 →</a></figcaption>
+  </figure>
+</div></section>
+
 <section class="block" id="liquid"><div class="container">
   <div class="section-intro">
     <div class="kicker kicker--sdk">Engine · Liquids</div>
@@ -441,16 +458,16 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <h2>机械臂切黄瓜：MPM 弹性体的切割与断裂</h2>
     <p class="lead">FR3 握着主厨刀，在砧板上从黄瓜的细端直压切片。黄瓜是 88 万个 MPM 粒子组成的弹性体，刀、砧板和机械臂是 IPC 刚体，在同一个 Newton 求解里耦合。
     为此给引擎补了四处：线性粒子传输、损伤（只允许碰到过刀的粒子断裂）、粒子摩擦，以及刀中面裂纹（双场 CPIC，把刀的中面当作一张超前刃口 1 mm 的裂纹面）。
-    11 月 1 日下午去掉了果肉的塑性（此前果肉在 3% 应变就开始流动，看上去像橡皮泥），渲染改用原模型沿仿真裂纹面切开、随粒子移动的切块网格，并把片切到 5 mm。11 月 2 日改为按黄瓜切面的实测位置瞄准、补偿切的过程中黄瓜的滑动，三片厚度一致（约 6 mm）。
+    11 月 1 日下午去掉了果肉的塑性（此前果肉在 3% 应变就开始流动，看上去像橡皮泥），渲染改用原模型沿仿真裂纹面切开、随粒子移动的切块网格，并把片切到 5 mm。11 月 2 日改为按黄瓜切面的实测位置瞄准、补偿切的过程中黄瓜的滑动，三片厚度一致（约 6 mm）；当晚换了页首视频：原来那一组中间那片的上缘翘起一个小钩，补偿量从 4.5 mm 改为 5.0 mm 后三片边缘完整。
     刀和黄瓜都按原模型使用，没有改形状。
     <a class="more" href="docs/cutting.html">阅读场景、引擎改动、测试台与对照 →</a></p>
   </div>
   <figure class="fig">
-    <video src="media/cucumber_cut.mp4?v=1102a" muted loop playsinline controls preload="metadata"></video>
+    <video src="media/cucumber_cut.mp4?v=1102b" muted loop playsinline controls preload="metadata"></video>
     <figcaption><b>原刀 · 四刀直压 · 纯弹性果肉 · 三片约 6 mm</b> — 每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板，先切掉细端，再切三片。
-    黄瓜没有扶住，刀往下切时会把它沿砧板推开，所以按切面的实测位置瞄准，并多留 4.5 mm 抵消这段滑动；三片在中轴处是 6.1 / 6.3 / 6.2 mm。
-    粒子间距 0.75 mm，果肉 E = 2 MPa；切下的薄片平躺叠在砧板上，碎料 0.29%。仿真 18.1 s，一张 A800 上 4.3 小时。左上角是跟着刀走的切口近景；切面上的籽是贴图。
-    这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices.usdc">cucumber_cut_6mm_slices.usdc（675 MB）</a>；1 mm 间距、三片 15 mm 的视频和 USD 见详情页。
+    黄瓜没有扶住，刀往下切时会把它沿砧板推开，所以按切面的实测位置瞄准，并多留 5.0 mm 抵消这段滑动；三片在中轴处是 6.2 / 6.6 / 6.0 mm，边缘完整。
+    粒子间距 0.75 mm，果肉 E = 2 MPa；切下的薄片平躺叠在砧板上，碎料 0.21%。仿真 18.1 s，一张 A800 上 4.8 小时。左上角是跟着刀走的切口近景；切面上的籽是贴图。
+    这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices_v2.usdc">cucumber_cut_6mm_slices_v2.usdc（675 MB）</a>；1 mm 间距、三片 15 mm 的视频和 USD 见详情页。
     MPM 切割的改动在引擎开发分支上，尚未进入公开发布的 wheel。<a href="docs/cutting.html#full">薄片、硬度与渲染的对照 →</a></figcaption>
   </figure>
   <figure class="fig">

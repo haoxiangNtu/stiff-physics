@@ -38,7 +38,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <p class="lead">FR3 握着一把主厨刀，在木砧板上从一根黄瓜的细端切片。黄瓜是 MPM 粒子组成的弹性体，刀、砧板和机械臂是 IPC 刚体，
 所有物体在同一个 Newton 求解里耦合，没有交替迭代。为了让刀切得开、切口不再粘回去，给引擎补了四处：线性粒子传输、损伤（只允许碰到过刀的粒子断裂）、粒子与刚体之间的摩擦，
 以及把刀的中面当作一张裂纹面（双场 CPIC）。11 月 1 日下午又做了三件事：去掉果肉的塑性（此前果肉在 3% 应变就开始流动，看上去像橡皮泥）；渲染改用原模型沿仿真里的裂纹面切开、
-随粒子移动的“切块网格”；试了更薄的片（5 / 4 / 3 mm）和更硬的果肉（E = 5 MPa）。11 月 2 日起不扶黄瓜、只移动切割位置：按黄瓜切面的实测位置瞄准，并补偿切的过程中黄瓜的滑动，三片厚度一致。下面给出场景参数、每处改动的原因和验证、切割测试台和完整场景的对照，以及路径追踪视频和 USD 动画。
+随粒子移动的“切块网格”；试了更薄的片（5 / 4 / 3 mm）和更硬的果肉（E = 5 MPa）。11 月 2 日起不扶黄瓜、只移动切割位置：按黄瓜切面的实测位置瞄准，并补偿切的过程中黄瓜的滑动，三片厚度一致；当晚换了页首视频，因为原来那一组中间那片的上缘翘起一个小钩（<a href="#nick">第四节“中间那片上的小钩”</a>）。下面给出场景参数、每处改动的原因和验证、切割测试台和完整场景的对照，以及路径追踪视频和 USD 动画。
 刀和黄瓜都按原模型使用，没有改形状。</p>
 
 <div class="toc"><b>目录</b>
@@ -47,18 +47,18 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 
 <section id="result">
 <figure class="fig">
-  <video src="../media/cucumber_cut.mp4?v=1102a" muted loop playsinline controls preload="metadata"></video>
+  <video src="../media/cucumber_cut.mp4?v=1102b" muted loop playsinline controls preload="metadata"></video>
   <figcaption><b>原刀 · 四刀直压 · 纯弹性果肉 · 三片约 6 mm</b> — FR3 握着原尺寸的主厨刀，每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板：先切掉细端，再切三片。
-  黄瓜没有扶住，刀往下切时会把它沿砧板推开，所以第二到第四刀按黄瓜切面的实测位置瞄准：刀落在切面外 5 mm 再加 4.5 mm 处，多出的 4.5 mm 用来抵消切的过程中黄瓜的滑动（第四节）。
+  黄瓜没有扶住，刀往下切时会把它沿砧板推开，所以第二到第四刀按黄瓜切面的实测位置瞄准：刀落在切面外 5 mm 再加 5.0 mm 处，多出的 5.0 mm 用来抵消切的过程中黄瓜的滑动（第四节）。
   883,562 个 MPM 粒子（间距 0.75 mm），纯弹性果肉（E = 2 MPa），只允许碰到过刀的粒子断裂；刀的中面作为超前刃口 1 mm 的裂纹面；刀模没有改。
-  三片在中轴处是 6.1 / 6.3 / 6.2 mm（按初始构型量），切下后平躺在砧板上叠在一起。仿真 18.1 s，一张 A800 上 4.3 小时。
+  三片在中轴处是 6.2 / 6.6 / 6.0 mm（按初始构型量），边缘完整，切下后平躺在砧板上叠在一起。仿真 18.1 s，一张 A800 上 4.8 小时。
   左上角是跟着刀走的切口近景。黄瓜用原模型的切块网格渲染（第五节），切面上的籽和果肉层次是贴图。<br>
-  这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices.usdc">cucumber_cut_6mm_slices.usdc（675 MB）</a>（机械臂、刀、砧板、切块网格的黄瓜，以及每 0.4 s 一帧的 MPM 粒子；说明见 <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-cutting-2026-11">release 页</a>）</figcaption>
+  这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices_v2.usdc">cucumber_cut_6mm_slices_v2.usdc（675 MB）</a>（机械臂、刀、砧板、切块网格的黄瓜，以及每 0.4 s 一帧的 MPM 粒子；说明见 <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-cutting-2026-11">release 页</a>）</figcaption>
 </figure>
 <figure class="fig">
-  <video src="../media/cucumber_cut_closeup.mp4?v=1102a" muted loop playsinline controls preload="metadata"></video>
+  <video src="../media/cucumber_cut_closeup.mp4?v=1102b" muted loop playsinline controls preload="metadata"></video>
   <figcaption><b>同一次运行的切口近景</b> — 镜头跟着刀所在的平面移动，刀始终侧对镜头。
-  与上一个视频是同一次运行，USD 动画相同：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices.usdc">cucumber_cut_6mm_slices.usdc（675 MB）</a></figcaption>
+  与上一个视频是同一次运行，USD 动画相同：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices_v2.usdc">cucumber_cut_6mm_slices_v2.usdc（675 MB）</a></figcaption>
 </figure>
 </section>
 
@@ -227,30 +227,57 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 <div class="tblwrap"><table>
 <thead><tr><th class="num">计划片厚</th><th class="num">补偿量</th><th class="num">三片实际厚度</th><th class="num">切到一半的刀力（各刀）</th><th class="num">全程最大力</th><th class="num">碎料</th><th class="num">用时</th></tr></thead>
 <tbody>
+<tr><td class="num">5 mm</td><td class="num">3.25 mm</td><td class="num">4.6 / 3.0 / 3.4 mm</td><td class="num">18 / 20 / 12 / 10 N</td><td class="num">38 N</td><td class="num">0.19%</td><td class="num">303 min</td></tr>
+<tr><td class="num">5 mm</td><td class="num">3.5 mm</td><td class="num">4.8 / 3.1 / 4.1 mm</td><td class="num">18 / 18 / 14 / 5 N</td><td class="num">36 N</td><td class="num">0.16%</td><td class="num">284 min</td></tr>
+<tr><td class="num">5 mm</td><td class="num">3.75 mm</td><td class="num">6.0 / 4.5 / 2.9 mm</td><td class="num">19 / 24 / 23 / 12 N</td><td class="num">71 N</td><td class="num">0.24%</td><td class="num">271 min</td></tr>
 <tr><td class="num">5 mm</td><td class="num">4.0 mm</td><td class="num">6.8 / 5.4 / 4.6 mm</td><td class="num">18 / 20 / 24 / 24 N</td><td class="num">64 N</td><td class="num">0.29%</td><td class="num">268 min</td></tr>
-<tr><td class="num">5 mm</td><td class="num"><b>4.5 mm（页首视频）</b></td><td class="num"><b>6.1 / 6.3 / 6.2 mm</b></td><td class="num">17 / 20 / 36 / 24 N</td><td class="num">79 N</td><td class="num">0.29%</td><td class="num">260 min</td></tr>
-<tr><td class="num">5 mm</td><td class="num">5.0 mm</td><td class="num">6.2 / 6.6 / 6.0 mm</td><td class="num">18 / 20 / 22 / 20 N</td><td class="num">40 N</td><td class="num">0.21%</td><td class="num">285 min</td></tr>
+<tr><td class="num">5 mm</td><td class="num">4.25 mm</td><td class="num">6.3 / 5.6 / 5.1 mm</td><td class="num">17 / 25 / 22 / 18 N</td><td class="num">58 N</td><td class="num">0.22%</td><td class="num">265 min</td></tr>
+<tr><td class="num">5 mm</td><td class="num">4.5 mm（原页首，中间那片有小钩）</td><td class="num">6.1 / 6.3 / 6.2 mm</td><td class="num">17 / 20 / 36 / 24 N</td><td class="num">79 N</td><td class="num">0.29%</td><td class="num">260 min</td></tr>
+<tr><td class="num">5 mm</td><td class="num">4.6 mm</td><td class="num">6.7 / 5.3 / 5.2 mm</td><td class="num">18 / 21 / 21 / 20 N</td><td class="num">38 N</td><td class="num">0.20%</td><td class="num">257 min</td></tr>
+<tr><td class="num">5 mm</td><td class="num"><b>5.0 mm（页首视频）</b></td><td class="num"><b>6.2 / 6.6 / 6.0 mm</b></td><td class="num">18 / 20 / 22 / 20 N</td><td class="num">40 N</td><td class="num">0.21%</td><td class="num">285 min</td></tr>
 <tr><td class="num">5 mm</td><td class="num">5.5 mm</td><td class="num">7.7 / 7.2 / 7.7 mm</td><td class="num">18 / 30 / 22 / 22 N</td><td class="num">81 N</td><td class="num">0.21%</td><td class="num">271 min</td></tr>
 <tr><td class="num">4 mm</td><td class="num">4.5 mm</td><td class="num">4.5 / 2.8 / 1.1 mm</td><td class="num">18 / 15 / 12 / 8 N</td><td class="num">35 N</td><td class="num">0.17%</td><td class="num">262 min</td></tr>
+<tr><td class="num">4 mm</td><td class="num">4.75 mm</td><td class="num">6.0 / 4.2 / 3.6 mm</td><td class="num">18 / 25 / 22 / 18 N</td><td class="num">65 N</td><td class="num">0.25%</td><td class="num">277 min</td></tr>
 <tr><td class="num">4 mm</td><td class="num">5.0 mm</td><td class="num">6.3 / 5.7 / 4.5 mm</td><td class="num">18 / 24 / 30 / 17 N</td><td class="num">69 N</td><td class="num">0.25%</td><td class="num">256 min</td></tr>
 <tr><td class="num">3 mm</td><td class="num">5.0 mm</td><td class="num">约 3.4 / 0.6 / 0 mm</td><td class="num">16 / 13 / 6 / 2 N</td><td class="num">25 N</td><td class="num">0.09%</td><td class="num">246 min</td></tr>
+<tr><td class="num">2 mm</td><td class="num">4.5 mm</td><td class="num">只切下一片，约 1.5 mm</td><td class="num">18 / 12 / 2 / 2 N</td><td class="num">34 N</td><td class="num">0.08%</td><td class="num">287 min</td></tr>
 </tbody></table></div>
 <figure class="fig">
   <img src="../media/cucumber_cut_comp.jpg?v=1102a" alt="四宫格：补偿量 4.0、4.5、5.0、5.5 mm 时切下的三片" loading="lazy">
-  <figcaption><b>补偿量的对照（计划 5 mm，结束时刻，切口近景）</b> — 四组都切下了完整的三片；补偿 4.5 mm 的一组三片厚度最一致，用作页首视频。</figcaption>
+  <figcaption><b>补偿量的对照（计划 5 mm，结束时刻，切口近景）</b> — 四组都切下了完整的三片。起初选了补偿 4.5 mm 的一组作页首视频（6.1 / 6.3 / 6.2 mm），后来发现它中间那片的上缘有一个小钩，现在页首用的是补偿 5.0 mm 的一组（下文）。</figcaption>
 </figure>
 <ul>
-<li><b>中轴处的片厚。</b>补偿 4.5 mm 时三片是 6.1 / 6.3 / 6.2 mm，比计划厚约 1 mm，但三片一致，上一版那种特别薄的一片没有了。
-补偿量和结果不成比例：从 4.0 加到 5.5 mm，三片的平均厚度是 5.6 / 6.2 / 6.3 / 7.5 mm，同一组里各片也可以相差 2 mm（补偿 4.0 mm 时是 6.8 / 5.4 / 4.6 mm）。
+<li><b>中轴处的片厚。</b>页首这一组（补偿 5.0 mm）三片是 6.2 / 6.6 / 6.0 mm，比计划厚约 1 mm，但三片一致，上一版那种特别薄的一片没有了。
+补偿量和结果不成比例：补偿 3.25–3.5 mm 时第二片只有约 3 mm；从 4.0 加到 5.5 mm，三片的平均厚度是 5.6 / 6.2 / 6.3 / 7.5 mm，同一组里各片也可以相差 2 mm（补偿 4.0 mm 时是 6.8 / 5.4 / 4.6 mm）。
 刀落点离切面的距离减去实际片厚，就是切的过程中黄瓜滑开的距离；计划 5 mm 的四组里，各刀在 2–4.5 mm 之间变化，所以只能按结果挑一组。
 仿真本身是确定的：同一配置重跑，片厚相差 0.1 mm 以内。</li>
 <li><b>楔形。</b>切面在黄瓜自身的坐标里都倾斜约 10°，因为刀往下走时黄瓜还在滑。第二到第四刀的切面彼此接近平行，所以第二、三片上下缘的厚度相差不超过 0.6 mm；
-第一片的另一面是第一刀的切面（倾斜 7°），上下缘相差约 3 mm（页首视频：上缘 7.6 mm、下缘 4.6 mm；上一版是上缘 4.7 mm、下缘 1.4 mm）。</li>
+第一片的另一面是第一刀的切面（倾斜 7°），上下缘相差约 3 mm（页首视频：上缘 7.6 mm、下缘 4.9 mm；上一版是上缘 4.7 mm、下缘 1.4 mm）。</li>
 <li><b>让刀跟着黄瓜走不行。</b>也试过在刀插在黄瓜里时让刀跟着黄瓜的位移沿轴向移动：刀身本身就在推黄瓜，刀一跟，黄瓜被推得更远，第一刀就把黄瓜推出了 87 mm，已放弃。
 不扶住黄瓜，刀和黄瓜之间的相对滑动就去不掉，楔形也就去不掉。</li>
 <li><b>能切多薄。</b>计划 4 mm 的两组是 4.5 / 2.8 / 1.1 mm 和 6.3 / 5.7 / 4.5 mm，片厚随刀数递减；计划 3 mm 时第二片只削下一层，第四刀没有切下东西（表中这一组的片厚按粒子数估算）。
-不扶黄瓜、0.75 mm 间距时，能稳定切出的是 6 mm 左右的片，再薄就对每刀的滑动太敏感。</li>
+计划 2 mm 时只切下了第一片（约 1.5 mm），第三、四刀前黄瓜已被推开 11 mm 以上，刀落在空处，刀力只剩 2 N。
+不扶黄瓜、0.75 mm 间距时，能稳定切出的是 6 mm 左右的片，再薄就对每刀的滑动太敏感。补偿 3.0 mm 的一组在第三刀后抬刀时卡住（碰撞候选对增到 8700 万），已停止。</li>
 </ul>
+<h3 id="nick">中间那片上的小钩（11 月 2 日晚）</h3>
+<p>补偿 4.5 mm 的那一组（原页首视频）中间那片的上缘翘起一个小钩，看上去像多切了一刀。这不是渲染问题：刀刃从表皮切入时，刃口两侧 3–5 mm 宽的一条表皮粒子断裂；
+在第二片上，这条断开的表皮在第三刀时仍连在片上，被刀身带着卷成一个钩。仿真是确定的，原样重跑会得到同样的钩，所以换了设置重跑，看哪些没有小钩
+（四组都是计划 5 mm、补偿 4.5 mm，各改一处）：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>改动</th><th class="num">三片实际厚度</th><th class="num">切到一半的刀力（各刀）</th><th class="num">全程最大力</th><th class="num">碎料</th><th>小钩</th></tr></thead>
+<tbody>
+<tr><td>损伤阈值 0.15 → 0.25</td><td class="num">7.0 / 5.7 / 4.9 mm</td><td class="num">18 / 21 / 20 / 21 N</td><td class="num">44 N</td><td class="num">0.10%</td><td>没有</td></tr>
+<tr><td>损伤阈值 0.15 → 0.40</td><td class="num">6.6 / 6.0 / 5.6 mm</td><td class="num">18 / 20 / 30 / 20 N</td><td class="num">73 N</td><td class="num">0.08%</td><td>更多：每片上缘都有锯齿</td></tr>
+<tr><td>刀面无摩擦</td><td class="num">5.8 / 4.9 / 3.5 mm</td><td class="num">10 / 10 / 12 / 8 N</td><td class="num">26 N</td><td class="num">0.21%</td><td>边缘略不齐</td></tr>
+<tr><td>裂纹超前刃口 1 → 1.5 mm</td><td class="num">7.0 / 5.4 / 4.8 mm</td><td class="num">16 / 17 / 16 / 15 N</td><td class="num">33 N</td><td class="num">0.14%</td><td>没有</td></tr>
+</tbody></table></div>
+<figure class="fig">
+  <img src="../media/cucumber_cut_nick.jpg?v=1102b" alt="左：补偿 4.5 mm，中间那片上缘有小钩；右：补偿 5.0 mm，三片边缘完整" loading="lazy">
+  <figcaption><b>小钩（结束前，切口近景）</b> — 左：补偿 4.5 mm，中间那片上缘的表皮翘起；右：补偿 5.0 mm（现页首视频），三片边缘完整。</figcaption>
+</figure>
+<p>没有小钩的设置不止一组：上表里损伤阈值 0.25 和裂纹超前 1.5 mm 两组，补偿量表里的 4.25、4.6、5.0 mm 三组也没有（逐帧近景检查）。
+其中三片厚度最一致的是补偿 5.0 mm 的一组（6.2 / 6.6 / 6.0 mm，刀力最大 40 N），换作页首视频；它的材料和刀与原页首完全相同，只是刀多留了 0.5 mm。
+小钩出现在计划 5 mm、补偿 4.0 和 4.5 mm 的两组，以及计划 4 mm、补偿 5.0 mm 的一组，位置相同；损伤阈值调到 0.40 时，表皮反而在每一片的上缘都被撕成锯齿。</p>
 
 <h3>纯弹性果肉、切块网格渲染和薄片（11 月 1 日下午）</h3>
 <p>反馈是切口不光滑、看着像橡皮泥，并希望片切得更薄、黄瓜更硬。原因有两个：渲染时用 splashsurf 从粒子重建表面，切面带颗粒、棱角是圆的；
