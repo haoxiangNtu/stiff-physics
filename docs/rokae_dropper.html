@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>双臂灵巧手滴管取液：Rokae AR5 + Wuji 手遥操作回放</title>
+<meta name="description" content="把一段真实遥操作录制（Rokae AR5 双臂 + Wuji 灵巧手）逐关节回放进 StiffGIPC：右手捏胶头吸取烧瓶里的蓝水，提出瓶口，移到烧杯上方挤压滴液，再放回。机器人、玻璃器皿、硅胶胶头和 MPM 水在同一个 IPC Newton 求解里耦合。附结果、复现脚本、USD 和限制。">
+<link rel="stylesheet" href="docs.css">
+<style>
+.fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
+  margin: 1.2rem 0 1.5rem; padding: .6rem; box-shadow: var(--fig-shadow); }
+.fig img, .fig video { border-radius: .4rem; width: 100%; height: auto; display: block; background: #fff; }
+.fig figcaption { color: var(--sub); text-align: center; padding: .6rem .5rem .1rem; font-size: .86rem; line-height: 1.6; }
+.fig figcaption b { color: var(--ink); font-weight: 600; }
+figure { margin: 0; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+tr.hl td { font-weight: 600; }
+pre { overflow-x: auto; }
+@media (max-width: 600px) {
+  .navbar .container { height: auto; min-height: 60px; flex-wrap: wrap; gap: 6px 14px; padding-block: 10px; }
+  .navbar__title { flex-basis: 100%; }
+  .navbar a.item { white-space: nowrap; font-size: .8rem; }
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="liquid.html">液体开发日志</a>
+  <a class="item" href="xense_mahjong.html">夹爪捏麻将</a>
+  <a class="item" href="outputs.html">技术详解</a>
+  <a class="item" href="../#rokae-dropper">返回演示 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / 双臂灵巧手滴管取液</div>
+<div class="kicker">Teleop replay · Dexterous hand · Liquids</div>
+<h1>双臂灵巧手滴管取液：Rokae AR5 + Wuji 手遥操作回放</h1>
+<p class="lead">实验台演示里的“滴管取液”原来由 FR3 机械臂完成，动作是按脚本生成的。这次换成一段<b>真实的遥操作录制</b>：
+双臂 Rokae AR5，每条臂末端一只 20 自由度的 Wuji 灵巧手，录制里有全部关节角。我们把这段录制逐关节回放进 StiffGIPC。右手捏住立在烧瓶里的玻璃滴管胶头，挤压、松开，吸进蓝水；
+接着把滴管提出瓶口，移到装黄水的烧杯上方挤压滴液，最后放回烧瓶。机器人、玻璃器皿、硅胶胶头和水在同一个 IPC Newton 求解里双向耦合，水用 MPM。
+<b>结果：</b>吸水、提起、移到烧杯上方这几步都能稳定复现。滴液能否落进烧杯，取决于滴管离开瓶颈那一刻的“甩动”，8 组带水仿真里只有 1 组把明显的水量滴进了烧杯（第四节）。</p>
+
+<div class="toc"><b>目录</b>
+  <a href="#result">结果视频</a><a href="#scene">一、场景</a><a href="#model">二、滴管模型</a><a href="#numbers">三、结果</a><a href="#runs">四、八组带水仿真</a><a href="#repro">五、复现与下载</a><a href="#limits">六、限制</a>
+</div>
+
+<section id="result">
+<figure class="fig">
+  <video src="../media/rokae_dropper.mp4?v=1105a" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>录制时间 8–35 s · 实时速度 · 路径追踪</b> — 上方依次显示阶段、胶头腔体体积、管内水量和烧杯里的蓝水粒子数（1 个粒子 = 0.0156 ml）。
+  16–18 s 松开胶头吸进约 0.9 ml 蓝水；20.7 s 滴管离开瓶颈时被胶头存下的扭转甩了一下，约 2/3 的水甩到桌上；23–26 s 挤压，11 个粒子（0.17 ml）落进烧杯；32–33 s 插回烧瓶；34.5 s 手指松开后，滴管从瓶口翻出，倒在烧瓶旁的桌上。</figcaption>
+</figure>
+</section>
+
+<h2 id="scene">一、场景</h2>
+<div class="tblwrap"><table>
+<thead><tr><th>物体</th><th>模型</th><th>来源</th></tr></thead>
+<tbody>
+<tr><td>双臂 AR5 + Wuji 手</td><td>69 个刚体（ABD）、54 个转动关节，按录制角度做位置伺服；碰撞网格是简化后封闭的凸包网格，渲染用原始网格</td><td>厂商 AR5 URDF + Wuji 手的 USD 导出网格，按录制里的安装方式装在法兰上（手绕法兰轴转 ±60°）</td></tr>
+<tr><td>手指驱动</td><td>“软”伺服：强度 5e-5，相当于电流受限的电机，捏到胶头时会被顶住而不是把胶头压扁</td><td>见第二节的注</td></tr>
+<tr><td>烧瓶、烧杯</td><td>刚体玻璃，按参考模型的尺寸；烧瓶装 45 mm 高的蓝水，烧杯装黄水</td><td>实验室参考模型（flask / beaker）</td></tr>
+<tr><td>水</td><td>MPM Lite，dx 5 mm，粒子间距 2.5 mm，共 13,297 个粒子；隐式表面张力 0.072 N/m；与玻璃、胶头和手指在 IPC 里双向耦合</td><td>液体模块的 v14 配置（<a href="liquid.html">液体开发日志</a>）</td></tr>
+<tr><td>桌面</td><td>解析地面，高度从录制里胶头的初始位置反推（烧瓶底 + 胶头赤道高度）</td><td>—</td></tr>
+</tbody></table></div>
+<p>时间：录制里手臂关节约 100 Hz、手指约 70 Hz，插值到仿真的 200 Hz（dt = 5 ms），从录制的 8 s 跑到 35 s，共 5460 步，一张 A800 上约 4.2 小时。</p>
+<p>标定只用到录制本身：从右手第一次捏住胶头那一帧的指尖位置推出滴管和烧瓶的位置；烧杯放在录制里挤压滴液时管口的正下方，再加一个按仿真实测管口位置修正的偏移。</p>
+
+<h2 id="model">二、滴管模型</h2>
+<ul>
+<li><b>玻璃管：</b>刚体，长 200 mm，内径 6.4 mm、外径 9.2 mm。最初把整支滴管都做成有限元，玻璃太硬，PCG 每步要 4 s，于是拆成刚体玻璃管 + 有限元胶头。</li>
+<li><b>硅胶胶头：</b>有限元，9416 个四面体，E = 0.5 MPa。颈部 60 个顶点用双向弹簧缝到玻璃管上。改用双向弹簧是因为单向的 FEM pin 只让胶头跟着玻璃管走，反过来手捏胶头时玻璃管不受力。胶头和玻璃管之间关掉碰撞。</li>
+<li><b>吸液：</b>胶头腔体里是封闭的空气。腔体体积每步从胶头内表面算出；松开胶头时体积变大，管口在水里就按体积差把水沿管吸进去，管口在空气里就吸进空气。挤压时反过来把管里的水推出去。</li>
+</ul>
+<p><b>注：手指为什么要“软”。</b>引擎的转动关节驱动能量不乘 dt²，等效刚度是 强度 × 质量 / dt²。默认强度下 Wuji 手指的刚度高到能把硅胶胶头直接压扁，胶头会从指间弹出去。
+强度降到 5e-5 后，手指按录制角度运动，碰到胶头就停在接触位置（右手指关节跟踪误差 ≤ 1.5°），这和真实灵巧手电流受限时的行为一致。手臂关节保持高刚度，跟踪误差 ≤ 0.1°。</p>
+
+<h2 id="numbers">三、结果（发布的这一组）</h2>
+<div class="tblwrap"><table>
+<thead><tr><th class="num">录制时间</th><th>阶段</th><th class="num">管口高度</th><th class="num">滴管倾角</th><th class="num">管内蓝水</th><th class="num">烧杯中蓝水</th><th class="num">桌上蓝水</th></tr></thead>
+<tbody>
+<tr><td class="num">14.7 s</td><td>捏住胶头（挤出空气）</td><td class="num">13 mm</td><td class="num">1°</td><td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+<tr><td class="num">17.7 s</td><td>松开吸液 · 提起</td><td class="num">71 mm</td><td class="num">10°</td><td class="num">60</td><td class="num">0</td><td class="num">0</td></tr>
+<tr><td class="num">19.7 s</td><td>滴管还在瓶颈里</td><td class="num">154 mm</td><td class="num">8°</td><td class="num">58</td><td class="num">0</td><td class="num">0</td></tr>
+<tr><td class="num">20.7 s</td><td>离开瓶颈，甩动</td><td class="num">242 mm</td><td class="num">39°</td><td class="num">20</td><td class="num">0</td><td class="num">18</td></tr>
+<tr><td class="num">24.7 s</td><td>挤压滴液</td><td class="num">142 mm</td><td class="num">23°</td><td class="num">3</td><td class="num">10</td><td class="num">42</td></tr>
+<tr class="hl"><td class="num">26.7 s</td><td>滴完</td><td class="num">133 mm</td><td class="num">20°</td><td class="num">1</td><td class="num">11</td><td class="num">43</td></tr>
+<tr><td class="num">32.7 s</td><td>插回瓶口</td><td class="num">17 mm</td><td class="num">9°</td><td class="num">1</td><td class="num">11</td><td class="num">43</td></tr>
+</tbody></table></div>
+<p>水量以粒子计，1 个粒子 = 0.0156 ml。整个过程中烧瓶只被带动 1 mm，烧杯不动。烧瓶里的水在滴管插入、吸液、提出时保持在瓶里。</p>
+<p><b>甩动从哪来。</b>录制里滴管出瓶时的路径并不正好沿瓶颈轴线。瓶颈逼着滴管相对手指转了约 10°，硅胶胶头把这个扭转存成弹性能；滴管一离开瓶颈，扭转就被释放，滴管倾角在不到 1 s 内从 8° 跳到 30°–40°。
+管里的水被甩出约 2/3，而且之后的倾角和管口位置每组都不一样，相差 2–5 cm，烧杯内半径只有 3.2 cm。</p>
+<p>我们试过三种办法：</p>
+<ul>
+<li>让管内水柱整体跟着管子走（<code>--pump-track 1.0</code>）：甩出的水量没有明显变化。</li>
+<li>把胶头从 1.2 MPa 降到 0.5 MPa 或 0.3 MPa：甩动后的倾角更快回到 10°–20°，但甩动本身仍在。</li>
+<li>按实测管口位置重新摆烧杯：没有用，因为管口位置每组都不同（第四节）。</li>
+</ul>
+
+<h2 id="runs">四、八组带水仿真</h2>
+<p>全部是同一段录制、同一套参数，只改表里的列。“吸入”是滴管还在瓶颈里时管内的蓝水粒子数，“进烧杯”和“桌上”都是 35 s 时的计数。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>组</th><th class="num">胶头 E</th><th>其他</th><th class="num">烧杯偏移（mm）</th><th class="num">吸入</th><th class="num">进烧杯</th><th class="num">桌上</th></tr></thead>
+<tbody>
+<tr class="hl"><td>A（发布）</td><td class="num">0.5 MPa</td><td>—</td><td class="num">14, 34</td><td class="num">60</td><td class="num">11</td><td class="num">43</td></tr>
+<tr><td>B</td><td class="num">0.3 MPa</td><td>—</td><td class="num">14, 34</td><td class="num">31</td><td class="num">2</td><td class="num">24</td></tr>
+<tr><td>C</td><td class="num">1.2 MPa</td><td>水柱跟随</td><td class="num">14, 34</td><td class="num">35</td><td class="num">4</td><td class="num">24</td></tr>
+<tr><td>D</td><td class="num">1.2 MPa</td><td>水柱跟随，粒子种子 0.30</td><td class="num">14, 34</td><td class="num">30</td><td class="num">1</td><td class="num">24</td></tr>
+<tr><td>E</td><td class="num">0.3 MPa</td><td>—</td><td class="num">−6, 22</td><td class="num">33</td><td class="num">4</td><td class="num">28</td></tr>
+<tr><td>F</td><td class="num">0.5 MPa</td><td>—</td><td class="num">−6, 22</td><td class="num">51</td><td class="num">2</td><td class="num">41</td></tr>
+<tr><td>G</td><td class="num">0.3 MPa</td><td>粒子种子 0.30</td><td class="num">−6, 22</td><td class="num">28</td><td class="num">0</td><td class="num">24</td></tr>
+<tr><td>H</td><td class="num">0.5 MPa</td><td>—</td><td class="num">34, 16</td><td class="num">51</td><td class="num">0</td><td class="num">49</td></tr>
+</tbody></table></div>
+<p>8 组里有 6 组把水滴进了烧杯，但只有 A 组超过 4 个粒子。A 和 F、H 的设置只差烧杯位置：烧杯不参与滴液之前的任何接触，可是改了它，黄水粒子的位置和整个求解的舍入就跟着变，到甩动那一刻已经足以让结果分叉。
+所以 A 组的 11 个粒子应当看作“一次成功的样本”，不是这套设置的稳定结果。</p>
+
+<h2 id="repro">五、复现与下载</h2>
+<p><b>下载</b>（<a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-rokae-dropper-2026-11">release 页</a>）：</p>
+<ul>
+<li><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-rokae-dropper-2026-11/rokae_dropper_repro.zip">rokae_dropper_repro.zip（20 MB）</a>：脚本、URDF、简化网格、参考玻璃器皿、滴管四面体网格缓存、从录制提取的关节轨迹，以及发布那组的运行命令 <code>run_final.sh</code>。</li>
+<li><a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-rokae-dropper-2026-11/rokae_dropper_water.usdc（142 MB）</a>：A 组的 USD，Y 轴向上，单位米，25 fps，683 帧。内容有机器人每个连杆的变换、烧瓶 / 烧杯 / 玻璃管的变换、胶头表面的逐帧顶点，以及蓝、黄两色水粒子（<code>UsdGeomPoints</code>）。</li>
+</ul>
+<p>脚本也可以直接在网页上看：</p>
+<ul>
+<li><a href="../media/rokae_dropper/rokae_dropper.py">rokae_dropper.py</a>：场景、标定、滴管、腔压吸液模型、回放和记录。</li>
+<li><a href="../media/rokae_dropper/robot_assets.py">robot_assets.py</a>：双臂 AR5 + Wuji 手 URDF 的生成和正运动学。</li>
+<li><a href="../media/rokae_dropper/analyze.py">analyze.py</a>：第三、四节的表就是用它生成的。</li>
+<li><a href="../media/rokae_dropper/render_mitsuba_rokae.py">render_mitsuba_rokae.py</a>：路径追踪视频。</li>
+<li><a href="../media/rokae_dropper/export_usd_rokae.py">export_usd_rokae.py</a>：USD 导出。</li>
+</ul>
+<p><b>需要的引擎版本：</b>水用的是 StiffGIPC 的 MPM 液体模块，它在引擎开发分支上，<b>还没有进入公开发布的 wheel</b>。所以这个包目前只能在带液体模块的引擎源码树里运行：</p>
+<pre><code>unzip rokae_dropper_repro.zip
+cp -r rokae_dropper_repro/* &lt;带液体模块的引擎源码树&gt;/
+cd &lt;引擎源码树&gt;
+./run_final.sh out/rokae_dropper/final      # 一张 A800 约 4.2 小时，最后打印第三节的表
+PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_dropper/final --cam wide</code></pre>
+<p>我们把这个包解压到一个干净的目录里，在一张 A800 上跑过前 100 步，确认场景搭建的输出（标定、粒子数、网格）与发布那组逐行一致。
+<code>LAB_LIQ_JITTER</code> 是水粒子初始位置的扰动种子，发布那组用 0.31。换一个种子，结果会像第四节那样分散。</p>
+
+<h2 id="limits">六、限制</h2>
+<ul>
+<li><b>甩动没有解决。</b>滴管离开瓶颈时会甩一下，管里约 2/3 的水甩到桌上，之后的管口位置不可预测；8 组里只有 1 组滴进了明显的水量。真人操作时滴管能在指间滑动来对准瓶颈，仿真里的指尖摩擦（μ = 1.0）和录制轨迹的组合做不到。</li>
+<li><b>放回烧瓶只部分复现。</b>滴管能插回瓶里，但手指松开后（约 34.5 s）它从瓶口翻出，倒在烧瓶旁的桌上，没有立在瓶里。录制里回程时管口离瓶轴约 3 cm，而瓶口间隙只有约 1 cm；真人操作时滴管能在指间滑动来对准，仿真里做不到。</li>
+<li><b>左手摇烧杯（录制 35 s 之后）没有做。</b>录制和 URDF 对烧杯位置有约 13 cm 的出入，左臂底座因此平移了 (14, −10) cm 来对齐；按录制动作下落时，手指总有一部分要穿过烧杯所在的位置。离线搜索找不到可行的放置，所以这一段不在结果里。</li>
+<li><b>水比真实的水黏，分辨率也偏粗。</b>水的黏性比真实水大得多（见液体日志的真实性对比），粒子间距 2.5 mm，比 6.4 mm 的管内径只小 2–3 倍，所以管里的水柱只有十几到几十个粒子。</li>
+<li>手指驱动的强度 5e-5 是按“能捏住胶头又不把它压扁”调出来的，不是 Wuji 手电机的实测参数。</li>
+</ul>
+</article>
+
+<footer><div class="container">
+  <span><a href="../">← 返回首页</a></span>
+  <span><a href="liquid.html">液体开发日志 →</a></span>
+</div></footer>
+</body>
+</html>
