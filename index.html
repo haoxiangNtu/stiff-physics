@@ -424,7 +424,8 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <p class="lead">把一段真实遥操作录制（Rokae AR5 双臂 + Wuji 灵巧手，全部关节角）逐关节回放进 StiffGIPC：右手捏住玻璃滴管的硅胶胶头，挤压、松开，从烧瓶吸进约 0.9 ml 蓝水，
     提出瓶口，移到烧杯上方挤压滴液，再放回（放回这一步没有复现成功）。机器人、玻璃器皿、硅胶胶头和 MPM 水在同一个 IPC Newton 求解里耦合；胶头腔体是封闭空气，吸多少水由腔体体积的变化决定。
     吸水、提起、移到烧杯上方都能稳定复现，烧瓶只被带动 1 mm。<b>还没解决的：</b>滴管离开瓶颈时胶头存下的扭转会把它甩一下，约 2/3 的水甩到桌上，之后的管口位置每组都不同；8 组带水仿真里只有发布的这一组把明显的水量（11 个粒子，0.17 ml）滴进了烧杯。左手摇烧杯那一段没有做。
-    <a class="more" href="docs/rokae_dropper.html">阅读场景、滴管模型、八组结果与限制 →</a></p>
+    <b>11-07：</b>快模式下重跑了两段录制——第一段吸进的 16 个粒子全部滴进烧杯（放回瓶口仍失败：滴管在指间打滑）；第二段录制抓取、吸液、提起正常，转移时打滑更严重。
+    <a class="more" href="docs/rokae_dropper.html">阅读场景、滴管模型、八组结果、限制与快模式回放 →</a></p>
   </div>
   <figure class="fig">
     <video src="media/rokae_dropper.mp4?v=1105a" muted loop playsinline controls preload="metadata"></video>
@@ -444,7 +445,9 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <a class="more" href="docs/mpm_ipc.html">阅读场景、方法、差异与下载 →</a></p>
     <p class="lead" id="ug-compare-link"><b>新增（11-06）：</b>把恢复版引擎和我们的粒子求积液体放进完全相同的实验台场景并排跑（静水、晃荡、溃坝、浮块、运动平板）——
     两家每一项都同一水平，连缺陷都一样；恢复版演示好看是因为 16 cm 网格、每格约 4000 粒子的工作点。唯一借到的是二次 B 样条插值（阻尼 ÷4，已移植）。
-    <a class="more" href="docs/ug_compare.html">看并排视频、数值表与根因 →</a></p>
+    <b>11-07 更新：</b>找到了"恢复版不加处理就能静止"的根因——粒子求积能量的零空间让粒子在格子内聚团（J 不变、液面缓降、势能变涡旋），恢复版靠截断牛顿（每步约 2 次）把它压住，是数值阻尼不是物理；两个方向都复现了。
+    引擎据此改了两处（液体用粒子位移做牛顿退出判据 = 恢复版的隐式阻尼；求解前显式亚格子密度控制 = 粒子求积缺的逐点不可压），组合成两种模式：快模式（每步 1.2 次牛顿、6 倍速，静水比恢复版还静，晃荡阻尼偏大）和严格模式（每步 3.5 次、3.5 倍速，晃荡与浮块指标回到默认水平，静水衰减到静止）。
+    <a class="more" href="docs/ug_compare.html">看并排视频、数值表、根因与两种模式 →</a></p>
   </div>
   <div class="fig-grid">
     <figure class="fig">
