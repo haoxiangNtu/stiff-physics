@@ -146,6 +146,41 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 <li><b>水比真实的水黏，分辨率也偏粗。</b>水的黏性比真实水大得多（见液体日志的真实性对比），粒子间距 2.5 mm，比 6.4 mm 的管内径只小 2–3 倍，所以管里的水柱只有十几到几十个粒子。</li>
 <li>手指驱动的强度 5e-5 是按“能捏住胶头又不把它压扁”调出来的，不是 Wuji 手电机的实测参数。</li>
 </ul>
+
+<h2 id="modes">七、两种求解模式 × 两段录制（11-07）</h2>
+<p class="lead">液体求解器的两种模式（<a href="ug_compare.html#modes">对照页第七节</a>：快模式 = 粒子判据退出 + <code>newton_tol 1e-2 / pcg_tol 1e-4</code>，严格模式 = 粒子判据退出 + <code>newton_tol 1e-3 / pcg_tol 1e-4</code>）各自把两段录制从抓取跑到放回：发布那段（上面各节，手指抓握力 1e-3、胶头 1.2 MPa、右臂经相机校正和干跑闭环对中）和同一天晚 11 分钟录的第二段。
+四段视频都是同一视角的预览渲染。</p>
+
+<div class="tblwrap"><table>
+<thead><tr><th>录制 / 模式</th><th class="num">吸进（粒子）</th><th class="num">滴进烧杯 / 落在桌上</th><th>放回</th><th class="num">步数 / 用时</th></tr></thead>
+<tbody>
+<tr><td>第一段 · 快模式</td><td class="num">31（0.48 mL）</td><td class="num">1 / 22</td><td>28.7 s 撞瓶颈，滴管在指间甩到 74°，未插回</td><td class="num">5660 / 83 min</td></tr>
+<tr><td>第一段 · 严格模式</td><td class="num">29（0.45 mL）</td><td class="num"><b>16</b> / 11</td><td>28.7 s 撞瓶颈，滴管脱手倒在桌上</td><td class="num">5660 / 111 min</td></tr>
+<tr><td>第二段 · 快模式</td><td class="num">13</td><td class="num">0 / 0（提起时水柱落回烧瓶）</td><td>转移时滑转 25°–30°，未插回，37.7 s 松手后倒在桌上</td><td class="num">4960 / 54 min</td></tr>
+<tr><td>第二段 · 严格模式</td><td class="num">8</td><td class="num">0 / 1（提起时水柱落回烧瓶）</td><td>19.7 s 提起时管身勾住瓶颈，把烧瓶拖动 6 cm；未插回</td><td class="num">4960 / 120 min</td></tr>
+</tbody></table></div>
+<p>水量以粒子计，1 个粒子 = 0.0156 mL。对照：发布的那组（默认收敛、旧版手指参数）吸进 60 个、滴进烧杯 11 个、桌上 43 个。</p>
+
+<div class="fig"><figure>
+  <video src="../media/rokae_rec1_strict_liq.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>第一段录制 · 严格模式。</b>14.7–16.7 s 捏放胶头吸进 29 个粒子，20.7 s 出瓶时在指间甩动 34°，24.7 s 在烧杯上方挤压：16 个粒子进烧杯、11 个落在桌上；28.7 s 放回时撞到瓶颈，滴管脱手倒在桌上。</figcaption>
+</figure></div>
+<div class="fig"><figure>
+  <video src="../media/rokae_rec1_fast_liq.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>第一段录制 · 快模式。</b>吸进 31 个粒子，甩动 23°，挤压时 22 个落在桌上、1 个进烧杯——滴液点由甩动后的管口位置决定，两种模式之间差了一个烧杯半径；放回时撞瓶颈，滴管被甩到 74°。</figcaption>
+</figure></div>
+<div class="fig"><figure>
+  <video src="../media/rokae_rec2_strict_liq.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>第二段录制 · 严格模式。</b>这段录制的动作序列不同：16.5 s 抓住滴管，22–24 s 提起，25 s 横移 20 cm 到烧杯上方，26–31 s 悬停挤压，33–35 s 回到瓶口，38.5 s 松手。抓取和吸液正常（胶头 13.3→6.6 mL 后回弹吸进 8 个粒子），但 19.7 s 提起时管身勾住瓶颈把烧瓶拖动了 6 cm，水柱在提起过程中落回瓶里，到烧杯上方已无液可滴；放回没有对上。</figcaption>
+</figure></div>
+<div class="fig"><figure>
+  <video src="../media/rokae_rec2_fast_liq.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>第二段录制 · 快模式。</b>吸进 13 个粒子，提起时水柱同样落回烧瓶，转移时滴管在指间滑转 25°–30°，放回失败，松手后倒在桌上。</figcaption>
+</figure></div>
+
+<p><b>两段录制、两种模式共同的限制：滴管在指间打滑。</b>出瓶和转移时的惯性与接触把滴管相对手掌转了 20°–35°，之后的管口位置就不再由录制决定——第一段的滴液点在两种模式下差了一个烧杯半径，放回瓶口因此全部失败；第二段录制的握持更松（指尖笼半径 12.7 mm，第一段 7.6 mm），滑转更严重，管内的水柱在提起时就落回瓶里。
+第二段录制还有两处必须按录制本身重新标定：胶头在手掌坐标里的位置（按它自己的指尖笼找，沿用第一段的常数会让手指闭在离胶头 1.6 cm 的空处）和接近阶段的手指闭合命令（按录制从 9 s 起播，手指在 14.7 s 从下方撞翻滴管；从 16 s 张开起手、1 s 内闭合到录制值才抓得住）。把手指多闭 25% 的变体握得住但胶头一直被压扁、吸不进水，没有采用。</p>
+<p>两种模式在这个场景里差别不大：液体不是瓶颈，瓶颈是手—滴管接触；快模式比严格模式快 25%–55%（固体接触占了大部分时间）。</p>
 </article>
 
 <footer><div class="container">
