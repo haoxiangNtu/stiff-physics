@@ -46,6 +46,16 @@ StiffGIPC 粒子求积液体（UG 模式）放进<b>完全相同</b>的场景—
 <section id="videos">
 <h2>一、并排视频（左：我们的引擎；右：恢复版）</h2>
 <p>每个视频的两边使用同一组初始粒子（同一随机种子）、同样的容器和参数。粒子按速度着色（深色静止，亮色快）。晃荡为 2.5 倍慢放。</p>
+<p><b>注意：这一节里"我们的引擎"是 11-06 修复前的默认设置（节点严格收敛的牛顿）</b>——晃荡和浮块视频里我们这边 3 s 后还在动、恢复版已静止，正是第六节分析的根因，不是时间不够长：默认设置下底层涡旋随时间增长。修复后的两种模式见下面两段四联视频和第七节。</p>
+
+<div class="fig"><figure>
+  <video src="../media/ug_modes_slosh.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>晃荡（三线性）— 修复前 / 严格模式 / 快模式 / 恢复版</b>，2.5 倍慢放。严格模式 ζ 0.35（f 3.20 Hz），快模式 ζ 0.47（3.15 Hz），修复前 0.27（3.05 Hz），恢复版 0.21（4.90 Hz）；修复后的两种模式在第一个周期之后静止。</figcaption>
+</figure></div>
+<div class="fig"><figure>
+  <video src="../media/ug_modes_float.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>浮块（三线性）— 修复前 / 严格模式 / 快模式 / 恢复版</b>。吃水：修复前 7.45 mm，严格模式 7.06，快模式 6.23，恢复版 7.2（理论 10，差距来自三线性求积的体积锁定，四者相同）；修复后块下方的水不再持续打转。</figcaption>
+</figure></div>
 
 <div class="fig"><figure>
   <video src="../media/ug_cmp_m6_tri.mp4" muted loop playsinline controls preload="metadata"></video>
