@@ -67,7 +67,17 @@ StiffGIPC 粒子求积液体（UG 模式）放进<b>完全相同</b>的场景—
   <figcaption><b>溃坝（三线性）</b>。57 × 114 mm 水柱在 60 mm 宽的槽里释放。前沿速度恢复版 1.55、我们 1.51 √gH，都在实验值 1.48–1.74 之内。</figcaption>
 </figure></div>
 
-<p class="pending" id="pending-note">浮块（B 样条）与静水（三线性 / B 样条）两边的并排视频：恢复版这三组还在跑（它每步要 10–25 秒），跑完补上。</p>
+<div class="fig"><figure>
+  <video src="../media/ug_cmp_float_bs.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>浮块（二次 B 样条）</b>。吃水接近理论值（恢复版 8.9 mm，我们 9.8 mm），但两边的块都比三线性时摆得更厉害（倾斜 5–7°）；我们这边壁面附近的水明显在动（颜色更亮），这就是 B 样条的壁面层问题。</figcaption>
+</figure></div>
+
+<div class="fig"><figure>
+  <video src="../media/ug_cmp_m2_tri.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>静水（三线性）</b>。10×8×10 cm 的水块在 12 cm 盒子里摊开。2 s 后深度 p95 两边都约 49 mm（理想 52.8，损失约 6%）；恢复版在摊开的瞬态里把 59 个粒子弹出了盒子（自动拆了 4–5 个子步也没挡住），我们的没有弹出。</figcaption>
+</figure></div>
+
+<p class="pending" id="pending-note">静水（B 样条）的并排视频：恢复版这一组还在跑（它每步 25 秒），跑完补上。</p>
 </section>
 
 <h2 id="table">二、数值表（网格 5 mm、粒子 2.5 mm、步长 5 ms）</h2>
