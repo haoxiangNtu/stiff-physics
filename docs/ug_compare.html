@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>同场景对照：我们的粒子求积液体 vs 恢复版 Unified_GIPC</title>
+<meta name="description" content="把恢复版 Unified_GIPC 引擎和我们的 StiffGIPC 粒子求积液体（UG 模式）放在完全相同的场景、网格、粒子间距和时间步下跑五个标准测试：静水、晃荡、溃坝、浮块、运动平板。并排视频、数值表、根因诊断。">
+<link rel="stylesheet" href="docs.css">
+<style>
+.fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
+  margin: 1.2rem 0 1.5rem; padding: .6rem; box-shadow: var(--fig-shadow); }
+.fig img, .fig video { border-radius: .4rem; width: 100%; height: auto; display: block; background: #fff; }
+.fig figcaption { color: var(--sub); text-align: center; padding: .6rem .5rem .1rem; font-size: .86rem; line-height: 1.6; }
+.fig figcaption b { color: var(--ink); font-weight: 600; }
+figure { margin: 0; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+tr.hl td { font-weight: 600; }
+.pending { color: var(--sub); font-style: italic; }
+@media (max-width: 600px) {
+  .navbar .container { height: auto; min-height: 60px; flex-wrap: wrap; gap: 6px 14px; padding-block: 10px; }
+  .navbar__title { flex-basis: 100%; }
+  .navbar a.item { white-space: nowrap; font-size: .8rem; }
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="liquid.html">液体开发日志</a>
+  <a class="item" href="mpm_ipc.html">流固耦合演示</a>
+  <a class="item" href="rokae_dropper.html">滴管回放</a>
+  <a class="item" href="../#mpm">返回首页 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / 同场景对照：粒子求积液体 vs 恢复版 Unified_GIPC</div>
+<div class="kicker">Liquids · MPM in IPC · Side-by-side</div>
+<h1>同场景对照：我们的粒子求积液体 vs 恢复版 Unified_GIPC</h1>
+<p class="lead">之前<a href="mpm_ipc.html">流固耦合演示页</a>里的"液体龙砸方块塔"来自恢复版 Unified_GIPC 引擎，看起来比我们实验台尺度的水要好。
+为了弄清差别到底来自方法还是来自工作点，我们把恢复版引擎（反编译后可运行的版本，GPU 内核与原版一致）和我们的
+StiffGIPC 粒子求积液体（UG 模式）放进<b>完全相同</b>的场景——同样的几何、网格 5 mm、粒子间距 2.5 mm、时间步 5 ms、同一张显卡——
+跑五个标准测试，并排看。结论：<b>两家在每一项上都是同一水平，连缺陷都一样</b>；恢复版演示好看，是因为它的工作点是 16 cm 网格、每格约 4000 个粒子的大尺度飞溅，不是方法更好。
+唯一它有而我们没有的二次 B 样条插值已经移植进我们的引擎，表现也一致。</p>
+
+<section id="videos">
+<h2>一、并排视频（左：我们的引擎；右：恢复版）</h2>
+<p>每个视频的两边使用同一组初始粒子（同一随机种子）、同样的容器和参数。粒子按速度着色（深色静止，亮色快）。晃荡为 2.5 倍慢放。</p>
+
+<div class="fig"><figure>
+  <video src="../media/ug_cmp_m6_tri.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>晃荡（三线性插值）</b>。实验台烧杯，水面初始倾斜 10°。两边的阻尼比都是 0.21（真实水约 0.008），两边都在第一个周期内就几乎停了；我们的频率偏低（3.15 Hz，理论 4.25），恢复版偏高（4.90 Hz）。</figcaption>
+</figure></div>
+
+<div class="fig"><figure>
+  <video src="../media/ug_cmp_m6_bs.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>晃荡（二次 B 样条插值）</b>。同一场景换成 27 节点二次 B 样条：阻尼比降到 0.048（恢复版）/ 0.092（我们），频率都接近理论值（3.95 / 4.10 Hz）。这是两个引擎差别最大的一项，也是我们从恢复版借到的唯一东西。</figcaption>
+</figure></div>
+
+<div class="fig"><figure>
+  <video src="../media/ug_cmp_float_tri.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>浮块（三线性）</b>。40×40×20 mm、密度 500 的块从水面上 5 mm 释放，理论吃水 10 mm。两边都浮得偏高（恢复版 7.2 mm，我们 7.4 mm），都没有粒子穿进块内。红线是块的轮廓。</figcaption>
+</figure></div>
+
+<div class="fig"><figure>
+  <video src="../media/ug_cmp_m12_tri.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>溃坝（三线性）</b>。57 × 114 mm 水柱在 60 mm 宽的槽里释放。前沿速度恢复版 1.55、我们 1.51 √gH，都在实验值 1.48–1.74 之内。</figcaption>
+</figure></div>
+
+<p class="pending" id="pending-note">浮块（B 样条）与静水（三线性 / B 样条）两边的并排视频：恢复版这三组还在跑（它每步要 10–25 秒），跑完补上。</p>
+</section>
+
+<h2 id="table">二、数值表（网格 5 mm、粒子 2.5 mm、步长 5 ms）</h2>
+<div class="tblwrap"><table>
+<thead><tr><th>测试</th><th>参考（真实水 / 理论）</th><th class="num">三线性：恢复版 / 我们</th><th class="num">B 样条：恢复版 / 我们</th></tr></thead>
+<tbody>
+<tr><td>静水 2 s 后体积（深度 p95）</td><td>100%</td><td class="num">94% / 94%</td><td class="num">83%（弹出 109 粒子）/ 72%</td></tr>
+<tr><td>晃荡阻尼比</td><td>≈ 0.008</td><td class="num">0.21 / 0.21</td><td class="num">0.048 / 0.092</td></tr>
+<tr><td>晃荡频率</td><td>4.25 Hz</td><td class="num">4.90 / 3.15</td><td class="num">3.95 / 4.10</td></tr>
+<tr><td>溃坝前沿速度</td><td>1.48–1.74 √gH</td><td class="num">1.55 / 1.51</td><td class="num">1.57 / —</td></tr>
+<tr><td>浮块吃水</td><td>10 mm</td><td class="num">7.2 / 7.4</td><td class="num">9.1 / 9.8</td></tr>
+<tr><td>粒子穿入运动固体</td><td>0</td><td class="num">0 / 0</td><td class="num">0 / 0</td></tr>
+<tr><td>每格 1 粒子的静水（5 mm 网格）</td><td>100%</td><td class="num">塌缩到 20% / 20%</td><td class="num">塌缩 / 塌缩</td></tr>
+</tbody></table></div>
+<p>每格粒子数的影响两家也一样：每格 1 个塌缩约 80%，8 个损失约 6%，64 个以上守恒（三线性）。恢复版 case13 的工作点是网格 160 mm、粒子约 10 mm，每格约 4000 个粒子。</p>
+
+<h2 id="diagnosis">三、根因（两家共有）</h2>
+<ol>
+<li><b>三线性粒子求积 = 六面体单元的数值积分。</b>每格 1 个粒子是减缩积分，出现沙漏模式（静水塌缩）；每格 8 个以上是近不可压材料的完全积分，出现<b>体积锁定</b>：水偏硬，阻尼大、晃荡频率低、浮力偏大（每格 64 粒子时吃水反而只有 4.2 mm）。</li>
+<li><b>二次 B 样条解除锁定</b>（阻尼 ÷4、频率对、吃水对），但静水里出现壁面层不稳定：离壁 3 mm 内的伪速度是盒子中心的 3 倍，盒子越小体积损失越大（6 cm 盒 37%，12 cm 盒 28%）。张力、求解精度、节点质量下限、密度再锚定、PIC/APIC、每格 27/64 粒子都不能消除它。原因是光滑核的支撑伸进墙内的网格节点，只靠粒子-固体屏障挡不住；修法是我们主路径已有的网格级壁面约束。</li>
+<li>密闭满水容器（无自由面）两种插值都让 Newton 每步撞迭代上限，水不动——粒子求积液体不适合密闭容器。</li>
+</ol>
+
+<h2 id="speed">四、速度</h2>
+<p>同场景、同卡：我们的引擎每次 Newton 迭代约 13–30 ms，恢复版约 180–260 ms（快 7–17 倍）；每步快 1–9 倍（恢复版收敛阈值松、迭代少，不稳定时会自动拆子步）。
+恢复版是反编译重建版，主机侧用 Python 组装稀疏矩阵，比原版 wheel 慢约 2.4 倍（用其自带的 case13 计时校准：原版 300 帧 635 s，重建版 1554 s）。扣掉这一项，我们的引擎比原版大约每次迭代快 3–7 倍。</p>
+
+<h2 id="takeaways">五、对引擎的结论</h2>
+<ul>
+<li>恢复版的流固耦合方法（粒子代理 IPC 屏障 + 粒子求积 MPM）我们已经有，表现一致，没有可移植的优势。分区求积对流体从不触发；BDF2 二阶积分不降低阻尼。</li>
+<li>已移植的二次 B 样条（开关默认关）显著改善动态行为，但静水需要壁面约束配合，这是下一步。</li>
+<li>实验台尺度的演示（烧瓶、烧杯里的水要静止 30 秒）仍用主路径（网格级壁面约束 + 静水稳定项，静水残余速度 0.03 mm/s）。</li>
+</ul>
+<p>这些测试的脚本（静水盒、晃荡、溃坝、浮块、运动平板）和并排渲染脚本会随下一次发布进入仓库的 <code>examples/liquid/</code>。</p>
+</article>
+</body>
+</html>

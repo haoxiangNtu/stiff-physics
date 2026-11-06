@@ -442,6 +442,9 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     接触的梯度和 Hessian 经插值权重链式回传到网格。两万粒子的液体龙落到钉边的布上，90 个刚体立方体叠成的塔压在布中央；
     把龙换成橡胶（fixed-corotated 弹性材料）后，同一条管线跑出被压扁但体积不变的龙。四个场景各有 MP4 和时间采样的 USD。
     <a class="more" href="docs/mpm_ipc.html">阅读场景、方法、差异与下载 →</a></p>
+    <p class="lead" id="ug-compare-link"><b>新增（11-06）：</b>把恢复版引擎和我们的粒子求积液体放进完全相同的实验台场景并排跑（静水、晃荡、溃坝、浮块、运动平板）——
+    两家每一项都同一水平，连缺陷都一样；恢复版演示好看是因为 16 cm 网格、每格约 4000 粒子的工作点。唯一借到的是二次 B 样条插值（阻尼 ÷4，已移植）。
+    <a class="more" href="docs/ug_compare.html">看并排视频、数值表与根因 →</a></p>
   </div>
   <div class="fig-grid">
     <figure class="fig">
