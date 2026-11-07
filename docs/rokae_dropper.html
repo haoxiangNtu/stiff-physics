@@ -43,7 +43,7 @@ pre { overflow-x: auto; }
 <b>结果：</b>吸水、提起、移到烧杯上方这几步都能稳定复现。滴液能否落进烧杯，取决于滴管离开瓶颈那一刻的“甩动”，8 组带水仿真里只有 1 组把明显的水量滴进了烧杯（第四节）。</p>
 
 <div class="toc"><b>目录</b>
-  <a href="#result">结果视频</a><a href="#scene">一、场景</a><a href="#model">二、滴管模型</a><a href="#numbers">三、结果</a><a href="#runs">四、八组带水仿真</a><a href="#repro">五、复现与下载</a><a href="#limits">六、限制</a>
+  <a href="#result">结果视频</a><a href="#scene">一、场景</a><a href="#model">二、滴管模型</a><a href="#numbers">三、结果</a><a href="#runs">四、八组带水仿真</a><a href="#repro">五、复现与下载</a><a href="#limits">六、限制</a><a href="#modes">七、两种模式 × 原始轨迹</a>
 </div>
 
 <section id="result">
@@ -147,40 +147,81 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 <li>手指驱动的强度 5e-5 是按“能捏住胶头又不把它压扁”调出来的，不是 Wuji 手电机的实测参数。</li>
 </ul>
 
-<h2 id="modes">七、两种求解模式 × 两段录制（11-07）</h2>
-<p class="lead">液体求解器的两种模式（<a href="ug_compare.html#modes">对照页第七节</a>：快模式 = 粒子判据退出 + <code>newton_tol 1e-2 / pcg_tol 1e-4</code>，严格模式 = 粒子判据退出 + <code>newton_tol 1e-3 / pcg_tol 1e-4</code>）各自把两段录制从抓取跑到放回：发布那段（上面各节，手指抓握力 1e-3、胶头 1.2 MPa、右臂经相机校正和干跑闭环对中）和同一天晚 11 分钟录的第二段。
-四段视频都是同一视角的预览渲染。</p>
+<h2 id="modes">七、两种求解模式 × 原始轨迹（11-07，当天第二版）</h2>
+<p class="lead">液体求解器的两种模式（<a href="ug_compare.html#modes">对照页第七节</a>：快模式 = 粒子判据退出 + <code>newton_tol 1e-2 / pcg_tol 1e-4</code>，严格模式 = 粒子判据退出 + <code>newton_tol 1e-3 / pcg_tol 1e-4</code>）各自回放真实遥操作录制。
+与上面各节和本节早先的版本不同，这一版<b>不再修正轨迹</b>：录制里的全部关节角逐帧回放，右臂跟踪误差 ≤ 0.2°（早先的版本对右臂做过相机校正和干跑闭环对中，最大改动 9.4 cm / 24°，而真实视频里的滴管并没有那样的晃动）。
+物体的位置和尺寸改由视频标定得到，滴管的晃动按分量量化。视频都是同一视角的预览渲染。</p>
 
+<h3>视频对应哪段录制</h3>
+<p>当天有两段录制（145413 和 150534，各 65 s）和一段 105 s 的外部视频。把视频里两只手的像素轨迹与每段录制的关节角做正运动学后联合拟合相机参数，在 0–70 s 的时间偏移范围内扫描：</p>
 <div class="tblwrap"><table>
-<thead><tr><th>录制 / 模式</th><th class="num">吸进（粒子）</th><th class="num">滴进烧杯 / 落在桌上</th><th>放回</th><th class="num">步数 / 用时</th></tr></thead>
+<thead><tr><th>录制</th><th class="num">最佳偏移（视频 = 录制 + …）</th><th class="num">右手残差</th><th class="num">左手残差</th></tr></thead>
 <tbody>
-<tr><td>第一段 · 快模式</td><td class="num">31（0.48 mL）</td><td class="num">1 / 22</td><td>28.7 s 撞瓶颈，滴管在指间甩到 74°，未插回</td><td class="num">5660 / 83 min</td></tr>
-<tr><td>第一段 · 严格模式</td><td class="num">29（0.45 mL）</td><td class="num"><b>16</b> / 11</td><td>28.7 s 撞瓶颈，滴管脱手倒在桌上</td><td class="num">5660 / 111 min</td></tr>
-<tr><td>第二段 · 快模式</td><td class="num">13</td><td class="num">0 / 0（提起时水柱落回烧瓶）</td><td>转移时滑转 25°–30°，未插回，37.7 s 松手后倒在桌上</td><td class="num">4960 / 54 min</td></tr>
-<tr><td>第二段 · 严格模式</td><td class="num">8</td><td class="num">0 / 1（提起时水柱落回烧瓶）</td><td>19.7 s 提起时管身勾住瓶颈，把烧瓶拖动 6 cm；未插回</td><td class="num">4960 / 120 min</td></tr>
+<tr class="hl"><td>第二段 150534</td><td class="num">41.0 s</td><td class="num">2.8 px</td><td class="num">2.3 px</td></tr>
+<tr><td>第一段 145413</td><td class="num">45.0 s（最好的）</td><td class="num">14.1 px</td><td class="num">13.6 px</td></tr>
 </tbody></table></div>
-<p>水量以粒子计，1 个粒子 = 0.0156 mL。对照：发布的那组（默认收敛、旧版手指参数）吸进 60 个、滴进烧杯 11 个、桌上 43 个。</p>
+<p>视频是第二段。加上机载相机和左臂底座平移后，第二段的残差降到 1.5 / 0.9 px（外部相机）和 1.8 px（机载）。第一段没有视频，它的场景只能从关节角本身推，本节以第二段为主。</p>
 
-<div class="fig"><figure>
-  <video src="../media/rokae_rec1_strict_liq.mp4" muted loop playsinline controls preload="metadata"></video>
-  <figcaption><b>第一段录制 · 严格模式。</b>14.7–16.7 s 捏放胶头吸进 29 个粒子，20.7 s 出瓶时在指间甩动 34°，24.7 s 在烧杯上方挤压：16 个粒子进烧杯、11 个落在桌上；28.7 s 放回时撞到瓶颈，滴管脱手倒在桌上。</figcaption>
-</figure></div>
-<div class="fig"><figure>
-  <video src="../media/rokae_rec1_fast_liq.mp4" muted loop playsinline controls preload="metadata"></video>
-  <figcaption><b>第一段录制 · 快模式。</b>吸进 31 个粒子，甩动 23°，挤压时 22 个落在桌上、1 个进烧杯——滴液点由甩动后的管口位置决定，两种模式之间差了一个烧杯半径；放回时撞瓶颈，滴管被甩到 74°。</figcaption>
-</figure></div>
+<h3>视频里量出来的尺寸和位置</h3>
+<p>用两路相机（外部视频 + 录制自带的机载相机，机器人自身的运动学做标尺，不用学习式单目深度）三角化烧瓶底、烧杯底和桌面，再以烧瓶轴线或手的正运动学位置做深度基准，把视频里的像素换算成毫米：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>量</th><th class="num">真实（视频）</th><th class="num">仿真参考模型</th><th>处理</th></tr></thead>
+<tbody>
+<tr><td>烧瓶瓶口高度</td><td class="num">165 mm</td><td class="num">162 mm</td><td>一致</td></tr>
+<tr><td>烧瓶液面高度</td><td class="num">70 mm</td><td class="num">45 mm</td><td>改为 70 mm（<code>--flask-fill 0.066</code>）</td></tr>
+<tr><td>烧杯口高度</td><td class="num">131–145 mm</td><td class="num">98 mm</td><td>未改；滴液点在杯口上方，落点不受影响</td></tr>
+<tr><td>立在瓶里的胶头中心高度</td><td class="num">238 mm</td><td class="num">239 mm</td><td>一致</td></tr>
+<tr><td>胶头中心到管口</td><td class="num">235 mm（粗管到 185 mm 处，再往下约 50 mm 是看不见的细毛细管）</td><td class="num">235 mm（直管到底）</td><td>一致；仿真的管口对应真实毛细管的末端</td></tr>
+<tr><td>烧瓶底位置（机器人坐标）</td><td class="num">(0.569, −0.187)</td><td class="num">按指尖推的 (0.627, −0.187)</td><td>见下</td></tr>
+</tbody></table></div>
+<p><b>手装得太长。</b>提起阶段（18.5–23.5 s）两路相机里管身都竖直在烧瓶轴线上（机载相机里水柱在 258–272 px，瓶轴 263 px；若胶头在正运动学算出的指尖处，应在 290–298 px），胶头高度又正好等于指尖笼的高度——真实胶头比模型的指尖靠后 6.7 cm。
+把手整体向前臂方向缩 65 mm 后一切吻合：立着的胶头正好落在拇指、食指、中指指尖（到胶头中心 25 / 16 / 20 mm，胶头半径 17 mm）。两相机拟合对这个安装长度完全不敏感（0 / −65 / −90 mm 三种长度的残差一模一样，都被"手心偏移"这个自由参数吸收了），所以之前用它定下的 0.09 m 法兰是个假象。
+由此也解释了早先场景里烧瓶被挪前 6 cm 的原因：是为了迎合一只装长了的手。两种场景在抓取那一刻手指与胶头的相对几何相同，所以早先场景的抓取仍然有效；差别在烧瓶、烧杯的绝对位置。</p>
+<p>另一个必须精确到 1 cm 的量：录制的手指闭合角是"指尖刚好捏到 35 mm 胶头"的角度。把烧瓶中心放到离指尖笼 1.3 cm 处（两相机三角化位置），手指只能碰到胶头而捏不住（握力 0）；放到笼中心正下方才捏得住。</p>
+
+<h3>晃动是什么</h3>
+<p>把滴管的倾角拆成两项：<b>手自身的旋转</b>（录制的关节角决定）和<b>滴管相对手的转动</b>。第二段录制里手在转移中只转 3–8°，真实管身 5–15°（视频 Hough 直线）。仿真里多出来的部分几乎都是滴管绕拇指—食指捏合轴的转动：两点指尖捏合在 IPC 的离散接触里绕这根轴几乎没有扭转摩擦，滴管像钟摆一样悬着。
+出瓶那一下来自瓶颈：管身还在瓶颈里时手已经转了 11–14°，滴管只能靠在指尖里转动或靠胶头颈部弯折来迁就；一出瓶口（23.9 s），储存的弯曲在 0.12 s 内释放，管口弹起 5 cm、倾角到 48°，握力同时从 6 N 掉到 0.5 N。真实视频里同一时刻管身只是略向后拖，1 s 内就恢复竖直。
+试过而没有用或更差的：把胶头下锥硬 pin 到玻璃管（力爆到 5 万 N 或翻转）、胶头 E 2.5 / 4 MPa（悬角不变）、摩擦过渡速度 1e-4 / 3e-3、μ 2.0（发散）、手指强度 1e-4（放回时掉）和 1e-3（压扁、卡死）、滴管初始倾斜 14°、缩短滴管（立不住）。</p>
+
+<h3>结果</h3>
+<p>发布的这一组用早先的场景（烧瓶放在按原安装长度推出的指尖笼正下方；手指与胶头的相对几何和修正后的场景相同，见上）。水量以粒子计，1 个粒子 = 0.0156 mL；"悬垂"是转移和悬停阶段管身相对竖直的角度。第二段录制 36 s 之后的放回撞在瓶沿上（握力 1500 N、每帧 3.5 s），因此截到 36 s。</p>
+<div class="tblwrap"><table>
+<thead><tr><th>录制 / 模式</th><th>手指强度</th><th class="num">吸进（粒子）</th><th class="num">滴进烧杯 / 落在桌上</th><th>悬垂</th><th>放回</th><th class="num">用时</th></tr></thead>
+<tbody>
+<tr class="hl"><td>第二段 · 严格模式</td><td>2e-4</td><td class="num">60（0.94 mL）</td><td class="num"><b>48</b> / 1</td><td>出瓶时 25° 一次，悬停 12–14° 不摆</td><td>未对上，36 s 时仍在手里，倾角 13°</td><td class="num">89 min</td></tr>
+<tr class="hl"><td>第二段 · 快模式</td><td>3e-4</td><td class="num">60（0.94 mL）</td><td class="num"><b>58</b> / 1</td><td>15–21°，缓慢漂移不抽动</td><td>未对上，36 s 时仍在手里，倾角 25°</td><td class="num">51 min</td></tr>
+<tr><td>第二段 · 快模式</td><td>2e-4</td><td class="num">82</td><td class="num">9 / 48</td><td>25–26°，滴液点偏出烧杯 4 cm</td><td>—</td><td class="num">54 min</td></tr>
+<tr><td>第二段 · 严格模式</td><td>3e-4</td><td class="num">57</td><td class="num">34 / 14</td><td>0–30° 来回摆</td><td>—</td><td class="num">125 min</td></tr>
+<tr><td>第一段 · 严格模式</td><td>2e-4</td><td class="num">9（0.14 mL）</td><td class="num">8 / 0</td><td>出瓶时 4° → 19° 跳一次，之后 18–24° 跟着手走</td><td>落在瓶旁桌面上</td><td class="num">113 min</td></tr>
+<tr><td>第一段 · 快模式</td><td>2e-4 / 3e-4</td><td colspan="4">两次都在 21–22 s 出瓶时卡死（握力 5000–8000 N）；第一段的录制捏在胶头下方锥面上（拇指—食指只闭到 29 mm），握力只有 1–4 N</td><td class="num">—</td></tr>
+</tbody></table></div>
+<p>同一场景、同一轨迹，手指强度 2e-4 和 3e-4 在两种模式里的表现互换（严格模式 2e-4 好、快模式 3e-4 好）：抓握的结果在这个精度下是混沌的，把两行并列发布是为了诚实地呈现这一点，而不是挑好的。两种模式本身的差别仍然不在液体：快模式比严格模式快 40%–60%。</p>
+
 <div class="fig"><figure>
   <video src="../media/rokae_rec2_strict_liq.mp4" muted loop playsinline controls preload="metadata"></video>
-  <figcaption><b>第二段录制 · 严格模式。</b>这段录制的动作序列不同：16.5 s 抓住滴管，22–24 s 提起，25 s 横移 20 cm 到烧杯上方，26–31 s 悬停挤压，33–35 s 回到瓶口，38.5 s 松手。抓取和吸液正常（胶头 13.3→6.6 mL 后回弹吸进 8 个粒子），但 19.7 s 提起时管身勾住瓶颈把烧瓶拖动了 6 cm，水柱在提起过程中落回瓶里，到烧杯上方已无液可滴；放回没有对上。</figcaption>
+  <figcaption><b>第二段录制 · 严格模式（手指 2e-4）。</b>15–18 s 捏放胶头吸进 60 个粒子，21–23.5 s 竖直提起，23.9 s 出瓶口时甩到 25°，24 s 横移到烧杯上方，27–31 s 悬停挤压：48 个粒子进烧杯、1 个落在桌上，悬停时管身 12–14°；33–36 s 往瓶口放回，没有对上。</figcaption>
 </figure></div>
 <div class="fig"><figure>
   <video src="../media/rokae_rec2_fast_liq.mp4" muted loop playsinline controls preload="metadata"></video>
-  <figcaption><b>第二段录制 · 快模式。</b>吸进 13 个粒子，提起时水柱同样落回烧瓶，转移时滴管在指间滑转 25°–30°，放回失败，松手后倒在桌上。</figcaption>
+  <figcaption><b>第二段录制 · 快模式（手指 3e-4）。</b>吸进 60 个粒子，出瓶后以 15–21° 悬着缓慢漂移，28–30 s 挤压：58 个粒子进烧杯、1 个落在桌上；放回没有对上，36 s 时倾角 25°。</figcaption>
+</figure></div>
+<div class="fig"><figure>
+  <video src="../media/rokae_rec1_strict_liq.mp4" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>第一段录制 · 严格模式（原始轨迹）。</b>这段录制捏在胶头下方的锥面上，握力只有 1–4 N，只吸进 9 个粒子；20 s 出瓶时倾角从 4° 跳到 19°，之后 18–24° 跟着手自身的旋转走（相对手只转 3–8°）；24–27 s 手停住时 8 个粒子进烧杯；32 s 以后放回落在瓶旁的桌面上。</figcaption>
 </figure></div>
 
-<p><b>两段录制、两种模式共同的限制：滴管在指间打滑。</b>出瓶和转移时的惯性与接触把滴管相对手掌转了 20°–35°，之后的管口位置就不再由录制决定——第一段的滴液点在两种模式下差了一个烧杯半径，放回瓶口因此全部失败；第二段录制的握持更松（指尖笼半径 12.7 mm，第一段 7.6 mm），滑转更严重，管内的水柱在提起时就落回瓶里。
-第二段录制还有两处必须按录制本身重新标定：胶头在手掌坐标里的位置（按它自己的指尖笼找，沿用第一段的常数会让手指闭在离胶头 1.6 cm 的空处）和接近阶段的手指闭合命令（按录制从 9 s 起播，手指在 14.7 s 从下方撞翻滴管；从 16 s 张开起手、1 s 内闭合到录制值才抓得住）。把手指多闭 25% 的变体握得住但胶头一直被压扁、吸不进水，没有采用。</p>
-<p>两种模式在这个场景里差别不大：液体不是瓶颈，瓶颈是手—滴管接触；快模式比严格模式快 25%–55%（固体接触占了大部分时间）。</p>
+
+<h3>还剩什么</h3>
+<ul>
+<li><b>悬垂角仍偏大：</b>12–21° 对真实的 5–15°。差的那部分是滴管绕指尖捏合轴的转动，是两点接触的扭转摩擦问题，与液体无关。</li>
+<li><b>绝对位置：</b>发布场景里烧瓶比两相机三角化的位置靠前 6 cm（补偿装长了的手），烧杯放在仿真实测滴液点正下方，比真实烧杯靠前约 13 cm（6 cm 安装长度 + 悬垂角 × 25 cm 杠杆）。把安装长度修正、烧瓶放回三角化位置的场景抓得住（吸液时 17–83 N），但松开后握力只有 2–8 N，出瓶时甩到 42°；手指强度 5e-4 / 1e-3、胶头 0.5 MPa、玻璃管深插胶头颈 15 / 20 mm 并逐环缝合的变体正在跑，有结果再更新本节。</li>
+<li><b>放回瓶口开环差约 5 cm</b>（悬垂角差 10° × 22 cm）；第二段 36 s 之后撞瓶沿，截断。</li>
+<li><b>第一段录制</b>没有视频，捏合位置只能从关节角推；它捏在胶头锥面上，握力 1–4 N，快模式两次卡死。</li>
+<li>烧杯口高度仍是参考模型的 98 mm（真实 131–145 mm），只影响画面，不影响落点统计。</li>
+</ul>
+
+
 </article>
 
 <footer><div class="container">
