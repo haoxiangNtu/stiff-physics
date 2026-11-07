@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>滴管回放 · 3D 查看器</title>
+<meta name="description" content="Rokae AR5 + Wuji 手滴管回放的仿真记录，用 three.js 逐帧查看：机械臂、手、烧瓶、烧杯、玻璃管、硅胶胶头和 MPM 水粒子，可旋转缩放、单步、调玻璃透明度、看线框，检查放回阶段有没有穿透。">
+<style>
+  :root { --bg: #f3f4f6; --ink: #1c2026; --sub: #5b6470; --bar: #ffffff; --line: #d9dde3; --acc: #2b5fd0; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15181c; --ink: #e8ebef; --sub: #9aa3ad; --bar: #1e2227; --line: #343a42; --acc: #7aa2ff; } }
+  :root[data-theme="dark"] { --bg: #15181c; --ink: #e8ebef; --sub: #9aa3ad; --bar: #1e2227; --line: #343a42; --acc: #7aa2ff; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.5 -apple-system, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", sans-serif; }
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+  header { background: var(--bar); border-bottom: 1px solid var(--line); padding: 8px 16px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+  header b { font-size: 15px; }
+  header a { color: var(--acc); text-decoration: none; }
+  .ctl { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; background: var(--bar); border-bottom: 1px solid var(--line); padding: 6px 16px; }
+  .ctl label { display: inline-flex; align-items: center; gap: 4px; color: var(--sub); white-space: nowrap; }
+  .ctl button, .ctl select { font: inherit; padding: 3px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); cursor: pointer; }
+  .ctl button.on { background: var(--acc); color: #fff; border-color: var(--acc); }
+  #slider { flex: 1 1 220px; min-width: 160px; }
+  #time { font-variant-numeric: tabular-nums; min-width: 12em; }
+  #view { flex: 1 1 auto; position: relative; min-height: 360px; }
+  #view canvas { display: block; width: 100%; height: 100%; }
+  #msg { position: absolute; left: 16px; top: 12px; color: var(--sub); background: var(--bar); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; }
+  footer { background: var(--bar); border-top: 1px solid var(--line); padding: 8px 16px; color: var(--sub); font-size: 13px; }
+  footer p { margin: 4px 0; }
+  @media (max-width: 600px) { header, .ctl, footer { padding-inline: 16px; } #time { min-width: 0; } }
+</style>
+</head>
+<body>
+<header>
+  <b>滴管回放 · 3D 查看器</b>
+  <label>记录
+    <select id="run">
+      <option value="f2b_strict">录制 2 · 严格模式（手指 2e-4）</option>
+      <option value="f2a_fast">录制 2 · 快模式（手指 3e-4）</option>
+      <option value="final1_strict">录制 1 · 严格模式</option>
+    </select>
+  </label>
+  <a href="rokae_dropper.html#modes">← 返回结果页</a>
+</header>
+<div class="ctl">
+  <button id="play">播放</button>
+  <button id="prev">−1 帧</button>
+  <button id="next">+1 帧</button>
+  <input id="slider" type="range" min="0" max="0" value="0">
+  <span id="time">t = — s</span>
+  <label>速度 <select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label>
+</div>
+<div class="ctl">
+  <label><input id="showLiq" type="checkbox" checked> 水粒子</label>
+  <label><input id="showArm" type="checkbox" checked> 机械臂</label>
+  <label><input id="showHand" type="checkbox" checked> 手</label>
+  <label><input id="wire" type="checkbox"> 玻璃线框</label>
+  <label>玻璃不透明度 <input id="glass" type="range" min="0.05" max="1" step="0.05" value="0.3"></label>
+  <label>视角
+    <button id="camFront">正面</button><button id="camSide">侧面</button><button id="camTop">俯视</button><button id="camNeck">瓶口特写</button>
+  </label>
+  <label><input id="follow" type="checkbox"> 跟随滴管</label>
+</div>
+<div id="view"><div id="msg">正在加载记录…</div></div>
+<footer>
+  <p>仿真里的碰撞网格（机械臂、手指是凸包，烧瓶、烧杯、玻璃管是参考模型的表面），每两个仿真帧取一帧（约 13 帧/秒），水粒子取三分之一，位置精度 0.1 mm；胶头是有限元顶点逐帧位置。拖动旋转，滚轮缩放，右键平移。查穿透：把玻璃不透明度拉到 1 或开线框，用 −1 / +1 帧单步。</p>
+  <p>坐标：y 向上，桌面是 y = 0；长度单位米。录制 1 只跑了严格模式；两条录制 2 的放回都没有对上瓶口（见结果页）。</p>
+</footer>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const view = document.getElementById('view'), msg = document.getElementById('msg');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+view.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f3f4f6');
+const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 50);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.1;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x556655, 0.95));
+const sun = new THREE.DirectionalLight(0xffffff, 1.1); sun.position.set(1.5, 2.5, 1.0); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(-1.5, 1.0, -1.0); scene.add(fill);
+const table = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.MeshStandardMaterial({ color: 0x3f8275, roughness: 0.9 }));
+table.rotation.x = -Math.PI / 2; table.position.y = -0.0005; scene.add(table);
+const grid = new THREE.GridHelper(2, 20, 0x2f6a5e, 0x2f6a5e); grid.position.set(0.6, 0.0002, 0.1); grid.material.opacity = 0.35; grid.material.transparent = true; scene.add(grid);
+
+function resize() {
+  const w = view.clientWidth, h = view.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+
+let data = null, bodies = [], bulb = null, liq = null, frame = 0, playing = false, lastT = 0, acc = 0;
+const ui = {
+  play: document.getElementById('play'), slider: document.getElementById('slider'), time: document.getElementById('time'),
+  speed: document.getElementById('speed'), showLiq: document.getElementById('showLiq'), showArm: document.getElementById('showArm'),
+  showHand: document.getElementById('showHand'), wire: document.getElementById('wire'), glass: document.getElementById('glass'), follow: document.getElementById('follow'),
+};
+
+function typed(buf, a, base) {
+  const ctor = { float32: Float32Array, uint32: Uint32Array, int16: Int16Array, uint8: Uint8Array }[a.dtype];
+  const n = a.shape.reduce((p, q) => p * q, 1), start = base + a.offset;
+  return new ctor(buf.slice(start, start + n * ctor.BYTES_PER_ELEMENT));
+}
+
+async function load(run) {
+  msg.style.display = 'block'; msg.textContent = '正在加载记录 ' + run + ' …';
+  playing = false; ui.play.textContent = '播放';
+  for (const b of bodies) { scene.remove(b.mesh); b.mesh.geometry.dispose(); }
+  if (bulb) { scene.remove(bulb.mesh); bulb.mesh.geometry.dispose(); }
+  if (liq) { scene.remove(liq.pts); liq.pts.geometry.dispose(); }
+  bodies = []; bulb = null; liq = null;
+  const res = await fetch('../media/viewer/' + run + '.bin');
+  if (!res.ok) { msg.textContent = '加载失败：' + res.status; return; }
+  const buf = await res.arrayBuffer();
+  const hlen = new DataView(buf).getUint32(0, true);
+  const hdr = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, hlen)));
+  const base = 4 + hlen;
+  const A = {}; for (const a of hdr.arrays) A[a.name] = { arr: typed(buf, a, base), shape: a.shape };
+  data = { hdr, A };
+  const V = A.V.arr, F = A.F.arr, vo = A.vo.arr, vn = A.vn.arr, fo = A.fo.arr, fn = A.fn.arr;
+  for (let i = 0; i < hdr.nbodies; i++) {
+    if (vn[i] === 0) continue;
+    const name = hdr.names[i];
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(V.slice(vo[i] * 3, (vo[i] + vn[i]) * 3), 3));
+    g.setIndex(new THREE.BufferAttribute(F.slice(fo[i] * 3, (fo[i] + fn[i]) * 3), 1));
+    g.computeVertexNormals();
+    let mat, cls;
+    if (name === 'flask' || name === 'beaker') { mat = new THREE.MeshPhysicalMaterial({ color: 0xbcd4e6, roughness: 0.15, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }); cls = 'glass'; }
+    else if (name === 'stem') { mat = new THREE.MeshPhysicalMaterial({ color: 0xd2e6f2, roughness: 0.2, transparent: true, opacity: 0.75, side: THREE.DoubleSide }); cls = 'stem'; }
+    else if (name.includes('palm') || name.includes('finger')) { mat = new THREE.MeshStandardMaterial({ color: 0x2f3236, roughness: 0.7 }); cls = 'hand'; }
+    else { mat = new THREE.MeshStandardMaterial({ color: 0xd8dde3, roughness: 0.6 }); cls = 'arm'; }
+    const mesh = new THREE.Mesh(g, mat); mesh.matrixAutoUpdate = false; mesh.renderOrder = cls === 'glass' ? 2 : 1;
+    scene.add(mesh); bodies.push({ i, name, cls, mesh });
+  }
+  // bulb (FEM, animated)
+  const nb = A.bulb.shape[1];
+  const bg = new THREE.BufferGeometry();
+  bg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(nb * 3), 3));
+  bg.setIndex(new THREE.BufferAttribute(A.bulb_faces.arr, 1));
+  const bm = new THREE.Mesh(bg, new THREE.MeshStandardMaterial({ color: 0x2b5fd0, roughness: 0.55, side: THREE.DoubleSide }));
+  scene.add(bm); bulb = { mesh: bm, n: nb, centre: hdr.bulb_centre, scale: hdr.bulb_scale };
+  // liquid (points)
+  const np_ = A.liq.shape[1], lab = A.lab.arr;
+  const lg = new THREE.BufferGeometry();
+  lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(np_ * 3), 3));
+  const col = new Float32Array(np_ * 3);
+  for (let k = 0; k < np_; k++) { const c = lab[k] === 0 ? [0.18, 0.38, 0.92] : [0.88, 0.76, 0.12]; col.set(c, k * 3); }
+  lg.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const pts = new THREE.Points(lg, new THREE.PointsMaterial({ size: 0.0032, vertexColors: true, sizeAttenuation: true }));
+  scene.add(pts); liq = { pts, n: np_, origin: hdr.liq_origin, scale: hdr.liq_scale };
+  ui.slider.max = hdr.nframes - 1; ui.slider.value = 0; frame = 0;
+  applyToggles(); setFrame(0); camFront(); msg.style.display = 'none';
+}
+
+function setFrame(k) {
+  if (!data) return;
+  const { hdr, A } = data; frame = Math.max(0, Math.min(hdr.nframes - 1, k));
+  const T = A.T.arr, nb = hdr.nbodies;
+  for (const b of bodies) {
+    const o = (frame * nb + b.i) * 16;
+    b.mesh.matrix.set(T[o], T[o + 1], T[o + 2], T[o + 3], T[o + 4], T[o + 5], T[o + 6], T[o + 7], T[o + 8], T[o + 9], T[o + 10], T[o + 11], T[o + 12], T[o + 13], T[o + 14], T[o + 15]);
+    b.mesh.matrixWorldNeedsUpdate = true;
+  }
+  const bp = bulb.mesh.geometry.attributes.position.array, B = A.bulb.arr, ob = frame * bulb.n * 3, bc = bulb.centre, bs = bulb.scale;
+  for (let k2 = 0; k2 < bulb.n * 3; k2 += 3) { bp[k2] = B[ob + k2] * bs + bc[0]; bp[k2 + 1] = B[ob + k2 + 1] * bs + bc[1]; bp[k2 + 2] = B[ob + k2 + 2] * bs + bc[2]; }
+  bulb.mesh.geometry.attributes.position.needsUpdate = true; bulb.mesh.geometry.computeVertexNormals(); bulb.mesh.geometry.computeBoundingSphere(); bulb.mesh.geometry.computeBoundingBox();
+  const lp = liq.pts.geometry.attributes.position.array, L = A.liq.arr, ol = frame * liq.n * 3, lo = liq.origin, ls = liq.scale;
+  for (let k2 = 0; k2 < liq.n * 3; k2 += 3) { lp[k2] = L[ol + k2] * ls + lo[0]; lp[k2 + 1] = L[ol + k2 + 1] * ls + lo[1]; lp[k2 + 2] = L[ol + k2 + 2] * ls + lo[2]; }
+  liq.pts.geometry.attributes.position.needsUpdate = true; liq.pts.geometry.computeBoundingSphere();
+  ui.slider.value = frame; ui.time.textContent = 't = ' + A.t.arr[frame].toFixed(2) + ' s（录制时间）· 帧 ' + (frame + 1) + '/' + hdr.nframes;
+  if (ui.follow.checked) { const c = bulb.mesh.geometry.boundingSphere.center; controls.target.lerp(c, 0.5); }
+}
+
+function applyToggles() {
+  for (const b of bodies) {
+    if (b.cls === 'arm') b.mesh.visible = ui.showArm.checked;
+    if (b.cls === 'hand') b.mesh.visible = ui.showHand.checked;
+    if (b.cls === 'glass' || b.cls === 'stem') { b.mesh.material.wireframe = ui.wire.checked; }
+    if (b.cls === 'glass') { b.mesh.material.opacity = parseFloat(ui.glass.value); b.mesh.material.depthWrite = parseFloat(ui.glass.value) > 0.95; }
+  }
+  if (liq) liq.pts.visible = ui.showLiq.checked;
+}
+for (const id of ['showLiq', 'showArm', 'showHand', 'wire', 'glass']) document.getElementById(id).addEventListener('input', applyToggles);
+ui.slider.addEventListener('input', () => { playing = false; ui.play.textContent = '播放'; setFrame(parseInt(ui.slider.value)); });
+document.getElementById('prev').addEventListener('click', () => { playing = false; ui.play.textContent = '播放'; setFrame(frame - 1); });
+document.getElementById('next').addEventListener('click', () => { playing = false; ui.play.textContent = '播放'; setFrame(frame + 1); });
+ui.play.addEventListener('click', () => { playing = !playing; ui.play.textContent = playing ? '暂停' : '播放'; lastT = performance.now(); acc = 0; if (playing && data && frame >= data.hdr.nframes - 1) setFrame(0); });
+document.getElementById('run').addEventListener('change', e => load(e.target.value));
+
+function look(px, py, pz, tx, ty, tz) { camera.position.set(px, py, pz); controls.target.set(tx, ty, tz); controls.update(); }
+function camFront() { look(1.55, 0.70, 0.55, 0.62, 0.14, 0.10); }
+document.getElementById('camFront').addEventListener('click', camFront);
+document.getElementById('camSide').addEventListener('click', () => look(0.75, 0.55, 1.35, 0.62, 0.14, 0.10));
+document.getElementById('camTop').addEventListener('click', () => look(0.64, 1.70, 0.12, 0.62, 0.0, 0.10));
+document.getElementById('camNeck').addEventListener('click', () => { const f = bodies.find(b => b.name === 'flask'); const p = new THREE.Vector3().setFromMatrixPosition(f.mesh.matrixWorld); look(p.x + 0.33, 0.36, p.z + 0.28, p.x, 0.16, p.z); });
+
+function animate(now) {
+  requestAnimationFrame(animate);
+  if (playing && data) {
+    const t = data.A.t.arr, sp = parseFloat(ui.speed.value);
+    acc += (now - lastT) / 1000 * sp; lastT = now;
+    let k = frame;
+    while (k < data.hdr.nframes - 1 && t[k + 1] - t[frame] <= acc) k++;
+    if (k !== frame) { acc -= t[k] - t[frame]; setFrame(k); }
+    if (frame >= data.hdr.nframes - 1) { playing = false; ui.play.textContent = '播放'; }
+  }
+  controls.update(); renderer.render(scene, camera);
+}
+resize(); animate(performance.now());
+window.__viewer = { scene, camera, controls, renderer, get data() { return data; }, get bodies() { return bodies; }, get bulb() { return bulb; }, get liq() { return liq; }, get frame() { return frame; }, setFrame, THREE };
+const q = new URLSearchParams(location.search).get('run');
+if (q) document.getElementById('run').value = q;
+load(document.getElementById('run').value);
+</script>
+</body>
+</html>

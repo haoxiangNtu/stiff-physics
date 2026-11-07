@@ -185,6 +185,7 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 试过而没有用或更差的：把胶头下锥硬 pin 到玻璃管（力爆到 5 万 N 或翻转）、胶头 E 2.5 / 4 MPa（悬角不变）、摩擦过渡速度 1e-4 / 3e-3、μ 2.0（发散）、手指强度 1e-4（放回时掉）和 1e-3（压扁、卡死）、滴管初始倾斜 14°、缩短滴管（立不住）。</p>
 
 <h3>结果</h3>
+<p><b>三维逐帧查看：</b><a href="rokae_viewer.html?run=f2b_strict">录制 2 · 严格</a> · <a href="rokae_viewer.html?run=f2a_fast">录制 2 · 快</a> · <a href="rokae_viewer.html?run=final1_strict">录制 1 · 严格</a>——仿真里的碰撞网格、胶头有限元顶点和水粒子按仿真记录逐帧回放，可旋转、单步、调玻璃透明度或开线框，用来检查放回阶段有没有穿透（每个记录约 17 MB）。</p>
 <p>发布的这一组用早先的场景（烧瓶放在按原安装长度推出的指尖笼正下方；手指与胶头的相对几何和修正后的场景相同，见上）。水量以粒子计，1 个粒子 = 0.0156 mL；"悬垂"是转移和悬停阶段管身相对竖直的角度。第二段录制 36 s 之后的放回撞在瓶沿上（握力 1500 N、每帧 3.5 s），因此截到 36 s。</p>
 <div class="tblwrap"><table>
 <thead><tr><th>录制 / 模式</th><th>手指强度</th><th class="num">吸进（粒子）</th><th class="num">滴进烧杯 / 落在桌上</th><th>悬垂</th><th>放回</th><th class="num">用时</th></tr></thead>
