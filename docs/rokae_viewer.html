@@ -119,7 +119,7 @@
   <details>
     <summary>说明（数据内容、曲线定义、快捷键）</summary>
     <p>画面：仿真里的碰撞网格（机械臂、手指是凸包，烧瓶、烧杯、玻璃管是参考模型的表面），仿真记录的全部帧（25 帧/秒）；胶头是有限元顶点逐帧位置。容器里的水每两个粒子取一个；进过玻璃管内孔或离开过自己容器的水粒子全部保留，开“高亮”时烧瓶来的显示为品红、烧杯来的显示为白色。位置精度 0.1 mm。坐标 y 向上，桌面是 y = 0，单位米。</p>
-    <p>对比：选一条同一段录制的记录，它的滴管（玻璃管 + 胶头）和管口轨迹以橙色叠加在当前场景里，曲线同时画出两条。两条记录以桌面和器皿为基准对齐；“滴管放低 6 mm”的记录里桌面相对机器人低 6 mm，所以叠加时两只滴管在抓取前有 6 mm 的高差是设置本身。两条记录的烧杯位置可以不同：画面里是当前记录的烧杯，“管口到烧杯轴线”这一行两条曲线都对当前记录的烧杯量。</p>
+    <p>对比：选一条同一段录制的记录，它的滴管（玻璃管 + 胶头）和管口轨迹以橙色叠加在当前场景里，曲线同时画出两条。两条记录以桌面和器皿为基准对齐；“滴管放低 6 mm”的记录里桌面相对机器人低 6 mm，所以叠加时两只滴管在抓取前有 6 mm 的高差是设置本身。两条记录的烧杯位置可以不同：画面里是当前记录的烧杯，“管口到烧杯轴线”这一行两条曲线都对当前记录的烧杯量。“11-09 重新标定的场景”里烧瓶、烧杯和桌面相对机器人的位置与之前的记录不同（见结果页第九节）：把它和之前的记录叠加时，对比的滴管按两只烧瓶重合的方式平移，这时“管口到烧杯轴线”两条曲线各按自己的烧杯量，右上角的说明里会注明平移了多少。</p>
     <p>曲线：管身倾角 = 玻璃管轴线与竖直方向的夹角；相对手掌的转动 = 玻璃管轴线与“从提起前那一刻起刚性固定在右手掌上”的轴线之间的夹角（零点：录制 2 为 20.0 s，录制 1 为 16.5 s）；胶头弯折 = 胶头顶部与颈部中心连线对管身轴线的夹角；握力 = 胶头顶点上法向接触力大小之和的一半；管口浸入深度 = 烧瓶里液面（沉降后的实际液面）减管口高度，露出水面记 0；气室模型要求的管内水量 = 把胶头腔体当作密封气室时腔体回弹对应的水量（纵轴与下一行相同，超出部分截平）；管内实际水量 = 玻璃管内孔里的水粒子数；烧杯里 = 烧杯内半径 32 mm、高 75 mm 以内；桌面上 = 高度 4 mm 以下且不在两个容器里。</p>
     <p>操作：拖动旋转，滚轮缩放，右键平移；← / → 单步（按住 Shift 一次 10 帧），空格播放 / 暂停。切换记录时保留当前时刻和视角。“复制当前视图链接”把记录、对比、时刻和视角写进网址。管口轨迹画的是最近 4 s；杯口的黑圈是“烧杯里”计数用的半径 32 mm。查穿透：把玻璃不透明度拉到 1 或开线框，用单步。</p>
   </details>
@@ -137,7 +137,11 @@ const RUNS = [
   { id: 'rec2_strict', group: '已发布（11-07，烧杯放在仿真滴液点下方，烧瓶液面约 36 mm）', rec: 2, name: '录制 2 · 严格模式 · 手指 2e-4' },
   { id: 'rec2_fast', rec: 2, name: '录制 2 · 快模式 · 手指 3e-4' },
   { id: 'rec1_strict', rec: 1, name: '录制 1 · 严格模式' },
-  { id: 'rec2_low6_fast', group: '11-08 调参轮 · 带水（录制 2，手指 2e-4，烧杯在实测位置）', rec: 2, name: '滴管放低 6 mm · 液面约 48 mm · 快模式' },
+  { id: 'rec2_v2_fast', group: '11-09 重新标定的场景（录制 2，手指 2e-4，滴管 223 mm，烧瓶 137 mm，烧杯在两相机实测位置）', rec: 2, name: '胶头 2.5 MPa · 带水 · 快模式' },
+  { id: 'rec2_v2_e40_fast', rec: 2, name: '胶头 4.0 MPa · 带水 · 快模式' },
+  { id: 'rec2_v2_e12_dry', rec: 2, name: '胶头 1.2 MPa · 干跑（转移途中脱手）' },
+  { id: 'rec2_v2_long_dry', rec: 2, name: '滴管仍用 235 mm · 胶头 1.2 MPa · 干跑（胶头被向上挤出）' },
+  { id: 'rec2_low6_fast', group: '11-08 调参轮 · 带水（录制 2，手指 2e-4，烧杯按当时的实测位置）', rec: 2, name: '滴管放低 6 mm · 液面约 48 mm · 快模式' },
   { id: 'rec2_low6_strict', rec: 2, name: '滴管放低 6 mm · 液面约 48 mm · 严格模式' },
   { id: 'rec2_soft_fast', rec: 2, name: '胶头 0.5 MPa · 液面约 48 mm · 快模式' },
   { id: 'rec2_soft_strict', rec: 2, name: '胶头 0.5 MPa · 液面约 48 mm · 严格模式' },
@@ -188,6 +192,7 @@ const ui = {
 let A = null, B = null, mapAB = null;            // current record, comparison record, frame map A -> B
 let objsA = [], objsB = [];                      // three.js objects owned by each record
 let bodies = [], bulbA = null, bulbB = null, liqBulk = null, liqOut = null, trailA = null, trailB = null, ringObj = null, ghostStem = null;
+let shiftB = null;                               // [dx, dz] applied to the comparison overlay when the two records' flasks differ
 let frame = 0, playing = false, lastT = 0, acc = 0, loadToken = 0, firstLoad = true;
 
 // ---------------------------------------------------------------- record file (gzip: uint32 header length, JSON, arrays)
@@ -330,22 +335,31 @@ function buildA() {
   }
 }
 function buildB() {
-  dispose(objsB); objsB = []; bulbB = trailB = ghostStem = null; mapAB = null;
+  dispose(objsB); objsB = []; bulbB = trailB = ghostStem = null; mapAB = null; shiftB = null;
   if (!A || !B) return;
   const iS = B.hdr.stem;
+  // records from different scenes place the flask differently (the hand-length correction moves it 6 cm): overlay the
+  // comparison dropper translated so that the two flasks coincide
+  const fa = A.hdr.flask_rest, fb = B.hdr.flask_rest, sx = fa[0] - fb[0], sz = fa[2] - fb[2];
+  shiftB = Math.hypot(sx, sz) > 1e-3 ? [sx, sz] : null;
+  const grpB = new THREE.Group();
+  if (shiftB) grpB.position.set(sx, 0, sz);
+  grpB.updateMatrix(); grpB.matrixAutoUpdate = false; grpB.matrixWorldNeedsUpdate = true;
   ghostStem = fixed(new THREE.Mesh(bodyGeometry(B, iS), new THREE.MeshStandardMaterial({ color: COL_B, roughness: 0.5, transparent: true, opacity: 0.6, side: THREE.DoubleSide })));
   bulbB = makeBulb(B, COL_B, 0.85);
   trailB = makeTrail(B, COL_B);
-  for (const o of [ghostStem, bulbB, trailB]) { scene.add(o); objsB.push(o); }
+  for (const o of [ghostStem, bulbB, trailB]) grpB.add(o);
+  scene.add(grpB); objsB.push(grpB);
   mapAB = new Int32Array(A.nf);                                     // nearest comparison frame in time
   for (let k = 0, j = 0; k < A.nf; k++) {
     while (j < B.nf - 1 && Math.abs(B.t[j + 1] - A.t[k]) <= Math.abs(B.t[j] - A.t[k])) j++;
     mapAB[k] = j;
   }
-  // the comparison tube's tip measured against the CURRENT record's beaker axis (the two records may place the beaker differently)
-  B.tipOffA = new Array(B.nf).fill(null);
+  // the comparison tube's tip measured against the CURRENT record's beaker axis (the two records may place the beaker differently);
+  // across scenes (shiftB) each record keeps the distance to its own beaker
+  B.tipOffA = shiftB ? null : new Array(B.nf).fill(null);
   const nbA = A.hdr.nbodies, ibA = A.hdr.beaker, br = A.hdr.beaker_rest;
-  for (let j = 0, k = 0; j < B.nf; j++) {
+  for (let j = 0, k = 0; j < B.nf && B.tipOffA; j++) {
     while (k < A.nf - 1 && Math.abs(A.t[k + 1] - B.t[j]) <= Math.abs(A.t[k] - B.t[j])) k++;
     const o = (k * nbA + ibA) * 12, T = A.T;
     const bx = T[o] * br[0] + T[o + 1] * br[1] + T[o + 2] * br[2] + T[o + 3], bz = T[o + 8] * br[0] + T[o + 9] * br[1] + T[o + 10] * br[2] + T[o + 11];
@@ -510,11 +524,17 @@ function buildFacts() {
     p.appendChild(el('b', '', run ? run.name : R.id));
     const mode = m.newton_tol >= 5e-3 ? '快模式（newton_tol 1e-2）' : '严格模式（newton_tol 1e-3）';
     const off = m.beaker_offset || [0, 0];
+    const fit = !!(m.hand_mount_env && m.hand_mount_env.WUJI_MOUNT_FIT);
+    const hd = R.hdr, dropLen = Math.round((Math.hypot(hd.top_rest[0] - hd.tip_rest[0], hd.top_rest[1] - hd.tip_rest[1], hd.top_rest[2] - hd.tip_rest[2]) + 0.035) * 1000);
     const bits = ['录制 ' + m.recording, mode, '手指强度 ' + (m.finger_strength_right ? m.finger_strength_right.toExponential().replace('e-', 'e-') : '—'), '胶头 ' + (m.e_bulb / 1e6).toFixed(1) + ' MPa',
-      m.table_dz ? '滴管' + (m.table_dz < 0 ? '放低 ' : '抬高 ') + Math.abs(m.table_dz * 1e3).toFixed(0) + ' mm' : '滴管原高度',
-      '烧杯' + (off[0] || off[1] ? '在发布时的位置（相对实测位置偏移 ' + (off[0] * 1e3).toFixed(0) + ', ' + (off[1] * 1e3).toFixed(0) + ' mm）' : '在实测位置'),
+      fit ? '11-09 重新标定的场景（手的安装角按视频轮廓拟合；桌面、烧瓶、烧杯在两相机实测位置）' : '11-07 的场景（物体按手指合拢处摆放，手的安装角未修正）',
+      '滴管 ' + dropLen + ' mm' + (m.lean_deg ? '，初始斜靠在瓶口' : '，初始竖直'),
+      (m.flask_h_mm && Math.abs(m.flask_h_mm - 160) > 1) ? '烧瓶高 ' + m.flask_h_mm.toFixed(0) + ' mm' : '烧瓶高 160 mm',
+      m.table_dz ? '滴管' + (m.table_dz < 0 ? '放低 ' : '抬高 ') + Math.abs(m.table_dz * 1e3).toFixed(0) + ' mm' : null,
+      fit ? null : '烧杯' + (off[0] || off[1] ? '在发布时的位置（相对当时的实测位置偏移 ' + (off[0] * 1e3).toFixed(0) + ', ' + (off[1] * 1e3).toFixed(0) + ' mm）' : '在当时的实测位置'),
       m.liquid ? '烧瓶液面 ' + (m.flask_level ?? 0).toFixed(1) + ' mm（沉降后）' : '无水'];
-    p.appendChild(document.createTextNode('（' + (key === 'b' ? '对比' : '当前') + '）' + bits.join(' · ')));
+    p.appendChild(document.createTextNode('（' + (key === 'b' ? '对比' : '当前') + '）' + bits.filter(Boolean).join(' · ')));
+    if (key === 'b' && shiftB) p.appendChild(document.createTextNode('。两条记录的烧瓶位置不同，对比滴管已按烧瓶平移 ' + (Math.hypot(shiftB[0], shiftB[1]) * 1e3).toFixed(0) + ' mm 对齐；“到烧杯轴线”各按自己的烧杯量'));
     if (m.liquid) {
       const d = R.diag, last = R.nf - 1, peak = Math.max(...d.bore);
       p.appendChild(document.createTextNode('。蓝水：管内最多 ' + peak + ' 粒，结束时离开烧瓶 '));
