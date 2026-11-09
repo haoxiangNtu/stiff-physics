@@ -97,7 +97,7 @@
   <label><input id="showArm" type="checkbox" checked> 机械臂</label>
   <label><input id="showHand" type="checkbox" checked> 手</label>
   <label><input id="showTrail" type="checkbox" checked> 管口轨迹 + 杯口圈</label>
-  <label id="showRealWrap" hidden><input id="showReal" type="checkbox" checked> 视频实测的胶头位置（红点）</label>
+  <label id="showRealWrap" hidden><input id="showReal" type="checkbox" checked> 视频实测的胶头和管身（红色）</label>
   <label><input id="wire" type="checkbox"> 玻璃线框</label>
   <label>玻璃不透明度 <input id="glass" type="range" min="0.05" max="1" step="0.05" value="0.3"></label>
   <label>视角
@@ -121,7 +121,7 @@
     <summary>说明（数据内容、曲线定义、快捷键）</summary>
     <p>画面：仿真里的碰撞网格（机械臂、手指是凸包，烧瓶、烧杯、玻璃管是参考模型的表面），仿真记录的全部帧（25 帧/秒）；胶头是有限元顶点逐帧位置。容器里的水每两个粒子取一个；进过玻璃管内孔或离开过自己容器的水粒子全部保留，开“高亮”时烧瓶来的显示为品红、烧杯来的显示为白色。位置精度 0.1 mm。坐标 y 向上，桌面是 y = 0，单位米。</p>
     <p>对比：选一条同一段录制的记录，它的滴管（玻璃管 + 胶头）和管口轨迹以橙色叠加在当前场景里，曲线同时画出两条。两条记录以桌面和器皿为基准对齐；“滴管放低 6 mm”的记录里桌面相对机器人低 6 mm，所以叠加时两只滴管在抓取前有 6 mm 的高差是设置本身。两条记录的烧杯位置可以不同：画面里是当前记录的烧杯，“管口到烧杯轴线”这一行两条曲线都对当前记录的烧杯量。11-07、11-09、11-10 三组场景里烧瓶、烧杯和桌面相对机器人的位置各不相同（以 11-10 的为准，见结果页第十节）：把不同场景的记录叠加时，对比的滴管按两只烧瓶重合的方式平移，这时“管口到烧杯轴线”两条曲线各按自己的烧杯量，右上角的说明里会注明平移了多少。</p>
-    <p>红点（只在 11-10 的记录里）：从真实视频量出来的胶头中心，红色小球外面套一个胶头大小的线框球；28.5 s 前后另有一个小红点是量到的悬停管口。测量用三台按手腕端盖标定的相机：手到达之前和放回之后（38.5 s 以后）是三相机交会的静止位置；11.3–15 s 手在合拢前把斜靠的滴管沿瓶口推转了约 2 cm，这一段是逐帧跟踪的位置；握持期间（16–36.5 s）真实胶头相对手掌不动（近景相机里全程偏差在 ±5 mm 内），画的是固定在手掌上的那个点。精度约 ±6 mm（15–16 s 之间是两段之间的直线过渡，36.5–38.5 s 没有测量）。仿真的胶头和红球重合，说明抓的位置和视频一致；曲线“胶头中心：仿真到视频实测位置的距离”是这个距离随时间的变化。</p>
+    <p>红色（只在 11-10 的记录里）是从真实视频量出来的滴管。<b>红球</b>：胶头中心，小球外面套一个胶头大小的线框球。测量用三台按手腕端盖标定的相机：手到达之前和放回之后（38.5 s 以后）是三相机交会的静止位置；11.3–15 s 手在合拢前把斜靠的滴管沿瓶口推转了约 2 cm，这一段是逐帧跟踪的位置；握持期间（16–36.5 s）真实胶头相对手掌不动（近景相机里全程偏差在 ±5 mm 内），画的是固定在手掌上的那个点。精度约 ±6 mm（15–16 s 之间是两段之间的直线过渡，36.5–38.5 s 没有测量）。<b>红杆</b>（22–34.4 s）：真实玻璃管的轴线，从胶头中心画到管口。方向是量出来的：24–29 s 用三台相机交会管内蓝色液柱的下端（34 个时刻，相对手掌的方向只散开 0.3–0.7°），液体滴完以后用近景和正面两台相机里玻璃管本身的走向；真实滴管从出瓶到悬停在手里不转，滴液捏胶头前后转了约 3.5°，之后到放回瓶里又不转。颜色较淡的两段（22–24 s、29–31.8 s）没有直接测量，是前后两段的外推和过渡。杆长 227 mm 来自静止时的几何（胶头中心离桌面 227 mm、管口在瓶底）；视频里只看得清到约 206 mm 处，再往下的尖端太细。方向的精度约 ±2.5°，折到管口约 ±10 mm（两台侧面相机在烧杯处有约 1 cm 的不一致）。仿真的滴管和红球、红杆重合，说明抓的位置和滴管在手里的朝向都和视频一致；曲线“胶头中心：仿真到视频实测位置的距离”“管身朝向：仿真与视频实测的夹角”“管口：仿真到视频推算位置的距离”是它们随时间的变化。</p>
     <p>曲线：管身倾角 = 玻璃管轴线与竖直方向的夹角；相对手掌的转动 = 玻璃管轴线与“从提起前那一刻起刚性固定在右手掌上”的轴线之间的夹角（零点：录制 2 为 20.0 s，录制 1 为 16.5 s）；胶头弯折 = 胶头顶部与颈部中心连线对管身轴线的夹角；握力 = 胶头顶点上法向接触力大小之和的一半；管口浸入深度 = 烧瓶里液面（沉降后的实际液面）减管口高度，露出水面记 0；气室模型要求的管内水量 = 把胶头腔体当作密封气室时腔体回弹对应的水量（纵轴与下一行相同，超出部分截平）；管内实际水量 = 玻璃管内孔里的水粒子数；烧杯里 = 烧杯内半径 32 mm、高 75 mm 以内；桌面上 = 高度 4 mm 以下且不在两个容器里。</p>
     <p>操作：拖动旋转，滚轮缩放，右键平移；← / → 单步（按住 Shift 一次 10 帧），空格播放 / 暂停。切换记录时保留当前时刻和视角。“复制当前视图链接”把记录、对比、时刻和视角写进网址。管口轨迹画的是最近 4 s；杯口的黑圈是“烧杯里”计数用的半径 32 mm。查穿透：把玻璃不透明度拉到 1 或开线框，用单步。</p>
   </details>
@@ -134,12 +134,16 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // ---------------------------------------------------------------- records
-const DATA_VERSION = '3';
+const DATA_VERSION = '4';
 const RUNS = [
   // v3 runs begin
-  { id: 'rec2_v3_best_dry', group: '11-10 重新标定的场景（三台相机按手腕端盖标定；手指约 15 N；滴管 235 mm；红球 = 视频实测的胶头位置）', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 玻璃摩擦 0.2 · 干跑（抓取位置最接近视频）' },
-  { id: 'rec2_v3_fast', rec: 2, name: '胶头 1.2 MPa · 带水 · 快模式（水滴进烧杯）' },
-  { id: 'rec2_v3_dry', rec: 2, name: '胶头 1.2 MPa · 干跑' },
+  { id: 'rec2_v3_best_dry', group: '11-10 重新标定的场景（三台相机按手腕端盖标定；手指约 15 N；滴管 235 mm；红球 / 红杆 = 视频实测的胶头和管身）', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 玻璃摩擦 0.2 · 干跑 · 快模式（抓取位置最接近视频）' },
+  { id: 'rec2_v3_best_strict_dry', rec: 2, name: '同上 · 严格模式（牛顿容差 1e-3）' },
+  { id: 'rec2_v3_d1_fast', rec: 2, name: '同上 · 接触层 1 mm · 快模式（握力不再乱跳）' },
+  { id: 'rec2_v3_strict', rec: 2, name: '胶头 1.2 MPa · 带水 · 严格模式（回程离瓶轴最近：42 mm）' },
+  { id: 'rec2_v3_fast', rec: 2, name: '胶头 1.2 MPa · 带水 · 快模式' },
+  { id: 'rec2_v3_best_fast', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 带水 · 快模式（悬停偏出 5 cm，6 粒进杯）' },
+  { id: 'rec2_v3_dry', rec: 2, name: '胶头 1.2 MPa · 干跑 · 快模式' },
   // v3 runs end
   { id: 'rec2_strict', group: '已发布（11-07，烧杯放在仿真滴液点下方，烧瓶液面约 36 mm）', rec: 2, name: '录制 2 · 严格模式 · 手指 2e-4' },
   { id: 'rec2_fast', rec: 2, name: '录制 2 · 快模式 · 手指 3e-4' },
@@ -346,7 +350,13 @@ function buildA() {
     realObj = new THREE.Group(); const bulb = mk(0.005, COL_REAL), halo = new THREE.Mesh(new THREE.SphereGeometry(0.017, 20, 12), new THREE.MeshBasicMaterial({ color: COL_REAL, wireframe: true, transparent: true, opacity: 0.35, depthTest: false }));
     halo.frustumCulled = false; halo.renderOrder = 6; bulb.add(halo); realObj.add(bulb);
     const tips = (hdr.real.tips || []).map(tp => { const m = mk(0.003, COL_REAL); m.position.set(tp[1], tp[2], tp[3]); m.userData.t = tp[0]; realObj.add(m); return m; });
-    realObj.userData = { bulb, tips }; scene.add(realObj); objsA.push(realObj);
+    // the carried real dropper: a thin rod from the measured bulb centre to the glass tip (direction measured in the footage)
+    let stem = null, stemTip = null;
+    if (hdr.real.tip) {
+      stem = new THREE.Mesh(new THREE.CylinderGeometry(0.0011, 0.0011, 1, 8), new THREE.MeshBasicMaterial({ color: COL_REAL, depthTest: false, transparent: true, opacity: 0.85 }));
+      stem.frustumCulled = false; stem.renderOrder = 6; realObj.add(stem); stemTip = mk(0.0028, COL_REAL); realObj.add(stemTip);
+    }
+    realObj.userData = { bulb, tips, stem, stemTip }; scene.add(realObj); objsA.push(realObj);
   }
   if (hdr.meta.liquid) {
     liqBulk = makePoints(A.nB, 0.0030); colorPoints(liqBulk, A.labB, WATER); scene.add(liqBulk); objsA.push(liqBulk);
@@ -396,6 +406,14 @@ function setFrame(k) {
   if (realObj) {
     const p = hdr.real.bulb[frame], u = realObj.userData; u.bulb.visible = !!p; if (p) u.bulb.position.set(p[0], p[1], p[2]);
     for (const m of u.tips) m.visible = Math.abs(A.t[frame] - m.userData.t) <= 1.0;
+    if (u.stem) {
+      const q = hdr.real.tip[frame], on = !!(p && q); u.stem.visible = u.stemTip.visible = on;
+      if (on) {
+        const a = new THREE.Vector3(p[0], p[1], p[2]), b = new THREE.Vector3(q[0], q[1], q[2]), d = b.clone().sub(a), L = d.length();
+        u.stem.position.copy(a).addScaledVector(d, 0.5); u.stem.scale.set(1, L, 1); u.stem.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.multiplyScalar(1 / L));
+        u.stem.material.opacity = (hdr.real.tip_meas && !hdr.real.tip_meas[frame]) ? 0.4 : 0.85; u.stemTip.position.copy(b);
+      }
+    }
   }
   if (liqBulk) fillPoints(liqBulk, A.liqB, Math.min(A.nfB - 1, Math.floor(frame / hdr.bulk_fstep)) * A.nB * 3, A.nB, hdr.liq_origin, hdr.liq_scale);
   if (liqOut) fillPoints(liqOut, A.liqA, frame * A.nA * 3, A.nA, hdr.liq_origin, hdr.liq_scale);
@@ -492,9 +510,11 @@ const ROWS = [
   { k: 'tilt', label: '管身倾角', unit: '°', nd: 1, floor: 10 },
   { k: 'slip', label: '相对手掌的转动（提起前为零点）', unit: '°', nd: 1, floor: 10 },
   { k: 'bend', label: '胶头弯折', unit: '°', nd: 1, floor: 10 },
+  { k: 'axis_err', label: '管身朝向：仿真与视频实测的夹角', unit: '°', nd: 1, floor: 10 },
   { g: '管口位置' },
   { k: 'tip_h', label: '管口离桌面高度', unit: 'mm', nd: 0, floor: 50 },
   { k: 'tip_off', label: '管口到烧杯轴线的水平距离', unit: 'mm', nd: 0, floor: 50, cap: 150, ref: 'beaker_r_in', refLabel: v => '杯内半径 ' + v + ' mm' },
+  { k: 'tip_err', label: '管口：仿真到视频推算位置的距离', unit: 'mm', nd: 0, floor: 30 },
   { g: '抓握与胶头' },
   { k: 'bulb_err', label: '胶头中心：仿真到视频实测位置的距离', unit: 'mm', nd: 0, floor: 20 },
   { k: 'grip', label: '握力', unit: 'N', nd: 1, floor: 5 },
@@ -651,7 +671,7 @@ function buildTable() {
   const host = $('tblwrap'); host.textContent = '';
   if (!A || !$('tbl').open) return;
   const cols = [['tilt', '倾角 °', 1], ['tilt_rigid', '手带动的倾角 °', 1], ['slip', '相对手掌 °', 1], ['bend', '胶头弯折 °', 1], ['tip_h', '管口高 mm', 0], ['tip_off', '到杯轴 mm', 0],
-    ['bulb_err', '胶头到实测 mm', 0], ['grip', '握力 N', 1], ['vcav', '腔体 mL', 2], ['flask_d', '烧瓶位移 mm', 1], ['beaker_d', '烧杯位移 mm', 1], ['depth', '管口在液面下 mm', 0], ['sub', '管口浸没', 0],
+    ['bulb_err', '胶头到实测 mm', 0], ['axis_err', '管身朝向误差 °', 1], ['tip_err', '管口到实测 mm', 0], ['grip', '握力 N', 1], ['vcav', '腔体 mL', 2], ['flask_d', '烧瓶位移 mm', 1], ['beaker_d', '烧杯位移 mm', 1], ['depth', '管口在液面下 mm', 0], ['sub', '管口浸没', 0],
     ['target', '气室要求', 0], ['bore', '管内', 0], ['beaker', '杯里', 0], ['table', '桌面', 0], ['out', '离开烧瓶', 0]];
   for (const [R, title] of [[A, B ? '当前记录' : ''], [B, '对比记录']]) {
     if (!R) continue;
@@ -742,7 +762,7 @@ window.__viewer = { scene, camera, controls, renderer, get A() { return A; }, ge
   fillSelects();
   const q = new URLSearchParams(location.search);
   if (q.get('table') === '1') $('tbl').open = true;
-  let id = q.get('run') || 'rec2_v3_best_dry'; id = ALIAS[id] || id; if (!runById(id)) id = 'rec2_strict';
+  let id = q.get('run') || 'rec2_v3_d1_fast'; id = ALIAS[id] || id; if (!runById(id)) id = 'rec2_strict';
   ui.run.value = id;
   let cmp = q.get('cmp') || ''; cmp = ALIAS[cmp] || cmp; fillCmp(cmp);
   const t = q.get('t') !== null ? parseFloat(q.get('t')) : null;
