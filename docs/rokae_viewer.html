@@ -137,11 +137,14 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const DATA_VERSION = '4';
 const RUNS = [
   // v3 runs begin
-  { id: 'rec2_v3_best_dry', group: '11-10 重新标定的场景（三台相机按手腕端盖标定；手指约 15 N；滴管 235 mm；红球 / 红杆 = 视频实测的胶头和管身）', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 玻璃摩擦 0.2 · 干跑 · 快模式（抓取位置最接近视频）' },
-  { id: 'rec2_v3_best_strict_dry', rec: 2, name: '同上 · 严格模式（牛顿容差 1e-3）' },
-  { id: 'rec2_v3_d1_fast', rec: 2, name: '同上 · 接触层 1 mm · 快模式（握力不再乱跳）' },
-  { id: 'rec2_v3_strict', rec: 2, name: '胶头 1.2 MPa · 带水 · 严格模式（回程离瓶轴最近：42 mm）' },
-  { id: 'rec2_v3_fast', rec: 2, name: '胶头 1.2 MPa · 带水 · 快模式' },
+  { id: 'rec2_v3_f10_mu06_fast', group: '11-10 重新标定的场景（三台相机按手腕端盖标定；手指约 15 N；滴管 235 mm；红球 / 红杆 = 视频实测的胶头和管身）', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 接触层 1 mm · 手指约 4.5 N、摩擦 0.6 · 干跑 · 快模式（目前最接近视频）' },
+  { id: 'rec2_v3_f10_fast', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 接触层 1 mm · 手指约 4.5 N、摩擦 1.0 · 干跑 · 快模式' },
+  { id: 'rec2_v3_d1_fast', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 接触层 1 mm · 手指约 15 N · 干跑 · 快模式' },
+  { id: 'rec2_v3_strict', rec: 2, name: '胶头 1.2 MPa · 带水 · 严格模式（30 粒进杯）' },
+  { id: 'rec2_v3_fast', rec: 2, name: '胶头 1.2 MPa · 带水 · 快模式（20 粒进杯）' },
+  { id: 'rec2_v3_best_dry', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 接触层 0.5 mm · 手指约 15 N · 干跑 · 快模式（原设置）' },
+  { id: 'rec2_v3_d1_strict', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 接触层 1 mm · 严格模式 · 干跑' },
+  { id: 'rec2_v3_best_strict_dry', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 严格模式 · 干跑（接触层 0.5 mm）' },
   { id: 'rec2_v3_best_fast', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 带水 · 快模式（悬停偏出 5 cm，6 粒进杯）' },
   { id: 'rec2_v3_dry', rec: 2, name: '胶头 1.2 MPa · 干跑 · 快模式' },
   // v3 runs end
@@ -762,7 +765,7 @@ window.__viewer = { scene, camera, controls, renderer, get A() { return A; }, ge
   fillSelects();
   const q = new URLSearchParams(location.search);
   if (q.get('table') === '1') $('tbl').open = true;
-  let id = q.get('run') || 'rec2_v3_d1_fast'; id = ALIAS[id] || id; if (!runById(id)) id = 'rec2_strict';
+  let id = q.get('run') || 'rec2_v3_f10_mu06_fast'; id = ALIAS[id] || id; if (!runById(id)) id = 'rec2_strict';
   ui.run.value = id;
   let cmp = q.get('cmp') || ''; cmp = ALIAS[cmp] || cmp; fillCmp(cmp);
   const t = q.get('t') !== null ? parseFloat(q.get('t')) : null;
