@@ -217,7 +217,7 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 <ul>
 <li><b>悬垂角仍偏大：</b>12–21° 对真实的 5–15°。差的那部分是滴管绕指尖捏合轴的转动，是两点接触的扭转摩擦问题，与液体无关。发布场景的手指比真实指尖高 12 mm 闭合（手模型装长了 65 mm 的结果）；把滴管抬高 12 mm 让手指在真实高度闭合（11-08 干跑），悬停仍是 12–19°，抬高 24 mm 则捏在锥面上抓不住——悬垂角对捏合高度不敏感。</li>
 <li><b>绝对位置：</b>发布场景里烧瓶比两相机三角化的位置靠前 6 cm（补偿装长了的手），烧杯放在仿真实测滴液点正下方，比真实烧杯靠前约 13 cm（6 cm 安装长度 + 悬垂角 × 25 cm 杠杆）。把安装长度修正、烧瓶放回三角化位置的场景抓得住（吸液时 17–83 N），但松开后握力只有 2–8 N，出瓶时甩到 42°；手指强度 5e-4 / 1e-3、胶头 0.5 MPa、玻璃管深插胶头颈 15 / 20 mm 并逐环缝合的变体（当天晚间跑完）都没有改善：5e-4 和软胶头同样在出瓶时失握，1e-3 卡死，15 mm 颈环出瓶时脱手，20 mm 颈环握得住但把烧瓶拖动 7 mm、滴管甩到 40°。</li>
-<li><b>放回瓶口开环差约 5 cm</b>（悬垂角差 10° × 22 cm）；第二段 36 s 之后撞瓶沿，截断。</li>
+<li><b>放回没有复现。</b>管口降到瓶口高度那一刻离瓶轴 82 mm（第二段严格）/ 124 mm（第二段快）/ 116 mm（第一段严格），而管口中心要落在瓶轴 10 mm 以内才进得去；滴管的朝向差 21–32°。逐帧分析见<a href="#return">第八节“放回这一步差在哪”</a>。此前这里写的是“开环差约 5 cm（悬垂角差 10°）”，那接近窗口末端管口已经降到瓶身旁边时离瓶轴的距离（46–79 mm），低估了，11-09 更正。第二段 36 s 之后的放回撞瓶沿，截断；录制里 36.5–39 s 的松手没有仿真。</li>
 <li><b>第一段录制</b>没有视频，捏合位置只能从关节角推；它捏在胶头锥面上，握力 1–4 N，快模式两次卡死。</li>
 <li>烧杯口高度仍是参考模型的 98 mm（真实 131–145 mm），只影响画面，不影响落点统计。</li>
 </ul>
@@ -255,6 +255,42 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 <li><b>软胶头松手后握不住。</b>提起时握力 5–6 N（发布组 11–12 N），出瓶口后甩到 20–57°；严格模式那组此后一直在 5–70° 之间摆，把 69 粒甩到桌上。滴管放低 6 mm 则相反：出瓶口不再甩（7–10°，接近视频里的样子），问题在吸液。</li>
 <li><b>“70 mm 液面”实际是 48 mm。</b>注水参数是播种高度：粒子播在离壁和底各留 3 mm 的区域里，落定后填满边缘，液面从 70 mm 降到约 48 mm（154 mL；真正到 70 mm 需要约 207 mL）。发布组同理，按 45 mm 播种，实际约 36 mm。视频里的 70 mm 液面这一轮并没有达到。</li>
 </ul>
+
+<h3 id="return">放回这一步差在哪（11-09 补）</h3>
+<p>13 条记录里没有一条把管口放回瓶颈。用同一批逐帧数据量了放回途中管口降到瓶口高度（离烧瓶底 160 mm）那一刻的状态：</p>
+<ul>
+<li><b>手回到了瓶口上方。</b>那一刻捏合点（胶头露在玻璃管外那部分的中心）离瓶轴 12–29 mm，高出瓶口 20–23 cm。滴管只要接近竖直、朝瓶轴一侧倾 3–8° 就能进瓶。</li>
+<li><b>差的是滴管在手里的朝向。</b>发布的三组此刻倾 17–29°，而且倾的方向不对：朝向差 21–32°，管口离瓶轴 82–124 mm。瓶口内半径 14.4 mm，管外半径 4.6 mm，管口中心要在瓶轴 10 mm 以内；捏合点到管口 227 mm，所以朝向只允许差约 2.5°。滴液宽松得多（烧杯内半径 32 mm，约 8°），所以滴得进、放不回。</li>
+<li><b>“滴管在手里不动”也放不回。</b>按录制，放回时手自身的姿态比提起前转了 12–16°；滴管如果从提起前起相对手掌固定不动，过瓶口高度时会倾 12–19°，管口离瓶轴 66–93 mm。真实的滴管在转移和放回时管身只倾 5–15°（视频），操作者又是看着瓶口对的。开环回放要放回，滴管在手里的朝向必须和真实的一致到约 2.5°。</li>
+<li><b>悬垂姿态改好，放回就接近。</b>这一轮“滴管放低 6 mm · 严格”朝向差 5.5°，管口离瓶轴 22 mm，差 12 mm 没进；软胶头的干跑 29 mm。但这两种设置带水后吸液或握持出了问题（上面第 1、2、4 条），目前没有一组同时做到“滴进实测位置的烧杯”和“接近放回”。</li>
+<li><b>第二段录制没有仿真到松手。</b>仿真截到 36 s，此时手还握着滴管，发布组的管口在瓶身外侧，离桌面 39 / 54 mm、离瓶轴 46 / 79 mm（严格 / 快）；录制里手指在 36.5–39 s 松开。第一段录制仿真到了松手之后：管口落在离瓶轴 48 mm 的桌面上，滴管靠在烧瓶外壁上。</li>
+</ul>
+<div class="tblwrap"><table style="min-width:46rem">
+<thead><tr><th>记录（点开看这一刻）</th><th class="num">管口过瓶口高度</th><th class="num">捏合点离瓶轴</th><th class="num">对准瓶口需要的倾角</th><th class="num">仿真里的倾角</th><th class="num">朝向差</th><th class="num">管口离瓶轴</th></tr></thead>
+<tbody>
+<tr><td colspan="7" style="color:var(--sub);font-size:.84rem;background:color-mix(in srgb, var(--primary) 3%, var(--surface))">第七节的发布组</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_strict&amp;t=33.62&amp;cam=neck">发布组 · 第二段 · 严格</a></td><td class="num">33.62 s</td><td class="num">19 mm</td><td class="num">4.9°</td><td class="num">16.8°</td><td class="num">20.8°</td><td class="num">82 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_fast&amp;t=34.02&amp;cam=neck">发布组 · 第二段 · 快</a></td><td class="num">34.02 s</td><td class="num">29 mm</td><td class="num">8.2°</td><td class="num">29.1°</td><td class="num">32.3°</td><td class="num">124 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec1_strict&amp;t=30.06&amp;cam=neck">发布组 · 第一段 · 严格</a></td><td class="num">30.06 s</td><td class="num">13 mm</td><td class="num">3.5°</td><td class="num">25.5°</td><td class="num">29.9°</td><td class="num">116 mm</td></tr>
+<tr><td colspan="7" style="color:var(--sub);font-size:.84rem;background:color-mix(in srgb, var(--primary) 3%, var(--surface))">11-08 带水，烧瓶液面约 48 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_low6_fast&amp;t=33.46&amp;cam=neck">滴管放低 6 mm · 快</a></td><td class="num">33.46 s</td><td class="num">13 mm</td><td class="num">3.3°</td><td class="num">13.5°</td><td class="num">9.7°</td><td class="num">39 mm</td></tr>
+<tr class=hl><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_low6_strict&amp;t=33.42&amp;cam=neck">滴管放低 6 mm · 严格</a></td><td class="num">33.42 s</td><td class="num">13 mm</td><td class="num">3.4°</td><td class="num">10.1°</td><td class="num">5.5°</td><td class="num">22 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_soft_fast&amp;t=33.82&amp;cam=neck">胶头 0.5 MPa · 快</a></td><td class="num">33.82 s</td><td class="num">26 mm</td><td class="num">7.0°</td><td class="num">21.4°</td><td class="num">24.3°</td><td class="num">95 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_soft_strict&amp;t=33.62&amp;cam=neck">胶头 0.5 MPa · 严格</a></td><td class="num">33.62 s</td><td class="num">19 mm</td><td class="num">4.9°</td><td class="num">14.3°</td><td class="num">19.5°</td><td class="num">77 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_low6soft_fast&amp;t=33.82&amp;cam=neck">放低 6 mm + 0.5 MPa · 快</a></td><td class="num">33.82 s</td><td class="num">27 mm</td><td class="num">7.2°</td><td class="num">25.1°</td><td class="num">17.1°</td><td class="num">68 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_low6soft_strict&amp;t=33.62&amp;cam=neck">放低 6 mm + 0.5 MPa · 严格</a></td><td class="num">33.62 s</td><td class="num">23 mm</td><td class="num">5.9°</td><td class="num">19.8°</td><td class="num">14.0°</td><td class="num">55 mm</td></tr>
+<tr><td colspan="7" style="color:var(--sub);font-size:.84rem;background:color-mix(in srgb, var(--primary) 3%, var(--surface))">11-08 带水，烧瓶液面约 36 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_low6_fast_fill45&amp;t=33.42&amp;cam=neck">滴管放低 6 mm · 快</a></td><td class="num">33.42 s</td><td class="num">12 mm</td><td class="num">3.1°</td><td class="num">9.4°</td><td class="num">9.6°</td><td class="num">39 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_soft_fast_fill45&amp;t=33.54&amp;cam=neck">胶头 0.5 MPa · 快</a></td><td class="num">33.54 s</td><td class="num">19 mm</td><td class="num">4.8°</td><td class="num">13.2°</td><td class="num">15.0°</td><td class="num">60 mm</td></tr>
+<tr><td colspan="7" style="color:var(--sub);font-size:.84rem;background:color-mix(in srgb, var(--primary) 3%, var(--surface))">11-08 干跑（无水，快模式）</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_low6_dry&amp;t=33.42&amp;cam=neck">滴管放低 6 mm</a></td><td class="num">33.42 s</td><td class="num">13 mm</td><td class="num">3.3°</td><td class="num">14.6°</td><td class="num">13.0°</td><td class="num">52 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_soft_dry&amp;t=33.42&amp;cam=neck">胶头 0.5 MPa</a></td><td class="num">33.42 s</td><td class="num">15 mm</td><td class="num">3.8°</td><td class="num">8.4°</td><td class="num">7.3°</td><td class="num">29 mm</td></tr>
+</tbody></table></div>
+<p style="font-size:.86rem;color:var(--sub)">进瓶的条件是最后一列小于 10 mm（朝向差约 2.5° 以内）。“管口过瓶口高度”是放回途中管口降过瓶口的那一帧；捏合点取胶头高出玻璃管顶 10 mm 以上那部分顶点的平均位置；“需要的倾角”是捏合点指向瓶口中心的直线与竖直的夹角；“仿真里的倾角”是管身与竖直的夹角（查看器里的“管身倾角”）；“朝向差”是捏合点到管口、捏合点到瓶口中心两条直线的夹角。发布场景的手模型装长了 65 mm（见第七节），放回时手又比提起前转了 12–16°，按 65 mm × 转角估算，捏合点的位置本身最多可能偏 1–2 cm，“需要的倾角”相应最多有约 ±4° 的不确定；它不改变发布组差 21–32° 的结论，但对差 5.5° 的那一组有影响。</p>
+<div class="fig"><figure>
+  <a href="rokae_viewer.html?run=rec2_strict&amp;cmp=rec2_low6_strict&amp;t=33.62&amp;cam=neck"><img src="../media/rokae_viewer_return.jpg" alt="三维查看器：放回途中 33.62 s，发布组严格模式的滴管（灰色玻璃管）管口在烧瓶瓶口旁边，对比的“滴管放低 6 mm · 严格”（橙色）管口在瓶沿处" loading="lazy"></a>
+  <figcaption><b>放回途中管口降到瓶口高度（33.62 s）。</b>灰色玻璃管是发布组严格模式：手已经回到烧瓶上方，但滴管倾 16.8°，管口在瓶口旁 82 mm 处。橙色是“滴管放低 6 mm · 严格”：倾得小、方向也对，管口到了瓶沿（它在 33.42 s 过瓶口高度时离瓶轴 22 mm），仍在瓶口外。</figcaption>
+</figure></div>
 
 <h3>怎么用查看器定位</h3>
 <p>查看器里选一条记录，再选一条同一段录制的记录做对比：对比记录的滴管以橙色叠加在同一个场景里，右侧每个量画两条曲线，点或拖曲线跳到对应时刻，切换记录时保留时刻和视角。进过滴管或离开过容器的水粒子全部保留并高亮（品红），所以水柱在管里的位置、滴在哪里都能直接看到。下面三张图各对应上面的一件事，点图进入同一时刻、同一视角。</p>
