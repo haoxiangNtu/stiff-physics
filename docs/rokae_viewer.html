@@ -152,12 +152,6 @@ const RUNS = [
   { id: 'rec2_strict', group: '已发布（11-07，烧杯放在仿真滴液点下方，烧瓶液面约 36 mm）', rec: 2, name: '录制 2 · 严格模式 · 手指 2e-4' },
   { id: 'rec2_fast', rec: 2, name: '录制 2 · 快模式 · 手指 3e-4' },
   { id: 'rec1_strict', rec: 1, name: '录制 1 · 严格模式' },
-  { id: 'rec2_v2_fast', group: '11-09 的场景（已作废：相机标定有误，场景整体偏了 4–7 cm；红球 = 实测胶头位置）', rec: 2, name: '胶头 2.5 MPa · 带水 · 快模式' },
-  { id: 'rec2_v2_strict', rec: 2, name: '胶头 2.5 MPa · 带水 · 严格模式（出瓶口时脱手）' },
-  { id: 'rec2_v2_e40_fast', rec: 2, name: '胶头 4.0 MPa · 带水 · 快模式' },
-  { id: 'rec2_v2_m60_dry', rec: 2, name: '胶头 2.5 MPa · 手沿手腕轴再长 25 mm · 干跑（握得最稳，横移时侧摆）' },
-  { id: 'rec2_v2_e12_dry', rec: 2, name: '胶头 1.2 MPa · 干跑（转移途中脱手）' },
-  { id: 'rec2_v2_long_dry', rec: 2, name: '滴管仍用 235 mm · 胶头 1.2 MPa · 干跑（胶头被向上挤出）' },
   { id: 'rec2_low6_fast', group: '11-08 调参轮 · 带水（录制 2，手指 2e-4，烧杯按当时的实测位置）', rec: 2, name: '滴管放低 6 mm · 液面约 48 mm · 快模式' },
   { id: 'rec2_low6_strict', rec: 2, name: '滴管放低 6 mm · 液面约 48 mm · 严格模式' },
   { id: 'rec2_soft_fast', rec: 2, name: '胶头 0.5 MPa · 液面约 48 mm · 快模式' },
@@ -766,13 +760,14 @@ window.__viewer = { scene, camera, controls, renderer, get A() { return A; }, ge
   fillSelects();
   const q = new URLSearchParams(location.search);
   if (q.get('table') === '1') $('tbl').open = true;
-  let id = q.get('run') || 'rec2_v3_f05_fast'; id = ALIAS[id] || id; if (!runById(id)) id = 'rec2_strict';
+  let id = q.get('run') || 'rec2_v3_f05_fast'; id = ALIAS[id] || id; let missing = null; if (!runById(id)) { missing = id; id = 'rec2_v3_f05_fast'; }
   ui.run.value = id;
   let cmp = q.get('cmp') || ''; cmp = ALIAS[cmp] || cmp; fillCmp(cmp);
   const t = q.get('t') !== null ? parseFloat(q.get('t')) : null;
   const v = q.get('v') ? q.get('v').split(',').map(Number) : null;
   await loadRun(id, { t: Number.isFinite(t) ? t : null, cam: q.get('cam'), v: v && v.length === 6 && v.every(Number.isFinite) ? v : null });
   if (ui.cmp.value) await loadCmp(ui.cmp.value);
+  if (missing) { msg.style.display = 'block'; msg.textContent = '记录 ' + missing + ' 已不在站点上（11-09 的场景标定作废，其查看器文件为控制站点体积已移除；结论见结果页第十节）。已改为显示当前的默认记录。'; setTimeout(() => { msg.style.display = 'none'; }, 12000); }
 })();
 </script>
 </body>
