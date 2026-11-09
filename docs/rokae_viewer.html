@@ -4,65 +4,125 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>滴管回放 · 3D 查看器</title>
-<meta name="description" content="Rokae AR5 + Wuji 手滴管回放的仿真记录，用 three.js 逐帧查看：机械臂、手、烧瓶、烧杯、玻璃管、硅胶胶头和 MPM 水粒子，可旋转缩放、单步、调玻璃透明度、看线框，检查放回阶段有没有穿透。">
+<meta name="description" content="Rokae AR5 + Wuji 手滴管回放的仿真记录，用 three.js 逐帧查看：机械臂、手、烧瓶、烧杯、玻璃管、硅胶胶头和 MPM 水粒子，可旋转缩放、单步、叠加另一条记录对比，并带管身倾角、握力、管口位置、水量等逐帧诊断曲线。">
 <style>
-  :root { --bg: #f3f4f6; --ink: #1c2026; --sub: #5b6470; --bar: #ffffff; --line: #d9dde3; --acc: #2b5fd0; }
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15181c; --ink: #e8ebef; --sub: #9aa3ad; --bar: #1e2227; --line: #343a42; --acc: #7aa2ff; } }
-  :root[data-theme="dark"] { --bg: #15181c; --ink: #e8ebef; --sub: #9aa3ad; --bar: #1e2227; --line: #343a42; --acc: #7aa2ff; }
+  :root { --bg: #f3f4f6; --ink: #1c2026; --sub: #5b6470; --mute: #8a929c; --bar: #ffffff; --line: #d9dde3; --grid: #e6e9ee; --acc: #2b5fd0; --s1: #2a78d6; --s2: #eb6834; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15181c; --ink: #e8ebef; --sub: #9aa3ad; --mute: #7d8691; --bar: #1e2227; --line: #343a42; --grid: #2a3038; --acc: #7aa2ff; --s1: #3987e5; --s2: #d95926; } }
+  :root[data-theme="dark"] { --bg: #15181c; --ink: #e8ebef; --sub: #9aa3ad; --mute: #7d8691; --bar: #1e2227; --line: #343a42; --grid: #2a3038; --acc: #7aa2ff; --s1: #3987e5; --s2: #d95926; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.5 -apple-system, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", sans-serif; }
-  body { display: flex; flex-direction: column; min-height: 100vh; }
+  body { display: flex; flex-direction: column; height: 100vh; }
   header { background: var(--bar); border-bottom: 1px solid var(--line); padding: 8px 16px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
   header b { font-size: 15px; }
   header a { color: var(--acc); text-decoration: none; }
+  header label { display: inline-flex; align-items: center; gap: 4px; color: var(--sub); }
+  header select { font: inherit; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); max-width: min(46ch, 78vw); }
   .ctl { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; background: var(--bar); border-bottom: 1px solid var(--line); padding: 6px 16px; }
   .ctl label { display: inline-flex; align-items: center; gap: 4px; color: var(--sub); white-space: nowrap; }
   .ctl button, .ctl select { font: inherit; padding: 3px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); cursor: pointer; }
-  .ctl button.on { background: var(--acc); color: #fff; border-color: var(--acc); }
   #slider { flex: 1 1 220px; min-width: 160px; }
-  #time { font-variant-numeric: tabular-nums; min-width: 12em; }
-  #view { flex: 1 1 auto; position: relative; min-height: 360px; }
+  #time { font-variant-numeric: tabular-nums; min-width: 13em; }
+  #main { flex: 1 1 auto; min-height: 0; display: flex; }
+  #view { flex: 1 1 auto; position: relative; min-width: 0; min-height: 320px; }
   #view canvas { display: block; width: 100%; height: 100%; }
   #msg { position: absolute; left: 16px; top: 12px; color: var(--sub); background: var(--bar); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; }
-  footer { background: var(--bar); border-top: 1px solid var(--line); padding: 8px 16px; color: var(--sub); font-size: 13px; }
+  #diag { flex: 0 0 380px; box-sizing: border-box; background: var(--bar); border-left: 1px solid var(--line); overflow-y: auto; padding: 10px 14px 14px; }
+  #facts { font-size: 13px; color: var(--sub); margin-bottom: 8px; }
+  #facts p { margin: 0 0 4px; }
+  #facts b { color: var(--ink); font-weight: 600; }
+  i.k { display: inline-block; width: 14px; height: 0; border-top: 2px solid var(--s1); border-radius: 1px; flex: none; vertical-align: middle; }
+  i.k.b { border-top-color: var(--s2); }
+  #readout { font-size: 13px; color: var(--sub); border-top: 1px solid var(--line); padding-top: 8px; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  #readout b { color: var(--ink); }
+  .row { margin-top: 7px; }
+  .grp { margin-top: 12px; font-size: 12px; font-weight: 600; color: var(--ink); border-top: 1px solid var(--grid); padding-top: 6px; }
+  #rows .grp:first-child { border-top: 0; padding-top: 0; margin-top: 6px; }
+  .rh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12.5px; line-height: 1.35; }
+  .rl { color: var(--sub); }
+  .rv { color: var(--sub); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rv b { color: var(--ink); font-weight: 600; margin: 0 5px 0 3px; }
+  .rv i.k { width: 10px; }
+  svg.plot { display: block; width: 100%; height: 38px; cursor: crosshair; touch-action: none; }
+  svg.plot .gr { stroke: var(--grid); stroke-width: 1; }
+  svg.plot .base { stroke: var(--line); stroke-width: 1; }
+  svg.plot .ref { stroke: var(--mute); stroke-width: 1; }
+  svg.plot .sa, svg.plot .sb { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  svg.plot .sa { stroke: var(--s1); }
+  svg.plot .sb { stroke: var(--s2); }
+  svg.plot .play { stroke: var(--ink); stroke-width: 1; }
+  svg.plot .hov { stroke: var(--mute); stroke-width: 1; }
+  svg.plot text, #xaxis text { font-size: 10px; fill: var(--mute); font-variant-numeric: tabular-nums; paint-order: stroke; stroke: var(--bar); stroke-width: 3px; stroke-linejoin: round; }
+  #xaxis { display: block; width: 100%; height: 16px; }
+  #xcap { font-size: 11px; color: var(--mute); text-align: right; }
+  details { margin-top: 10px; font-size: 13px; }
+  summary { cursor: pointer; color: var(--sub); }
+  #tblwrap { overflow: auto; max-height: 62vh; margin-top: 6px; }
+  #tblwrap table { border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #tblwrap caption { text-align: left; color: var(--sub); padding: 6px 0 2px; }
+  #tblwrap th, #tblwrap td { padding: 2px 7px; text-align: right; border-bottom: 1px solid var(--grid); }
+  #tblwrap th { color: var(--sub); font-weight: 500; position: sticky; top: 0; background: var(--bar); }
+  #tblwrap tbody tr { cursor: pointer; }
+  #tblwrap tbody tr:hover { background: var(--bg); }
+  footer { background: var(--bar); border-top: 1px solid var(--line); padding: 4px 16px; color: var(--sub); font-size: 13px; }
+  footer details { margin: 2px 0; }
   footer p { margin: 4px 0; }
-  @media (max-width: 600px) { header, .ctl, footer { padding-inline: 16px; } #time { min-width: 0; } }
+  @media (max-width: 900px) {
+    body { height: auto; min-height: 100vh; }
+    #main { flex-direction: column; }
+    #view { flex: none; height: 62vh; }
+    #diag { flex: none; border-left: 0; border-top: 1px solid var(--line); }
+    #time { min-width: 0; }
+  }
 </style>
 </head>
 <body>
 <header>
   <b>滴管回放 · 3D 查看器</b>
-  <label>记录
-    <select id="run">
-      <option value="f2b_strict">录制 2 · 严格模式（手指 2e-4）</option>
-      <option value="f2a_fast">录制 2 · 快模式（手指 3e-4）</option>
-      <option value="final1_strict">录制 1 · 严格模式</option>
-    </select>
-  </label>
+  <label>记录 <select id="run"></select></label>
+  <label>对比 <select id="cmp"></select></label>
   <a href="rokae_dropper.html#modes">← 返回结果页</a>
 </header>
 <div class="ctl">
   <button id="play">播放</button>
   <button id="prev">−1 帧</button>
   <button id="next">+1 帧</button>
-  <input id="slider" type="range" min="0" max="0" value="0">
+  <input id="slider" type="range" min="0" max="0" value="0" aria-label="时间">
   <span id="time">t = — s</span>
-  <label>速度 <select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label>
+  <label>速度 <select id="speed"><option value="0.1">0.1×</option><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label>
+  <button id="copy">复制当前视图链接</button>
 </div>
 <div class="ctl">
-  <label><input id="showLiq" type="checkbox" checked> 水粒子</label>
+  <label><input id="showBulk" type="checkbox" checked> 容器里的水</label>
+  <label><input id="showOut" type="checkbox" checked> 进过滴管 / 出过容器的水</label>
+  <label><input id="hl" type="checkbox" checked> 高亮</label>
   <label><input id="showArm" type="checkbox" checked> 机械臂</label>
   <label><input id="showHand" type="checkbox" checked> 手</label>
+  <label><input id="showTrail" type="checkbox" checked> 管口轨迹 + 杯口圈</label>
   <label><input id="wire" type="checkbox"> 玻璃线框</label>
   <label>玻璃不透明度 <input id="glass" type="range" min="0.05" max="1" step="0.05" value="0.3"></label>
   <label>视角
-    <button id="camFront">正面</button><button id="camSide">侧面</button><button id="camTop">俯视</button><button id="camNeck">瓶口特写</button>
+    <button id="camFront">正面</button><button id="camSide">侧面</button><button id="camTop">俯视</button><button id="camNeck">瓶口特写</button><button id="camBeaker">烧杯特写</button>
   </label>
   <label><input id="follow" type="checkbox"> 跟随滴管</label>
 </div>
-<div id="view"><div id="msg">正在加载记录…</div></div>
+<div id="main">
+  <div id="view"><div id="msg">正在加载记录…</div></div>
+  <aside id="diag" aria-label="逐帧诊断">
+    <div id="facts"></div>
+    <div id="readout">读数位置 <b id="rt">—</b><span id="rmode"></span></div>
+    <div id="rows"></div>
+    <svg id="xaxis" aria-hidden="true"></svg>
+    <div id="xcap">录制时间（s）· 点或拖曲线跳到该时刻</div>
+    <details id="tbl"><summary>数据表（每 0.5 s，点一行跳到该时刻）</summary><div id="tblwrap"></div></details>
+  </aside>
+</div>
 <footer>
-  <p>仿真里的碰撞网格（机械臂、手指是凸包，烧瓶、烧杯、玻璃管是参考模型的表面），每两个仿真帧取一帧（约 13 帧/秒），水粒子取三分之一，位置精度 0.1 mm；胶头是有限元顶点逐帧位置。拖动旋转，滚轮缩放，右键平移。查穿透：把玻璃不透明度拉到 1 或开线框，用 −1 / +1 帧单步。</p>
-  <p>坐标：y 向上，桌面是 y = 0；长度单位米。录制 1 只跑了严格模式；两条录制 2 的放回都没有对上瓶口（见结果页）。</p>
+  <details>
+    <summary>说明（数据内容、曲线定义、快捷键）</summary>
+    <p>画面：仿真里的碰撞网格（机械臂、手指是凸包，烧瓶、烧杯、玻璃管是参考模型的表面），仿真记录的全部帧（25 帧/秒）；胶头是有限元顶点逐帧位置。容器里的水每两个粒子取一个；进过玻璃管内孔或离开过自己容器的水粒子全部保留，开“高亮”时烧瓶来的显示为品红、烧杯来的显示为白色。位置精度 0.1 mm。坐标 y 向上，桌面是 y = 0，单位米。</p>
+    <p>对比：选一条同一段录制的记录，它的滴管（玻璃管 + 胶头）和管口轨迹以橙色叠加在当前场景里，曲线同时画出两条。两条记录以桌面和器皿为基准对齐；“滴管放低 6 mm”的记录里桌面相对机器人低 6 mm，所以叠加时两只滴管在抓取前有 6 mm 的高差是设置本身。两条记录的烧杯位置可以不同：画面里是当前记录的烧杯，“管口到烧杯轴线”这一行两条曲线都对当前记录的烧杯量。</p>
+    <p>曲线：管身倾角 = 玻璃管轴线与竖直方向的夹角；相对手掌的转动 = 玻璃管轴线与“从提起前那一刻起刚性固定在右手掌上”的轴线之间的夹角（零点：录制 2 为 20.0 s，录制 1 为 16.5 s）；胶头弯折 = 胶头顶部与颈部中心连线对管身轴线的夹角；握力 = 胶头顶点上法向接触力大小之和的一半；管口浸入深度 = 烧瓶里液面（沉降后的实际液面）减管口高度，露出水面记 0；气室模型要求的管内水量 = 把胶头腔体当作密封气室时腔体回弹对应的水量（纵轴与下一行相同，超出部分截平）；管内实际水量 = 玻璃管内孔里的水粒子数；烧杯里 = 烧杯内半径 32 mm、高 75 mm 以内；桌面上 = 高度 4 mm 以下且不在两个容器里。</p>
+    <p>操作：拖动旋转，滚轮缩放，右键平移；← / → 单步（按住 Shift 一次 10 帧），空格播放 / 暂停。切换记录时保留当前时刻和视角。“复制当前视图链接”把记录、对比、时刻和视角写进网址。管口轨迹画的是最近 4 s；杯口的黑圈是“烧杯里”计数用的半径 32 mm。查穿透：把玻璃不透明度拉到 1 或开线框，用单步。</p>
+  </details>
 </footer>
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
@@ -71,12 +131,37 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const view = document.getElementById('view'), msg = document.getElementById('msg');
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+// ---------------------------------------------------------------- records
+const DATA_VERSION = '2';
+const RUNS = [
+  { id: 'rec2_strict', group: '已发布（11-07，烧杯放在仿真滴液点下方，烧瓶液面约 36 mm）', rec: 2, name: '录制 2 · 严格模式 · 手指 2e-4' },
+  { id: 'rec2_fast', rec: 2, name: '录制 2 · 快模式 · 手指 3e-4' },
+  { id: 'rec1_strict', rec: 1, name: '录制 1 · 严格模式' },
+  { id: 'rec2_low6_fast', group: '11-08 调参轮 · 带水（录制 2，手指 2e-4，烧杯在实测位置）', rec: 2, name: '滴管放低 6 mm · 液面约 48 mm · 快模式' },
+  { id: 'rec2_low6_strict', rec: 2, name: '滴管放低 6 mm · 液面约 48 mm · 严格模式' },
+  { id: 'rec2_soft_fast', rec: 2, name: '胶头 0.5 MPa · 液面约 48 mm · 快模式' },
+  { id: 'rec2_soft_strict', rec: 2, name: '胶头 0.5 MPa · 液面约 48 mm · 严格模式' },
+  { id: 'rec2_low6soft_fast', rec: 2, name: '放低 6 mm + 胶头 0.5 MPa · 液面约 48 mm · 快模式' },
+  { id: 'rec2_low6soft_strict', rec: 2, name: '放低 6 mm + 胶头 0.5 MPa · 液面约 48 mm · 严格模式' },
+  { id: 'rec2_low6_fast_fill45', rec: 2, name: '滴管放低 6 mm · 液面约 36 mm · 快模式' },
+  { id: 'rec2_soft_fast_fill45', rec: 2, name: '胶头 0.5 MPa · 液面约 36 mm · 快模式' },
+  { id: 'rec2_low6_dry', group: '11-08 干跑参考（录制 2，快模式，无水，烧杯在发布时的位置）', rec: 2, name: '滴管放低 6 mm · 干跑' },
+  { id: 'rec2_soft_dry', rec: 2, name: '胶头 0.5 MPa · 干跑' },
+];
+const ALIAS = { f2b_strict: 'rec2_strict', f2a_fast: 'rec2_fast', final1_strict: 'rec1_strict' };   // links published before 11-09
+const runById = id => RUNS.find(r => r.id === id);
+
+// ---------------------------------------------------------------- three.js scene
+const $ = id => document.getElementById(id);
+const view = $('view'), msg = $('msg');
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 view.appendChild(renderer.domElement);
+const theme = new URLSearchParams(location.search).get('theme');
+if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f3f4f6');
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+scene.background = new THREE.Color(css('--bg') || '#f3f4f6');
 const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 50);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = 0.1;
@@ -86,136 +171,540 @@ const fill = new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(-1.5,
 const table = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.MeshStandardMaterial({ color: 0x3f8275, roughness: 0.9 }));
 table.rotation.x = -Math.PI / 2; table.position.y = -0.0005; scene.add(table);
 const grid = new THREE.GridHelper(2, 20, 0x2f6a5e, 0x2f6a5e); grid.position.set(0.6, 0.0002, 0.1); grid.material.opacity = 0.35; grid.material.transparent = true; scene.add(grid);
+const COL_A = 0x2a78d6, COL_B = 0xeb6834;          // current record / comparison record (same hues as the curves)
 
 function resize() {
   const w = view.clientWidth, h = view.clientHeight;
+  if (!w || !h) return;
   renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
 }
-window.addEventListener('resize', resize);
+new ResizeObserver(() => { resize(); layoutRows(); }).observe(view);
 
-let data = null, bodies = [], bulb = null, liq = null, frame = 0, playing = false, lastT = 0, acc = 0;
 const ui = {
-  play: document.getElementById('play'), slider: document.getElementById('slider'), time: document.getElementById('time'),
-  speed: document.getElementById('speed'), showLiq: document.getElementById('showLiq'), showArm: document.getElementById('showArm'),
-  showHand: document.getElementById('showHand'), wire: document.getElementById('wire'), glass: document.getElementById('glass'), follow: document.getElementById('follow'),
+  run: $('run'), cmp: $('cmp'), play: $('play'), slider: $('slider'), time: $('time'), speed: $('speed'),
+  showBulk: $('showBulk'), showOut: $('showOut'), hl: $('hl'), showArm: $('showArm'), showHand: $('showHand'),
+  showTrail: $('showTrail'), wire: $('wire'), glass: $('glass'), follow: $('follow'),
 };
+let A = null, B = null, mapAB = null;            // current record, comparison record, frame map A -> B
+let objsA = [], objsB = [];                      // three.js objects owned by each record
+let bodies = [], bulbA = null, bulbB = null, liqBulk = null, liqOut = null, trailA = null, trailB = null, ringObj = null, ghostStem = null;
+let frame = 0, playing = false, lastT = 0, acc = 0, loadToken = 0, firstLoad = true;
 
-function typed(buf, a, base) {
-  const ctor = { float32: Float32Array, uint32: Uint32Array, int16: Int16Array, uint8: Uint8Array }[a.dtype];
-  const n = a.shape.reduce((p, q) => p * q, 1), start = base + a.offset;
-  return new ctor(buf.slice(start, start + n * ctor.BYTES_PER_ELEMENT));
-}
-
-async function load(run) {
-  msg.style.display = 'block'; msg.textContent = '正在加载记录 ' + run + ' …';
-  playing = false; ui.play.textContent = '播放';
-  for (const b of bodies) { scene.remove(b.mesh); b.mesh.geometry.dispose(); }
-  if (bulb) { scene.remove(bulb.mesh); bulb.mesh.geometry.dispose(); }
-  if (liq) { scene.remove(liq.pts); liq.pts.geometry.dispose(); }
-  bodies = []; bulb = null; liq = null;
-  const res = await fetch('../media/viewer/' + run + '.bin');
-  if (!res.ok) { msg.textContent = '加载失败：' + res.status; return; }
-  const buf = await res.arrayBuffer();
+// ---------------------------------------------------------------- record file (gzip: uint32 header length, JSON, arrays)
+async function fetchRecord(id, withLiquid) {
+  const res = await fetch('../media/viewer/' + id + '.bin?v=' + DATA_VERSION);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  let buf = await res.arrayBuffer();
+  const m = new Uint8Array(buf, 0, 3);
+  if (m[0] === 0x1f && m[1] === 0x8b && m[2] === 0x08) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('这个浏览器不支持解压（需要较新的 Chrome / Edge / Firefox / Safari）');
+    buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  }
   const hlen = new DataView(buf).getUint32(0, true);
   const hdr = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, hlen)));
-  const base = 4 + hlen;
-  const A = {}; for (const a of hdr.arrays) A[a.name] = { arr: typed(buf, a, base), shape: a.shape };
-  data = { hdr, A };
-  const V = A.V.arr, F = A.F.arr, vo = A.vo.arr, vn = A.vn.arr, fo = A.fo.arr, fn = A.fn.arr;
+  const base = 4 + hlen, meta = {};
+  for (const a of hdr.arrays) meta[a.name] = a;
+  const ctors = { float32: Float32Array, uint32: Uint32Array, int16: Int16Array, uint8: Uint8Array };
+  const get = name => {
+    const a = meta[name], C = ctors[a.dtype], n = a.shape.reduce((p, q) => p * q, 1), s = base + a.offset;
+    const arr = new C(buf.slice(s, s + n * C.BYTES_PER_ELEMENT));
+    if (hdr.delta.includes(name) && a.shape[0] > 1) {             // undo the time-delta coding (Int16Array sums wrap like the encoder)
+      const stride = n / a.shape[0];
+      for (let o = stride; o < n; o++) arr[o] += arr[o - stride];
+    }
+    return arr;
+  };
+  const R = { id, hdr, t: get('t'), T: get('T'), V: get('V'), F: get('F'), vo: get('vo'), vn: get('vn'), fo: get('fo'), fn: get('fn'),
+              bulb: get('bulb'), bulbFaces: get('bulb_faces'), nBulb: meta.bulb.shape[1], diag: hdr.diag, nf: hdr.nframes };
+  if (withLiquid) {
+    R.liqA = get('liqA'); R.labA = get('labA'); R.nA = meta.liqA.shape[1];
+    R.liqB = get('liqB'); R.labB = get('labB'); R.nB = meta.liqB.shape[1]; R.nfB = meta.liqB.shape[0];
+  }
+  // tip / top of the glass tube in the world, every frame
+  const nb = hdr.nbodies, iS = hdr.stem, tr = hdr.tip_rest, pr = hdr.top_rest;
+  R.tipW = new Float32Array(R.nf * 3); R.topW = new Float32Array(R.nf * 3);
+  for (let k = 0; k < R.nf; k++) {
+    const o = (k * nb + iS) * 12, T = R.T;
+    for (let r = 0; r < 3; r++) {
+      R.tipW[k * 3 + r] = T[o + r * 4] * tr[0] + T[o + r * 4 + 1] * tr[1] + T[o + r * 4 + 2] * tr[2] + T[o + r * 4 + 3];
+      R.topW[k * 3 + r] = T[o + r * 4] * pr[0] + T[o + r * 4 + 1] * pr[1] + T[o + r * 4 + 2] * pr[2] + T[o + r * 4 + 3];
+    }
+  }
+  // the in-hand rotation has no meaning before its reference time
+  const tref = hdr.meta.t_ref;
+  R.diag.slip = R.diag.slip.map((v, k) => (R.t[k] < tref - 1e-3 ? null : v));
+  if (R.diag.depth) R.diag.depth_pos = R.diag.depth.map(v => (v === null ? null : Math.max(0, v)));
+  return R;
+}
+
+function setM(obj, T, o) {
+  obj.matrix.set(T[o], T[o + 1], T[o + 2], T[o + 3], T[o + 4], T[o + 5], T[o + 6], T[o + 7], T[o + 8], T[o + 9], T[o + 10], T[o + 11], 0, 0, 0, 1);
+  obj.matrixWorldNeedsUpdate = true;
+}
+function bodyGeometry(R, i) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(R.V.slice(R.vo[i] * 3, (R.vo[i] + R.vn[i]) * 3), 3));
+  g.setIndex(new THREE.BufferAttribute(R.F.slice(R.fo[i] * 3, (R.fo[i] + R.fn[i]) * 3), 1));
+  g.computeVertexNormals();
+  return g;
+}
+function fixed(obj) { obj.matrixAutoUpdate = false; obj.frustumCulled = false; return obj; }
+function makeBulb(R, color, opacity) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(R.nBulb * 3), 3));
+  g.setIndex(new THREE.BufferAttribute(R.bulbFaces, 1));
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.55, side: THREE.DoubleSide, transparent: opacity < 1, opacity });
+  return fixed(new THREE.Mesh(g, mat));
+}
+function fillBulb(R, mesh, k) {                      // bulb vertices are stored in the glass tube's frame
+  const p = mesh.geometry.attributes.position.array, q = R.bulb, o = k * R.nBulb * 3, c = R.hdr.bulb_centre, s = R.hdr.bulb_scale;
+  for (let i = 0; i < R.nBulb * 3; i += 3) { p[i] = q[o + i] * s + c[0]; p[i + 1] = q[o + i + 1] * s + c[1]; p[i + 2] = q[o + i + 2] * s + c[2]; }
+  mesh.geometry.attributes.position.needsUpdate = true; mesh.geometry.computeVertexNormals();
+  setM(mesh, R.T, (k * R.hdr.nbodies + R.hdr.stem) * 12);
+}
+function makeTrail(R, color) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(R.tipW, 3));
+  const line = new THREE.Line(g, new THREE.LineBasicMaterial({ color }));
+  line.frustumCulled = false;
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.003, 12, 8), new THREE.MeshBasicMaterial({ color }));
+  dot.frustumCulled = false;
+  const grp = new THREE.Group(); grp.add(line); grp.add(dot); grp.userData = { line, dot };
+  return grp;
+}
+function setTrail(grp, R, k) {                    // the last 4 s of the tip path (the whole history tangles in a swinging run)
+  let k0 = k; while (k0 > 0 && R.t[k] - R.t[k0 - 1] <= 4.0) k0--;
+  grp.userData.line.geometry.setDrawRange(k0, k - k0 + 1); grp.userData.dot.position.fromArray(R.tipW, k * 3);
+}
+function makePoints(n, size) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  const pts = new THREE.Points(g, new THREE.PointsMaterial({ size, vertexColors: true, sizeAttenuation: true }));
+  pts.frustumCulled = false;
+  return pts;
+}
+function fillPoints(pts, q, o, n, origin, s) {
+  const p = pts.geometry.attributes.position.array;
+  for (let i = 0; i < n * 3; i += 3) { p[i] = q[o + i] * s + origin[0]; p[i + 1] = q[o + i + 1] * s + origin[1]; p[i + 2] = q[o + i + 2] * s + origin[2]; }
+  pts.geometry.attributes.position.needsUpdate = true;
+}
+const WATER = [[0.18, 0.38, 0.92], [0.88, 0.76, 0.12]], WATER_HL = [[1.0, 0.18, 0.58], [1.0, 1.0, 1.0]];
+function colorPoints(pts, lab, table) {
+  const c = pts.geometry.attributes.color.array;
+  for (let k = 0; k < lab.length; k++) c.set(table[lab[k] === 0 ? 0 : 1], k * 3);
+  pts.geometry.attributes.color.needsUpdate = true;
+}
+function dispose(list) { for (const o of list) { scene.remove(o); o.traverse(x => { if (x.geometry) x.geometry.dispose(); if (x.material) x.material.dispose(); }); } }
+
+function buildA() {
+  dispose(objsA); objsA = []; bodies = []; liqBulk = liqOut = ringObj = null;
+  const hdr = A.hdr;
   for (let i = 0; i < hdr.nbodies; i++) {
-    if (vn[i] === 0) continue;
+    if (A.vn[i] === 0) continue;
     const name = hdr.names[i];
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(V.slice(vo[i] * 3, (vo[i] + vn[i]) * 3), 3));
-    g.setIndex(new THREE.BufferAttribute(F.slice(fo[i] * 3, (fo[i] + fn[i]) * 3), 1));
-    g.computeVertexNormals();
     let mat, cls;
     if (name === 'flask' || name === 'beaker') { mat = new THREE.MeshPhysicalMaterial({ color: 0xbcd4e6, roughness: 0.15, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }); cls = 'glass'; }
     else if (name === 'stem') { mat = new THREE.MeshPhysicalMaterial({ color: 0xd2e6f2, roughness: 0.2, transparent: true, opacity: 0.75, side: THREE.DoubleSide }); cls = 'stem'; }
     else if (name.includes('palm') || name.includes('finger')) { mat = new THREE.MeshStandardMaterial({ color: 0x2f3236, roughness: 0.7 }); cls = 'hand'; }
     else { mat = new THREE.MeshStandardMaterial({ color: 0xd8dde3, roughness: 0.6 }); cls = 'arm'; }
-    const mesh = new THREE.Mesh(g, mat); mesh.matrixAutoUpdate = false; mesh.renderOrder = cls === 'glass' ? 2 : 1;
-    scene.add(mesh); bodies.push({ i, name, cls, mesh });
+    const mesh = fixed(new THREE.Mesh(bodyGeometry(A, i), mat)); mesh.renderOrder = cls === 'glass' ? 2 : 1;
+    scene.add(mesh); objsA.push(mesh); bodies.push({ i, name, cls, mesh });
   }
-  // bulb (FEM, animated)
-  const nb = A.bulb.shape[1];
-  const bg = new THREE.BufferGeometry();
-  bg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(nb * 3), 3));
-  bg.setIndex(new THREE.BufferAttribute(A.bulb_faces.arr, 1));
-  const bm = new THREE.Mesh(bg, new THREE.MeshStandardMaterial({ color: 0x2b5fd0, roughness: 0.55, side: THREE.DoubleSide }));
-  scene.add(bm); bulb = { mesh: bm, n: nb, centre: hdr.bulb_centre, scale: hdr.bulb_scale };
-  // liquid (points)
-  const np_ = A.liq.shape[1], lab = A.lab.arr;
-  const lg = new THREE.BufferGeometry();
-  lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(np_ * 3), 3));
-  const col = new Float32Array(np_ * 3);
-  for (let k = 0; k < np_; k++) { const c = lab[k] === 0 ? [0.18, 0.38, 0.92] : [0.88, 0.76, 0.12]; col.set(c, k * 3); }
-  lg.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const pts = new THREE.Points(lg, new THREE.PointsMaterial({ size: 0.0032, vertexColors: true, sizeAttenuation: true }));
-  scene.add(pts); liq = { pts, n: np_, origin: hdr.liq_origin, scale: hdr.liq_scale };
-  ui.slider.max = hdr.nframes - 1; ui.slider.value = 0; frame = 0;
-  applyToggles(); setFrame(0); camFront(); msg.style.display = 'none';
+  bulbA = makeBulb(A, COL_A, 1); scene.add(bulbA); objsA.push(bulbA);
+  trailA = makeTrail(A, COL_A); scene.add(trailA); objsA.push(trailA);
+  // ring at the beaker rim: the "inside the beaker" radius used by the particle count
+  const ib = hdr.beaker;
+  if (ib >= 0) {
+    let ymax = -1e9; const n = A.vn[ib], o = A.vo[ib] * 3, cx = hdr.beaker_rest[0], cz = hdr.beaker_rest[2];
+    for (let k = 0; k < n; k++) ymax = Math.max(ymax, A.V[o + k * 3 + 1]);
+    const r = hdr.meta.beaker_r_in * 1e-3, pts = [];
+    for (let k = 0; k <= 64; k++) { const a = k / 64 * 2 * Math.PI; pts.push(cx + r * Math.cos(a), ymax + 0.001, cz + r * Math.sin(a)); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pts), 3));
+    ringObj = fixed(new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x1c2026 }))); ringObj.userData.body = ib;
+    scene.add(ringObj); objsA.push(ringObj);
+  }
+  if (hdr.meta.liquid) {
+    liqBulk = makePoints(A.nB, 0.0030); colorPoints(liqBulk, A.labB, WATER); scene.add(liqBulk); objsA.push(liqBulk);
+    liqOut = makePoints(A.nA, 0.0030); scene.add(liqOut); objsA.push(liqOut);
+  }
+}
+function buildB() {
+  dispose(objsB); objsB = []; bulbB = trailB = ghostStem = null; mapAB = null;
+  if (!A || !B) return;
+  const iS = B.hdr.stem;
+  ghostStem = fixed(new THREE.Mesh(bodyGeometry(B, iS), new THREE.MeshStandardMaterial({ color: COL_B, roughness: 0.5, transparent: true, opacity: 0.6, side: THREE.DoubleSide })));
+  bulbB = makeBulb(B, COL_B, 0.85);
+  trailB = makeTrail(B, COL_B);
+  for (const o of [ghostStem, bulbB, trailB]) { scene.add(o); objsB.push(o); }
+  mapAB = new Int32Array(A.nf);                                     // nearest comparison frame in time
+  for (let k = 0, j = 0; k < A.nf; k++) {
+    while (j < B.nf - 1 && Math.abs(B.t[j + 1] - A.t[k]) <= Math.abs(B.t[j] - A.t[k])) j++;
+    mapAB[k] = j;
+  }
+  // the comparison tube's tip measured against the CURRENT record's beaker axis (the two records may place the beaker differently)
+  B.tipOffA = new Array(B.nf).fill(null);
+  const nbA = A.hdr.nbodies, ibA = A.hdr.beaker, br = A.hdr.beaker_rest;
+  for (let j = 0, k = 0; j < B.nf; j++) {
+    while (k < A.nf - 1 && Math.abs(A.t[k + 1] - B.t[j]) <= Math.abs(A.t[k] - B.t[j])) k++;
+    const o = (k * nbA + ibA) * 12, T = A.T;
+    const bx = T[o] * br[0] + T[o + 1] * br[1] + T[o + 2] * br[2] + T[o + 3], bz = T[o + 8] * br[0] + T[o + 9] * br[1] + T[o + 10] * br[2] + T[o + 11];
+    B.tipOffA[j] = Math.round(Math.hypot(B.tipW[j * 3] - bx, B.tipW[j * 3 + 2] - bz) * 1e4) / 10;
+  }
 }
 
 function setFrame(k) {
-  if (!data) return;
-  const { hdr, A } = data; frame = Math.max(0, Math.min(hdr.nframes - 1, k));
-  const T = A.T.arr, nb = hdr.nbodies;
-  for (const b of bodies) {
-    const o = (frame * nb + b.i) * 16;
-    b.mesh.matrix.set(T[o], T[o + 1], T[o + 2], T[o + 3], T[o + 4], T[o + 5], T[o + 6], T[o + 7], T[o + 8], T[o + 9], T[o + 10], T[o + 11], T[o + 12], T[o + 13], T[o + 14], T[o + 15]);
-    b.mesh.matrixWorldNeedsUpdate = true;
+  if (!A) return;
+  const hdr = A.hdr, nb = hdr.nbodies;
+  frame = Math.max(0, Math.min(A.nf - 1, k));
+  for (const b of bodies) setM(b.mesh, A.T, (frame * nb + b.i) * 12);
+  fillBulb(A, bulbA, frame); setTrail(trailA, A, frame);
+  if (ringObj) setM(ringObj, A.T, (frame * nb + ringObj.userData.body) * 12);
+  if (liqBulk) fillPoints(liqBulk, A.liqB, Math.min(A.nfB - 1, Math.floor(frame / hdr.bulk_fstep)) * A.nB * 3, A.nB, hdr.liq_origin, hdr.liq_scale);
+  if (liqOut) fillPoints(liqOut, A.liqA, frame * A.nA * 3, A.nA, hdr.liq_origin, hdr.liq_scale);
+  if (B && mapAB) {
+    const kb = mapAB[frame];
+    setM(ghostStem, B.T, (kb * B.hdr.nbodies + B.hdr.stem) * 12); fillBulb(B, bulbB, kb); setTrail(trailB, B, kb);
   }
-  const bp = bulb.mesh.geometry.attributes.position.array, B = A.bulb.arr, ob = frame * bulb.n * 3, bc = bulb.centre, bs = bulb.scale;
-  for (let k2 = 0; k2 < bulb.n * 3; k2 += 3) { bp[k2] = B[ob + k2] * bs + bc[0]; bp[k2 + 1] = B[ob + k2 + 1] * bs + bc[1]; bp[k2 + 2] = B[ob + k2 + 2] * bs + bc[2]; }
-  bulb.mesh.geometry.attributes.position.needsUpdate = true; bulb.mesh.geometry.computeVertexNormals(); bulb.mesh.geometry.computeBoundingSphere(); bulb.mesh.geometry.computeBoundingBox();
-  const lp = liq.pts.geometry.attributes.position.array, L = A.liq.arr, ol = frame * liq.n * 3, lo = liq.origin, ls = liq.scale;
-  for (let k2 = 0; k2 < liq.n * 3; k2 += 3) { lp[k2] = L[ol + k2] * ls + lo[0]; lp[k2 + 1] = L[ol + k2 + 1] * ls + lo[1]; lp[k2 + 2] = L[ol + k2 + 2] * ls + lo[2]; }
-  liq.pts.geometry.attributes.position.needsUpdate = true; liq.pts.geometry.computeBoundingSphere();
-  ui.slider.value = frame; ui.time.textContent = 't = ' + A.t.arr[frame].toFixed(2) + ' s（录制时间）· 帧 ' + (frame + 1) + '/' + hdr.nframes;
-  if (ui.follow.checked) { const c = bulb.mesh.geometry.boundingSphere.center; controls.target.lerp(c, 0.5); }
+  ui.slider.value = frame;
+  ui.time.textContent = 't = ' + A.t[frame].toFixed(2) + ' s（录制时间）· 帧 ' + (frame + 1) + '/' + A.nf;
+  if (ui.follow.checked) controls.target.lerp(new THREE.Vector3().fromArray(A.topW, frame * 3), 0.5);
+  updateCursor(); if (!playing) syncURL();
 }
 
 function applyToggles() {
   for (const b of bodies) {
     if (b.cls === 'arm') b.mesh.visible = ui.showArm.checked;
     if (b.cls === 'hand') b.mesh.visible = ui.showHand.checked;
-    if (b.cls === 'glass' || b.cls === 'stem') { b.mesh.material.wireframe = ui.wire.checked; }
+    if (b.cls === 'glass' || b.cls === 'stem') b.mesh.material.wireframe = ui.wire.checked;
     if (b.cls === 'glass') { b.mesh.material.opacity = parseFloat(ui.glass.value); b.mesh.material.depthWrite = parseFloat(ui.glass.value) > 0.95; }
   }
-  if (liq) liq.pts.visible = ui.showLiq.checked;
+  if (liqBulk) liqBulk.visible = ui.showBulk.checked;
+  if (liqOut) {
+    liqOut.visible = ui.showOut.checked;
+    liqOut.material.size = ui.hl.checked ? 0.0048 : 0.0030;
+    colorPoints(liqOut, A.labA, ui.hl.checked ? WATER_HL : WATER);
+  }
+  for (const o of [trailA, trailB, ringObj]) if (o) o.visible = ui.showTrail.checked;
 }
-for (const id of ['showLiq', 'showArm', 'showHand', 'wire', 'glass']) document.getElementById(id).addEventListener('input', applyToggles);
-ui.slider.addEventListener('input', () => { playing = false; ui.play.textContent = '播放'; setFrame(parseInt(ui.slider.value)); });
-document.getElementById('prev').addEventListener('click', () => { playing = false; ui.play.textContent = '播放'; setFrame(frame - 1); });
-document.getElementById('next').addEventListener('click', () => { playing = false; ui.play.textContent = '播放'; setFrame(frame + 1); });
-ui.play.addEventListener('click', () => { playing = !playing; ui.play.textContent = playing ? '暂停' : '播放'; lastT = performance.now(); acc = 0; if (playing && data && frame >= data.hdr.nframes - 1) setFrame(0); });
-document.getElementById('run').addEventListener('change', e => load(e.target.value));
+for (const id of ['showBulk', 'showOut', 'hl', 'showArm', 'showHand', 'showTrail', 'wire', 'glass']) $(id).addEventListener('input', applyToggles);
+
+// ---------------------------------------------------------------- playback controls
+function pause() { playing = false; ui.play.textContent = '播放'; }
+function seekTime(ts) {                              // nearest frame of the current record
+  if (!A) return;
+  let lo = 0, hi = A.nf - 1;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (A.t[mid] <= ts) lo = mid; else hi = mid; }
+  setFrame(Math.abs(A.t[hi] - ts) < Math.abs(A.t[lo] - ts) ? hi : lo);
+}
+ui.slider.addEventListener('input', () => { pause(); setFrame(parseInt(ui.slider.value)); });
+$('prev').addEventListener('click', () => { pause(); setFrame(frame - 1); });
+$('next').addEventListener('click', () => { pause(); setFrame(frame + 1); });
+function togglePlay() {
+  playing = !playing; ui.play.textContent = playing ? '暂停' : '播放'; lastT = performance.now(); acc = 0;
+  if (playing && A && frame >= A.nf - 1) setFrame(0);
+  if (!playing) syncURL();
+}
+ui.play.addEventListener('click', togglePlay);
+window.addEventListener('keydown', e => {
+  if (e.target instanceof HTMLElement && ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(e.target.tagName) && e.key === ' ') return;
+  if (e.target instanceof HTMLSelectElement) return;
+  if (e.key === 'ArrowLeft') { pause(); setFrame(frame - (e.shiftKey ? 10 : 1)); e.preventDefault(); }
+  else if (e.key === 'ArrowRight') { pause(); setFrame(frame + (e.shiftKey ? 10 : 1)); e.preventDefault(); }
+  else if (e.key === ' ') { togglePlay(); e.preventDefault(); }
+});
 
 function look(px, py, pz, tx, ty, tz) { camera.position.set(px, py, pz); controls.target.set(tx, ty, tz); controls.update(); }
-function camFront() { look(1.55, 0.70, 0.55, 0.62, 0.14, 0.10); }
-document.getElementById('camFront').addEventListener('click', camFront);
-document.getElementById('camSide').addEventListener('click', () => look(0.75, 0.55, 1.35, 0.62, 0.14, 0.10));
-document.getElementById('camTop').addEventListener('click', () => look(0.64, 1.70, 0.12, 0.62, 0.0, 0.10));
-document.getElementById('camNeck').addEventListener('click', () => { const f = bodies.find(b => b.name === 'flask'); const p = new THREE.Vector3().setFromMatrixPosition(f.mesh.matrixWorld); look(p.x + 0.33, 0.36, p.z + 0.28, p.x, 0.16, p.z); });
+function bodyPos(name) { const b = bodies.find(x => x.name === name); if (!b) return null; b.mesh.updateMatrixWorld(true); const g = b.mesh.geometry; g.computeBoundingBox(); return g.boundingBox.getCenter(new THREE.Vector3()).applyMatrix4(b.mesh.matrix); }
+const CAMS = {
+  front: () => look(1.55, 0.70, 0.55, 0.62, 0.14, 0.10),
+  side: () => look(0.75, 0.55, 1.35, 0.62, 0.14, 0.10),
+  top: () => look(0.64, 1.70, 0.12, 0.62, 0.0, 0.10),
+  neck: () => { const p = bodyPos('flask'); if (p) look(p.x + 0.33, 0.36, p.z + 0.28, p.x, 0.16, p.z); },
+  beaker: () => { const p = bodyPos('beaker'); if (p) look(p.x + 0.30, 0.34, p.z - 0.24, p.x, 0.10, p.z); },
+};
+$('camFront').addEventListener('click', CAMS.front); $('camSide').addEventListener('click', CAMS.side); $('camTop').addEventListener('click', CAMS.top);
+$('camNeck').addEventListener('click', CAMS.neck); $('camBeaker').addEventListener('click', CAMS.beaker);
+
+function stateURL(withCamera) {
+  const u = new URL(location.href); u.search = '';
+  if (A) u.searchParams.set('run', A.id);
+  if (B) u.searchParams.set('cmp', B.id);
+  if (A) u.searchParams.set('t', A.t[frame].toFixed(2));
+  if (withCamera) u.searchParams.set('v', [camera.position.x, camera.position.y, camera.position.z, controls.target.x, controls.target.y, controls.target.z].map(v => v.toFixed(3)).join(','));
+  return u;
+}
+let urlTimer = 0;
+function syncURL() { clearTimeout(urlTimer); urlTimer = setTimeout(() => { try { history.replaceState(null, '', stateURL(false)); } catch (e) { /* file:// */ } }, 250); }
+$('copy').addEventListener('click', async () => {
+  const s = stateURL(true).toString(), btn = $('copy');
+  let ok = false;
+  try { await navigator.clipboard.writeText(s); ok = true; } catch (e) {
+    const ta = document.createElement('textarea'); ta.value = s; document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+    ta.remove();
+  }
+  btn.textContent = ok ? '已复制' : '复制失败，请从地址栏复制'; history.replaceState(null, '', s);
+  setTimeout(() => { btn.textContent = '复制当前视图链接'; }, 1800);
+});
+
+// ---------------------------------------------------------------- diagnostics: one small chart per quantity, shared time axis
+const ROWS = [
+  { g: '姿态' },
+  { k: 'tilt', label: '管身倾角', unit: '°', nd: 1, floor: 10 },
+  { k: 'slip', label: '相对手掌的转动（提起前为零点）', unit: '°', nd: 1, floor: 10 },
+  { k: 'bend', label: '胶头弯折', unit: '°', nd: 1, floor: 10 },
+  { g: '管口位置' },
+  { k: 'tip_h', label: '管口离桌面高度', unit: 'mm', nd: 0, floor: 50 },
+  { k: 'tip_off', label: '管口到烧杯轴线的水平距离', unit: 'mm', nd: 0, floor: 50, cap: 150, ref: 'beaker_r_in', refLabel: v => '杯内半径 ' + v + ' mm' },
+  { g: '抓握与胶头' },
+  { k: 'grip', label: '握力', unit: 'N', nd: 1, floor: 5 },
+  { k: 'vcav', label: '胶头腔体体积', unit: 'mL', nd: 2, free: true },
+  { g: '水（来自烧瓶的蓝水，1 粒 = 0.0156 mL）', liq: true },
+  { k: 'depth_pos', label: '管口浸入烧瓶液面的深度', unit: 'mm', nd: 0, floor: 10, liq: true },
+  { k: 'target', label: '气室模型要求的管内水量', unit: '粒', nd: 0, floor: 5, liq: true, axisOf: 'bore' },
+  { k: 'bore', label: '管内实际水量', unit: '粒', nd: 0, floor: 5, liq: true },
+  { k: 'beaker', label: '烧杯里', unit: '粒', nd: 0, floor: 5, liq: true },
+  { k: 'table', label: '桌面上', unit: '粒', nd: 0, floor: 5, liq: true },
+];
+// a record's series for a row; the comparison record's tip distance is measured to the CURRENT record's beaker (the one on screen)
+const series = (R, k) => (R === B && k === 'tip_off' && B.tipOffA ? B.tipOffA : R.diag[k]);
+const SVGNS = 'http://www.w3.org/2000/svg';
+const svg = (tag, attrs) => { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+const fmt = (v, nd) => (v === null || v === undefined || Number.isNaN(v) ? '—' : v.toFixed(nd));
+function niceCeil(x) { const p = Math.pow(10, Math.floor(Math.log10(x))), m = x / p; for (const s of [1, 1.5, 2, 3, 4, 5, 6, 8, 10]) if (m <= s + 1e-9) return s * p; return 10 * p; }
+function niceFloor(x) { const p = Math.pow(10, Math.floor(Math.log10(x))), m = x / p; let best = 1; for (const s of [1, 1.5, 2, 3, 4, 5, 6, 8, 10]) if (m >= s - 1e-9) best = s; return best * p; }
+const PLOT_H = 38;
+let rowEls = [], hoverK = -1, plotW = 0;
+
+function activeRows() { return ROWS.filter(r => A && (r.g || A.diag[r.k] || (B && B.diag[r.k])) && (!r.liq || A.hdr.meta.liquid || (B && B.hdr.meta.liquid))); }
+function rangeOf(r) {                                 // y range of a row over both records (the comparison only inside the current time span)
+  const [t0, t1] = tRange(), ya = series(A, r.k) || [], yb = (B && series(B, r.k)) || [];
+  let lo = Infinity, hi = -Infinity;
+  for (const v of ya) if (v !== null) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  if (B) for (let k = 0; k < yb.length; k++) { const v = yb[k]; if (v !== null && B.t[k] >= t0 - 1e-3 && B.t[k] <= t1 + 1e-3) { lo = Math.min(lo, v); hi = Math.max(hi, v); } }
+  if (!isFinite(lo)) { lo = 0; hi = 1; }
+  if (r.free) { lo = niceFloor(Math.max(lo, 1e-6)); hi = niceCeil(hi); if (hi <= lo) hi = lo + 1; }
+  else { lo = 0; hi = niceCeil(Math.max(hi, r.floor || 1)); }
+  return [lo, hi];
+}
+function tRange() { return [A.t[0], A.t[A.nf - 1]]; }
+function xOf(ts) { const [t0, t1] = tRange(); return (ts - t0) / (t1 - t0) * (plotW - 1) + 0.5; }
+function pathOf(t, y, lo, hi) {
+  let d = '', pen = false;
+  const [t0, t1] = tRange();
+  for (let k = 0; k < y.length; k++) {
+    const v = y[k];
+    if (v === null || v === undefined || t[k] < t0 - 1e-3 || t[k] > t1 + 1e-3) { pen = false; continue; }
+    const X = xOf(t[k]), Y = PLOT_H - 1.5 - (Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo) * (PLOT_H - 3);
+    d += (pen ? 'L' : 'M') + X.toFixed(1) + ' ' + Y.toFixed(1); pen = true;
+  }
+  return d;
+}
+function buildFacts() {
+  const box = $('facts'); box.textContent = '';
+  const line = (R, key) => {
+    const m = R.hdr.meta, run = runById(R.id), p = el('p');
+    if (key) { const i = el('i', 'k' + (key === 'b' ? ' b' : '')); p.appendChild(i); p.appendChild(document.createTextNode(' ')); }
+    p.appendChild(el('b', '', run ? run.name : R.id));
+    const mode = m.newton_tol >= 5e-3 ? '快模式（newton_tol 1e-2）' : '严格模式（newton_tol 1e-3）';
+    const off = m.beaker_offset || [0, 0];
+    const bits = ['录制 ' + m.recording, mode, '手指强度 ' + (m.finger_strength_right ? m.finger_strength_right.toExponential().replace('e-', 'e-') : '—'), '胶头 ' + (m.e_bulb / 1e6).toFixed(1) + ' MPa',
+      m.table_dz ? '滴管' + (m.table_dz < 0 ? '放低 ' : '抬高 ') + Math.abs(m.table_dz * 1e3).toFixed(0) + ' mm' : '滴管原高度',
+      '烧杯' + (off[0] || off[1] ? '在发布时的位置（相对实测位置偏移 ' + (off[0] * 1e3).toFixed(0) + ', ' + (off[1] * 1e3).toFixed(0) + ' mm）' : '在实测位置'),
+      m.liquid ? '烧瓶液面 ' + (m.flask_level ?? 0).toFixed(1) + ' mm（沉降后）' : '无水'];
+    p.appendChild(document.createTextNode('（' + (key === 'b' ? '对比' : '当前') + '）' + bits.join(' · ')));
+    if (m.liquid) {
+      const d = R.diag, last = R.nf - 1, peak = Math.max(...d.bore);
+      p.appendChild(document.createTextNode('。蓝水：管内最多 ' + peak + ' 粒，结束时离开烧瓶 '));
+      p.appendChild(el('b', '', String(d.out[last]))); p.appendChild(document.createTextNode('、烧杯里 '));
+      p.appendChild(el('b', '', String(d.beaker[last]))); p.appendChild(document.createTextNode('、桌面上 '));
+      p.appendChild(el('b', '', String(d.table[last])));
+    }
+    box.appendChild(p);
+  };
+  if (A) line(A, B ? 'a' : null);
+  if (B) line(B, 'b');
+}
+function buildRows() {
+  const host = $('rows'); host.textContent = ''; rowEls = [];
+  if (!A) return;
+  for (const r of activeRows()) {
+    if (r.g) { host.appendChild(el('div', 'grp', r.g)); continue; }
+    const row = el('div', 'row'), rh = el('div', 'rh');
+    rh.appendChild(el('span', 'rl', r.label));
+    const rv = el('span', 'rv'); rh.appendChild(rv); row.appendChild(rh);
+    const s = svg('svg', { class: 'plot', role: 'img', 'aria-label': r.label + '随时间的曲线' });
+    row.appendChild(s); host.appendChild(row);
+    s.addEventListener('pointerdown', e => { s.setPointerCapture(e.pointerId); pause(); seekTime(tAt(e, s)); });
+    s.addEventListener('pointermove', e => { if (e.buttons & 1) seekTime(tAt(e, s)); setHover(tAt(e, s)); });
+    s.addEventListener('pointerleave', () => setHover(null));
+    rowEls.push({ r, s, rv });
+  }
+  layoutRows();
+}
+function tAt(e, s) { const b = s.getBoundingClientRect(), [t0, t1] = tRange(); return t0 + Math.min(1, Math.max(0, (e.clientX - b.left) / Math.max(1, b.width - 1))) * (t1 - t0); }
+function layoutRows() {
+  if (!A || !rowEls.length) return;
+  const w = Math.floor(rowEls[0].s.getBoundingClientRect().width);
+  if (!w) return;
+  plotW = w;
+  const [t0, t1] = tRange();
+  for (const it of rowEls) {
+    const { r, s } = it;
+    s.textContent = ''; s.setAttribute('viewBox', '0 0 ' + w + ' ' + PLOT_H);
+    const ya = series(A, r.k) || [], yb = (B && series(B, r.k)) || [];
+    let [lo, hi] = rangeOf(r);
+    const cap = r.axisOf ? rangeOf(ROWS.find(x => x.k === r.axisOf))[1] : r.cap;      // e.g. the pump target on the bore row's axis
+    const clipped = !!(cap && hi > cap);
+    if (clipped || r.axisOf) hi = cap;
+    it.lo = lo; it.hi = hi;
+    for (let ts = Math.ceil(t0 / 5) * 5; ts <= t1; ts += 5) s.appendChild(svg('line', { class: 'gr', x1: xOf(ts), x2: xOf(ts), y1: 0, y2: PLOT_H }));
+    s.appendChild(svg('line', { class: 'base', x1: 0, x2: w, y1: PLOT_H - 0.5, y2: PLOT_H - 0.5 }));
+    if (r.ref) {
+      const v = A.hdr.meta[r.ref], Y = PLOT_H - 1.5 - (v - lo) / (hi - lo) * (PLOT_H - 3);
+      s.appendChild(svg('line', { class: 'ref', x1: 0, x2: w, y1: Y, y2: Y }));
+      const tx = svg('text', { x: 30, y: Y - 3 }); tx.textContent = r.refLabel(v); s.appendChild(tx);
+    }
+    if (B) s.appendChild(svg('path', { class: 'sb', d: pathOf(B.t, yb, lo, hi) }));
+    s.appendChild(svg('path', { class: 'sa', d: pathOf(A.t, ya, lo, hi) }));
+    const th = svg('text', { x: 3, y: 10 }); th.textContent = (clipped ? '≥' : '') + fmt(hi, hi < 10 && hi % 1 ? 1 : 0); s.appendChild(th);
+    if (lo !== 0) { const tl = svg('text', { x: 3, y: PLOT_H - 4 }); tl.textContent = fmt(lo, lo < 10 && lo % 1 ? 1 : 0); s.appendChild(tl); }
+    it.hov = svg('line', { class: 'hov', y1: 0, y2: PLOT_H, visibility: 'hidden' }); s.appendChild(it.hov);
+    it.play = svg('line', { class: 'play', y1: 0, y2: PLOT_H }); s.appendChild(it.play);
+  }
+  const xa = $('xaxis'); xa.textContent = ''; xa.setAttribute('viewBox', '0 0 ' + w + ' 16');
+  for (let ts = Math.ceil(t0 / 5) * 5; ts <= t1; ts += 5) {
+    const X = xOf(ts), tx = svg('text', { x: Math.min(w - 8, Math.max(8, X)), y: 12, 'text-anchor': 'middle' }); tx.textContent = String(ts); xa.appendChild(tx);
+  }
+  updateCursor();
+}
+function setHover(ts) {
+  if (ts === null || !A) hoverK = -1;
+  else { let lo = 0, hi = A.nf - 1; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (A.t[mid] <= ts) lo = mid; else hi = mid; } hoverK = Math.abs(A.t[hi] - ts) < Math.abs(A.t[lo] - ts) ? hi : lo; }
+  updateCursor();
+}
+function updateCursor() {                             // playhead, hover hairline, and the readout (hover position if any, else the playhead)
+  if (!A) return;
+  const k = hoverK >= 0 ? hoverK : frame, kb = B && mapAB ? mapAB[k] : -1;
+  $('rt').textContent = 't = ' + A.t[k].toFixed(2) + ' s'; $('rmode').textContent = hoverK >= 0 ? '（鼠标所在时刻）' : '（播放位置）';
+  const xp = xOf(A.t[frame]).toFixed(1), xh = hoverK >= 0 ? xOf(A.t[hoverK]).toFixed(1) : null;
+  for (const it of rowEls) {
+    if (!it.play) continue;
+    it.play.setAttribute('x1', xp); it.play.setAttribute('x2', xp);
+    if (xh === null) it.hov.setAttribute('visibility', 'hidden'); else { it.hov.setAttribute('visibility', 'visible'); it.hov.setAttribute('x1', xh); it.hov.setAttribute('x2', xh); }
+    const rv = it.rv, r = it.r; rv.textContent = '';
+    const sa = series(A, r.k), sb = B ? series(B, r.k) : null;
+    if (B) rv.appendChild(el('i', 'k'));
+    rv.appendChild(el('b', '', fmt(sa ? sa[k] : null, r.nd)));
+    if (B) { rv.appendChild(el('i', 'k b')); rv.appendChild(el('b', '', fmt(sb ? sb[kb] : null, r.nd))); }
+    rv.appendChild(document.createTextNode(r.unit));
+  }
+}
+function buildTable() {
+  const host = $('tblwrap'); host.textContent = '';
+  if (!A || !$('tbl').open) return;
+  const cols = [['tilt', '倾角 °', 1], ['tilt_rigid', '手带动的倾角 °', 1], ['slip', '相对手掌 °', 1], ['bend', '胶头弯折 °', 1], ['tip_h', '管口高 mm', 0], ['tip_off', '到杯轴 mm', 0],
+    ['grip', '握力 N', 1], ['vcav', '腔体 mL', 2], ['flask_d', '烧瓶位移 mm', 1], ['beaker_d', '烧杯位移 mm', 1], ['depth', '管口在液面下 mm', 0], ['sub', '管口浸没', 0],
+    ['target', '气室要求', 0], ['bore', '管内', 0], ['beaker', '杯里', 0], ['table', '桌面', 0], ['out', '离开烧瓶', 0]];
+  for (const [R, title] of [[A, B ? '当前记录' : ''], [B, '对比记录']]) {
+    if (!R) continue;
+    const use = cols.filter(c => series(R, c[0]));
+    const tb = el('table'); if (title) tb.appendChild(el('caption', '', title + '：' + (runById(R.id)?.name ?? R.id) + (R === B ? '（到杯轴 = 到当前记录的烧杯）' : '')));
+    const hr = el('tr'); hr.appendChild(el('th', '', 't (s)')); for (const c of use) hr.appendChild(el('th', '', c[1]));
+    const th = el('thead'); th.appendChild(hr); tb.appendChild(th);
+    const body = el('tbody'); let last = -1e9;
+    for (let k = 0; k < R.nf; k++) {
+      if (R.t[k] - last < 0.5 - 1e-3 && k !== R.nf - 1) continue;
+      last = R.t[k];
+      const tr = el('tr'); tr.appendChild(el('td', '', R.t[k].toFixed(2)));
+      for (const c of use) tr.appendChild(el('td', '', fmt(series(R, c[0])[k], c[2])));
+      const ts = R.t[k]; tr.addEventListener('click', () => { pause(); seekTime(ts); });
+      body.appendChild(tr);
+    }
+    tb.appendChild(body); host.appendChild(tb);
+  }
+}
+$('tbl').addEventListener('toggle', buildTable);
+function rebuildDiag() { buildFacts(); buildRows(); buildTable(); }
+
+// ---------------------------------------------------------------- loading / switching records
+function fillSelects() {
+  ui.run.textContent = ''; let grp = null;
+  for (const r of RUNS) {
+    if (r.group) { grp = document.createElement('optgroup'); grp.label = r.group; ui.run.appendChild(grp); }
+    const o = document.createElement('option'); o.value = r.id; o.textContent = r.name; grp.appendChild(o);
+  }
+}
+function fillCmp(keep) {
+  const cur = runById(ui.run.value); ui.cmp.textContent = '';
+  const none = document.createElement('option'); none.value = ''; none.textContent = '（不对比）'; ui.cmp.appendChild(none);
+  let grp = null;
+  for (const r of RUNS) {
+    if (r.group) { grp = document.createElement('optgroup'); grp.label = r.group; ui.cmp.appendChild(grp); }
+    if (r.id === cur.id || r.rec !== cur.rec) continue;
+    const o = document.createElement('option'); o.value = r.id; o.textContent = r.name; grp.appendChild(o);
+  }
+  for (const g of [...ui.cmp.querySelectorAll('optgroup')]) if (!g.children.length) g.remove();
+  ui.cmp.value = keep && [...ui.cmp.options].some(o => o.value === keep) ? keep : '';
+}
+async function loadRun(id, opts = {}) {
+  const token = ++loadToken, keepT = A ? A.t[frame] : null;
+  pause(); msg.style.display = 'block'; msg.textContent = '正在加载记录：' + (runById(id)?.name ?? id) + ' …';
+  try {
+    const R = await fetchRecord(id, true);
+    if (token !== loadToken) return;
+    A = R; buildA();
+    if (B && runById(B.id).rec !== runById(A.id).rec) B = null;
+    buildB();
+    ui.slider.max = A.nf - 1; applyToggles(); rebuildDiag();
+    frame = 0; setFrame(0);
+    if (opts.t !== undefined && opts.t !== null) seekTime(opts.t); else if (keepT !== null) seekTime(keepT);
+    if (firstLoad) { firstLoad = false; if (opts.v) look(...opts.v); else (CAMS[opts.cam] || CAMS.front)(); }
+    msg.style.display = 'none';
+  } catch (e) { if (token === loadToken) msg.textContent = '加载失败：' + e.message; }
+}
+async function loadCmp(id) {
+  const token = ++loadToken;
+  if (!id) { B = null; buildB(); applyToggles(); rebuildDiag(); setFrame(frame); return; }
+  msg.style.display = 'block'; msg.textContent = '正在加载对比记录：' + (runById(id)?.name ?? id) + ' …';
+  try {
+    const R = await fetchRecord(id, false);
+    if (token !== loadToken) return;
+    B = R; buildB(); applyToggles(); rebuildDiag(); setFrame(frame); msg.style.display = 'none';
+  } catch (e) { if (token === loadToken) msg.textContent = '对比记录加载失败：' + e.message; }
+}
+ui.run.addEventListener('change', async () => { const keep = ui.cmp.value; fillCmp(keep); await loadRun(ui.run.value); if (ui.cmp.value && (!B || B.id !== ui.cmp.value)) loadCmp(ui.cmp.value); });
+ui.cmp.addEventListener('change', () => loadCmp(ui.cmp.value));
 
 function animate(now) {
   requestAnimationFrame(animate);
-  if (playing && data) {
-    const t = data.A.t.arr, sp = parseFloat(ui.speed.value);
+  if (playing && A) {
+    const t = A.t, sp = parseFloat(ui.speed.value);
     acc += (now - lastT) / 1000 * sp; lastT = now;
     let k = frame;
-    while (k < data.hdr.nframes - 1 && t[k + 1] - t[frame] <= acc) k++;
+    while (k < A.nf - 1 && t[k + 1] - t[frame] <= acc) k++;
     if (k !== frame) { acc -= t[k] - t[frame]; setFrame(k); }
-    if (frame >= data.hdr.nframes - 1) { playing = false; ui.play.textContent = '播放'; }
+    if (frame >= A.nf - 1) pause();
   }
   controls.update(); renderer.render(scene, camera);
 }
 resize(); animate(performance.now());
-window.__viewer = { scene, camera, controls, renderer, get data() { return data; }, get bodies() { return bodies; }, get bulb() { return bulb; }, get liq() { return liq; }, get frame() { return frame; }, setFrame, THREE };
-const q = new URLSearchParams(location.search).get('run');
-if (q) document.getElementById('run').value = q;
-load(document.getElementById('run').value);
+window.__viewer = { scene, camera, controls, renderer, get A() { return A; }, get B() { return B; }, get frame() { return frame; }, setFrame, seekTime, THREE };
+
+(async () => {
+  fillSelects();
+  const q = new URLSearchParams(location.search);
+  if (q.get('table') === '1') $('tbl').open = true;
+  let id = q.get('run') || 'rec2_strict'; id = ALIAS[id] || id; if (!runById(id)) id = 'rec2_strict';
+  ui.run.value = id;
+  let cmp = q.get('cmp') || ''; cmp = ALIAS[cmp] || cmp; fillCmp(cmp);
+  const t = q.get('t') !== null ? parseFloat(q.get('t')) : null;
+  const v = q.get('v') ? q.get('v').split(',').map(Number) : null;
+  await loadRun(id, { t: Number.isFinite(t) ? t : null, cam: q.get('cam'), v: v && v.length === 6 && v.every(Number.isFinite) ? v : null });
+  if (ui.cmp.value) await loadCmp(ui.cmp.value);
+})();
 </script>
 </body>
 </html>

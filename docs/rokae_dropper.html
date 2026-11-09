@@ -43,7 +43,7 @@ pre { overflow-x: auto; }
 <b>结果：</b>吸水、提起、移到烧杯上方这几步都能稳定复现。滴液能否落进烧杯，取决于滴管离开瓶颈那一刻的“甩动”，8 组带水仿真里只有 1 组把明显的水量滴进了烧杯（第四节）。</p>
 
 <div class="toc"><b>目录</b>
-  <a href="#result">结果视频</a><a href="#scene">一、场景</a><a href="#model">二、滴管模型</a><a href="#numbers">三、结果</a><a href="#runs">四、八组带水仿真</a><a href="#repro">五、复现与下载</a><a href="#limits">六、限制</a><a href="#modes">七、两种模式 × 原始轨迹</a>
+  <a href="#result">结果视频</a><a href="#scene">一、场景</a><a href="#model">二、滴管模型</a><a href="#numbers">三、结果</a><a href="#runs">四、八组带水仿真</a><a href="#repro">五、复现与下载</a><a href="#limits">六、限制</a><a href="#modes">七、两种模式 × 原始轨迹</a><a href="#tuning">八、11-08 调参轮与逐帧定位</a>
 </div>
 
 <section id="result">
@@ -168,7 +168,7 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 <thead><tr><th>量</th><th class="num">真实（视频）</th><th class="num">仿真参考模型</th><th>处理</th></tr></thead>
 <tbody>
 <tr><td>烧瓶瓶口高度</td><td class="num">165 mm</td><td class="num">162 mm</td><td>一致</td></tr>
-<tr><td>烧瓶液面高度</td><td class="num">70 mm</td><td class="num">45 mm</td><td>发布的这组仍是 45 mm；11-08 的新一轮改为 70 mm（<code>--flask-fill 0.066</code>）</td></tr>
+<tr><td>烧瓶液面高度</td><td class="num">70 mm</td><td class="num">约 36 mm</td><td>注水参数是播种高度，落定后液面更低：发布的这组按 45 mm 播种，实际约 36 mm；11-08 一轮按 70 mm 播种（<code>--flask-fill 0.066</code>），实际约 48 mm（第八节）。视频里的 70 mm 还没有达到</td></tr>
 <tr><td>烧杯口高度</td><td class="num">131–145 mm</td><td class="num">98 mm</td><td>未改；滴液点在杯口上方，落点不受影响</td></tr>
 <tr><td>立在瓶里的胶头中心高度</td><td class="num">238 mm</td><td class="num">239 mm</td><td>一致</td></tr>
 <tr><td>胶头中心到管口</td><td class="num">235 mm（粗管到 185 mm 处，再往下约 50 mm 是看不见的细毛细管）</td><td class="num">235 mm（直管到底）</td><td>一致；仿真的管口对应真实毛细管的末端</td></tr>
@@ -185,7 +185,7 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 试过而没有用或更差的：把胶头下锥硬 pin 到玻璃管（力爆到 5 万 N 或翻转）、胶头 E 2.5 / 4 MPa（悬角不变）、摩擦过渡速度 1e-4 / 3e-3、μ 2.0（发散）、手指强度 1e-4（放回时掉）和 1e-3（压扁、卡死）、滴管初始倾斜 14°、缩短滴管（立不住）。</p>
 
 <h3>结果</h3>
-<p><b>三维逐帧查看：</b><a href="rokae_viewer.html?run=f2b_strict">录制 2 · 严格</a> · <a href="rokae_viewer.html?run=f2a_fast">录制 2 · 快</a> · <a href="rokae_viewer.html?run=final1_strict">录制 1 · 严格</a>——仿真里的碰撞网格、胶头有限元顶点和水粒子按仿真记录逐帧回放，可旋转、单步、调玻璃透明度或开线框，用来检查放回阶段有没有穿透（每个记录约 17 MB）。</p>
+<p><b>三维逐帧查看：</b><a href="rokae_viewer.html?run=rec2_strict">录制 2 · 严格</a> · <a href="rokae_viewer.html?run=rec2_fast">录制 2 · 快</a> · <a href="rokae_viewer.html?run=rec1_strict">录制 1 · 严格</a>——仿真里的碰撞网格、胶头有限元顶点和水粒子按仿真记录逐帧回放（25 帧/秒），可旋转、单步、调玻璃透明度或开线框，用来检查放回阶段有没有穿透；右侧是逐帧诊断曲线（倾角、握力、管口位置、管内水量等），可以叠加另一条记录对比（每个记录 5–7 MB，11-09 更新，见第八节）。</p>
 <p>发布的这一组用早先的场景（烧瓶放在按原安装长度推出的指尖笼正下方；手指与胶头的相对几何和修正后的场景相同，见上）。水量以粒子计，1 个粒子 = 0.0156 mL；"悬垂"是转移和悬停阶段管身相对竖直的角度。第二段录制 36 s 之后的放回撞在瓶沿上（握力 1500 N、每帧 3.5 s），因此截到 36 s。</p>
 <div class="tblwrap"><table>
 <thead><tr><th>录制 / 模式</th><th>手指强度</th><th class="num">吸进（粒子）</th><th class="num">滴进烧杯 / 落在桌上</th><th>悬垂</th><th>放回</th><th class="num">用时</th></tr></thead>
@@ -222,6 +222,55 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 <li>烧杯口高度仍是参考模型的 98 mm（真实 131–145 mm），只影响画面，不影响落点统计。</li>
 </ul>
 
+<h2 id="tuning">八、11-08 调参轮：把烧杯放回实测位置，与逐帧定位</h2>
+<p>第七节发布的那组把烧杯放在仿真的滴液点下方，比两相机实测位置靠前 69 mm。这一轮想去掉这个让步：先在干跑里找能把悬垂角降到视频水平（5–15°）的设置，再把烧杯放回实测位置带水重跑。全部是第二段录制、原始轨迹、手指强度 2e-4。<b>结论先说：8 组带水都不如发布组，发布组不变；</b>但这一轮的每条记录现在都能在三维查看器里逐帧看，下面的定位结果都来自这些逐帧数据。</p>
+<p>干跑找到两种设置：<b>滴管放低 6 mm</b>（桌面连同器皿相对机器人降 6 mm，手指在胶头上高 6 mm 处合拢）和<b>胶头 0.5 MPa</b>（发布组 1.2 MPa）。干跑里两者悬停时倾角的中位数是 6° 和 9°，出瓶口后的倾角峰值 11–12°（发布组 29–30°），挤压时管口离实测烧杯轴线 12–13 mm，在杯内（内半径 32 mm）。带水的 8 组是这两种设置和它们的组合 × 两种模式，另加两组少注水的。</p>
+<div class="tblwrap"><table style="min-width:46rem">
+<thead><tr><th>设置（点开三维查看）</th><th class="num">管内最多 → 出瓶口时</th><th class="num">进烧杯 / 落桌</th><th class="num">出瓶口倾角峰值</th><th class="num">悬停倾角</th><th>挤压时管口到烧杯轴线</th></tr></thead>
+<tbody>
+<tr><td colspan="6" style="color:var(--sub);font-size:.84rem;background:color-mix(in srgb, var(--primary) 3%, var(--surface))">带水，烧瓶液面约 48 mm（按 70 mm 播种），烧杯在实测位置</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_low6_fast">滴管放低 6 mm · 快</a></td><td class="num">28 → 4</td><td class="num">0 / 7</td><td class="num">7°</td><td class="num">15°</td><td>41 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_low6_strict">滴管放低 6 mm · 严格</a></td><td class="num">20 → 14</td><td class="num">9 / 2</td><td class="num">7°</td><td class="num">10°</td><td>29 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_soft_fast">胶头 0.5 MPa · 快</a></td><td class="num">40 → 31</td><td class="num">0 / 22</td><td class="num">25°</td><td class="num">8°</td><td>37 mm ①</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_soft_strict">胶头 0.5 MPa · 严格</a></td><td class="num">69 → 60</td><td class="num">2 / 69</td><td class="num">57°</td><td class="num">5–70° 来回摆</td><td>17–218 mm，一直在摆</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_low6soft_fast">放低 6 mm + 0.5 MPa · 快</a></td><td class="num">27 → 2</td><td class="num">1 / 0</td><td class="num">19°</td><td class="num">20°</td><td>67 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_low6soft_strict">放低 6 mm + 0.5 MPa · 严格</a></td><td class="num">29 → 17</td><td class="num">2 / 14</td><td class="num">7°</td><td class="num">16°</td><td>47 mm ②</td></tr>
+<tr><td colspan="6" style="color:var(--sub);font-size:.84rem;background:color-mix(in srgb, var(--primary) 3%, var(--surface))">带水，烧瓶液面约 36 mm（按 45 mm 播种），烧杯在实测位置</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_low6_fast_fill45">滴管放低 6 mm · 快</a></td><td class="num">26 → 3</td><td class="num">0 / 1</td><td class="num">10°</td><td class="num">9°</td><td>15 mm ③</td></tr>
+<tr class=hl><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_soft_fast_fill45">胶头 0.5 MPa · 快</a></td><td class="num">61 → 32</td><td class="num">25 / 5</td><td class="num">20°</td><td class="num">7°</td><td>24 mm</td></tr>
+<tr><td colspan="6" style="color:var(--sub);font-size:.84rem;background:color-mix(in srgb, var(--primary) 3%, var(--surface))">干跑（无水，快模式）。干跑时烧杯还摆在发布组的位置；这里的距离换算到实测位置的烧杯（在查看器里打开一条带水记录、把干跑选为对比，读到的就是这个数）</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_low6_dry">滴管放低 6 mm</a></td><td class="num">—</td><td class="num">—</td><td class="num">12°</td><td class="num">6°</td><td>13 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_soft_dry">胶头 0.5 MPa</a></td><td class="num">—</td><td class="num">—</td><td class="num">11°</td><td class="num">9°</td><td>12 mm</td></tr>
+<tr><td colspan="6" style="color:var(--sub);font-size:.84rem;background:color-mix(in srgb, var(--primary) 3%, var(--surface))">对照：第七节的发布组（液面约 36 mm，烧杯在仿真滴液点下方）</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_strict">发布组 · 严格</a></td><td class="num">63 → 54</td><td class="num">48 / 1</td><td class="num">30°</td><td class="num">13°</td><td>12 mm</td></tr>
+<tr><td style="white-space:nowrap"><a href="rokae_viewer.html?run=rec2_fast">发布组 · 快</a></td><td class="num">66 → 60</td><td class="num">59 / 1</td><td class="num">29°</td><td class="num">20°</td><td>19 mm</td></tr>
+</tbody></table></div>
+<p style="font-size:.86rem;color:var(--sub)">水量单位是粒子（1 粒 = 0.0156 mL）。① 水顺着杯壁外侧流到桌上；② 27.3–27.7 s 管身碰杯沿，把烧杯推走 15 mm；③ 管口在杯内，但管里已经没水。各列都是逐帧数据（每 0.04 s 一帧）：“出瓶口时”是管口升过瓶口（162 mm）那一帧；“倾角峰值”取出瓶口后 0.6 s 内；悬停取 26–31 s；管口到烧杯轴线取 28–30.5 s 的中位数。第七节表里发布组的数字是当时按 0.5 s 间隔读的（出瓶时 25°、吸进 60、快模式 58 进烧杯）；逐帧看，倾角峰值是 30°，管内最多 63 / 66 粒，快模式管里最后 1 粒在 32 s 落下后烧杯里是 59 粒。</p>
+
+<h3>逐帧数据定位出的五件事</h3>
+<ul>
+<li><b>吸进多少，由管口下方那一小束水决定，不由胶头决定。</b>松开胶头后腔体回弹，气室模型要求管内有 154–332 粒水（2.4–5.2 mL），实际只进了 20–66 粒。进水只发生在松开后的前 0.3–0.5 s；之后传送把已经进管的水一路提到管顶（约 1.3 s 内水柱顶端从管口上方 1 cm 升到 20 cm），管口下方没有新的水跟进。泵的进水区只取管口正下方 10 mm 以内、离轴线不超过“内孔半径 − 接触距离”的粒子，对 2.5 mm 间距的粒子来说只是一小束。发布组进了 61–66 粒；滴管放低 6 mm 的五组都只有 20–27 粒，和液面高低（管口浸入 7 mm 或 19 mm）、胶头软硬都无关，原因还没有查清。</li>
+<li><b>进得少，之后一点腔体变化就把它排光。</b>管口离开水面后气室封闭，管内水量跟着腔体体积走。滴管放低 6 mm 时手指合在胶头上部的圆顶上，提起过程中握力上升（快模式那组 13 → 18 N），腔体再缩 0.22–0.41 mL，相当于 14–26 粒，正好是管里的全部：23.2–24.6 s（还在瓶颈里或刚出瓶口）水柱已经少了一半以上，到烧杯上方只剩 0–9 粒。发布组同一段腔体只变 0.02–0.04 mL。</li>
+<li><b>带水和干跑的落点差 14–36 mm。</b>同一设置，带水时挤压位置的管口比干跑偏 14–36 mm（严格模式的软胶头那组一直在摆，不计）：滴管放低 6 mm 的偏向机器人一侧，软胶头的偏向远离机器人一侧；烧瓶里水多偏得多（液面约 36 mm 时 14 / 19 mm，约 48 mm 时 22–36 / 30 mm）。烧杯内半径 32 mm，所以按干跑放的烧杯带水就对不上：管口在 32 mm 以内的才滴得进去（表中 24 mm 那组进 25 粒，29 mm 那组进 9 粒），37 mm 的那组水顺着杯壁外侧流到桌上。</li>
+<li><b>软胶头松手后握不住。</b>提起时握力 5–6 N（发布组 11–12 N），出瓶口后甩到 20–57°；严格模式那组此后一直在 5–70° 之间摆，把 69 粒甩到桌上。滴管放低 6 mm 则相反：出瓶口不再甩（7–10°，接近视频里的样子），问题在吸液。</li>
+<li><b>“70 mm 液面”实际是 48 mm。</b>注水参数是播种高度：粒子播在离壁和底各留 3 mm 的区域里，落定后填满边缘，液面从 70 mm 降到约 48 mm（154 mL；真正到 70 mm 需要约 207 mL）。发布组同理，按 45 mm 播种，实际约 36 mm。视频里的 70 mm 液面这一轮并没有达到。</li>
+</ul>
+
+<h3>怎么用查看器定位</h3>
+<p>查看器里选一条记录，再选一条同一段录制的记录做对比：对比记录的滴管以橙色叠加在同一个场景里，右侧每个量画两条曲线，点或拖曲线跳到对应时刻，切换记录时保留时刻和视角。进过滴管或离开过容器的水粒子全部保留并高亮（品红），所以水柱在管里的位置、滴在哪里都能直接看到。下面三张图各对应上面的一件事，点图进入同一时刻、同一视角。</p>
+<div class="fig"><figure>
+  <a href="rokae_viewer.html?run=rec2_low6_fast&amp;cmp=rec2_strict&amp;t=22.50&amp;cam=neck"><img src="../media/rokae_viewer_drainback.jpg" alt="三维查看器：滴管放低 6 mm 的快模式记录（灰色玻璃管）与发布组严格模式（橙色）在 22.5 s 的对比，右侧是逐帧曲线" loading="lazy"></a>
+  <figcaption><b>水柱在瓶颈里就被排掉（22.5 s）。</b>当前记录是“滴管放低 6 mm · 快模式”，橙色是发布组。右侧“气室模型要求的管内水量”一行：管口离开水面后蓝线立刻掉到约 10 粒，橙线保持 55 粒左右直到 27 s 挤压；“管内实际水量”跟着走，蓝线 24 s 时只剩 4–8 粒。</figcaption>
+</figure></div>
+<div class="fig"><figure>
+  <a href="rokae_viewer.html?run=rec2_soft_fast&amp;t=29.00&amp;cam=beaker"><img src="../media/rokae_viewer_rim.jpg" alt="三维查看器：胶头 0.5 MPa 快模式记录在 29 s 的烧杯特写，管口在杯沿上方，高亮的水粒子落在烧杯外侧" loading="lazy"></a>
+  <figcaption><b>差 5 mm 没进杯（29.0 s）。</b>“胶头 0.5 MPa · 快模式”：悬停稳在 8°，管口离烧杯轴线 37 mm，正好在杯沿上（黑圈是计数用的内半径 32 mm），高亮的水粒子顺着杯壁外侧落到桌上。</figcaption>
+</figure></div>
+<div class="fig"><figure>
+  <a href="rokae_viewer.html?run=rec2_low6_fast&amp;cmp=rec2_low6_dry&amp;t=28.50&amp;v=0.900,0.450,-0.300,0.622,0.100,-0.024"><img src="../media/rokae_viewer_wetdry.jpg" alt="三维查看器：滴管放低 6 mm 的带水记录（灰色玻璃管）与同一设置的干跑（橙色）在 28.5 s 的对比" loading="lazy"></a>
+  <figcaption><b>同一设置，带水和干跑的落点（28.5 s）。</b>橙色是干跑的滴管，管口离烧杯轴线 8 mm，在杯内；带水的（灰色玻璃管）离轴线 41 mm，在杯外。两条记录只差烧瓶里有没有水。</figcaption>
+</figure></div>
+<p>这一轮说明的是：把悬垂角调到视频水平这一步在干跑里能做到，但带水之后吸液和落点各出了一个问题，而且都不在液体求解本身——一个在泵的进水模型（进得太少，于是对腔体的微小变化过分敏感），一个在抓握姿态受烧瓶里的水影响。在这两点改之前，发布组仍是目前最好的结果。</p>
 
 </article>
 
