@@ -137,7 +137,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const DATA_VERSION = '3';
 const RUNS = [
   // v3 runs begin
-  { id: 'rec2_v3_dry', group: '11-10 重新标定的场景（三台相机按手腕端盖标定；手指约 15 N；滴管 235 mm；红球 = 视频实测的胶头位置）', rec: 2, name: '胶头 1.2 MPa · 干跑' },
+  { id: 'rec2_v3_best_dry', group: '11-10 重新标定的场景（三台相机按手腕端盖标定；手指约 15 N；滴管 235 mm；红球 = 视频实测的胶头位置）', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 玻璃摩擦 0.2 · 干跑（抓取位置最接近视频）' },
+  { id: 'rec2_v3_fast', rec: 2, name: '胶头 1.2 MPa · 带水 · 快模式（水滴进烧杯）' },
+  { id: 'rec2_v3_dry', rec: 2, name: '胶头 1.2 MPa · 干跑' },
   // v3 runs end
   { id: 'rec2_strict', group: '已发布（11-07，烧杯放在仿真滴液点下方，烧瓶液面约 36 mm）', rec: 2, name: '录制 2 · 严格模式 · 手指 2e-4' },
   { id: 'rec2_fast', rec: 2, name: '录制 2 · 快模式 · 手指 3e-4' },
@@ -740,7 +742,7 @@ window.__viewer = { scene, camera, controls, renderer, get A() { return A; }, ge
   fillSelects();
   const q = new URLSearchParams(location.search);
   if (q.get('table') === '1') $('tbl').open = true;
-  let id = q.get('run') || 'rec2_strict'; id = ALIAS[id] || id; if (!runById(id)) id = 'rec2_strict';
+  let id = q.get('run') || 'rec2_v3_best_dry'; id = ALIAS[id] || id; if (!runById(id)) id = 'rec2_strict';
   ui.run.value = id;
   let cmp = q.get('cmp') || ''; cmp = ALIAS[cmp] || cmp; fillCmp(cmp);
   const t = q.get('t') !== null ? parseFloat(q.get('t')) : null;
