@@ -135,7 +135,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // ---------------------------------------------------------------- records
 const DATA_VERSION = '5';
-const SIZE_MB = {"rec1_strict":4.7,"rec2_v3_best_strict_dry":3.9,"rec2_v3_f10_mu06_fast":3.9,"rec2_low6soft_fast":7.0,"rec2_low6_fast":6.3,"rec2_v3_best_fast":5.9,"rec2_soft_dry":3.9,"rec2_low6_fast_fill45":5.4,"rec2_low6_dry":3.9,"rec2_strict":5.0,"rec2_soft_fast":6.6,"rec2_soft_strict":6.1,"rec2_low6soft_strict":5.2,"rec2_v3_best_dry":4.1,"rec2_v3_wet_f05_strict":4.1,"rec2_v3_wet_f07_fast":5.8,"rec2_v3_d1_fast":3.9,"rec2_v3_dry":4.3,"rec2_soft_fast_fill45":6.5,"rec2_fast":5.9,"rec2_v3_f05_fast":3.9,"rec2_v3_fast":6.3,"rec2_low6_strict":4.9,"rec2_v3_strict":5.4,"rec2_v3_f10_fast":3.9,"rec2_v3_d1_strict":3.6};   // download sizes, for the progress text
+const SIZE_MB = {"rec1_strict":4.7,"rec2_v3_best_strict_dry":3.9,"rec2_v3_wet_f07_n3":4.9,"rec2_v3_f10_mu06_fast":3.9,"rec2_low6soft_fast":7.0,"rec2_low6_fast":6.3,"rec2_v3_best_fast":5.9,"rec2_soft_dry":3.9,"rec2_low6_fast_fill45":5.4,"rec2_v3_wet_f05_n3":5.1,"rec2_low6_dry":3.9,"rec2_strict":5.0,"rec2_soft_fast":6.6,"rec2_soft_strict":6.1,"rec2_low6soft_strict":5.2,"rec2_v3_best_dry":4.1,"rec2_v3_wet_f05_strict":4.1,"rec2_v3_wet_f07_fast":5.8,"rec2_v3_d1_fast":3.9,"rec2_v3_dry":4.3,"rec2_soft_fast_fill45":6.5,"rec2_fast":5.9,"rec2_v3_f05_fast":3.9,"rec2_v3_fast":6.3,"rec2_low6_strict":4.9,"rec2_v3_strict":5.4,"rec2_v3_f10_fast":3.9,"rec2_v3_d1_strict":3.6};   // download sizes, for the progress text
 const RUNS = [
   // v3 runs begin
   { id: 'rec2_v3_f05_fast', group: '11-10 重新标定的场景（三台相机按手腕端盖标定；手指约 15 N；滴管 235 mm；红球 / 红杆 = 视频实测的胶头和管身）', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 接触层 1 mm · 手指约 2 N · 干跑 · 快模式（放回进瓶）' },
@@ -143,6 +143,8 @@ const RUNS = [
   { id: 'rec2_v3_d1_fast', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 接触层 1 mm · 手指约 15 N · 干跑 · 快模式' },
   { id: 'rec2_v3_strict', rec: 2, name: '胶头 1.2 MPa · 带水 · 手指约 15 N · 严格模式（30 粒进杯）' },
   { id: 'rec2_v3_fast', rec: 2, name: '胶头 1.2 MPa · 带水 · 手指约 15 N · 快模式（20 粒进杯）' },
+  { id: 'rec2_v3_wet_f05_n3', rec: 2, name: '【带水 · 最接近】手指约 2 N · 胶头 1.2 MPa · 容差 3e-3（8 粒进杯，回程离瓶轴 17 mm、擦瓶口未进）' },
+  { id: 'rec2_v3_wet_f07_n3', rec: 2, name: '【带水】手指约 3 N · 胶头 1.2 MPa · 容差 3e-3（11 粒进杯，回程偏 37 mm）' },
   { id: 'rec2_v3_wet_f07_fast', rec: 2, name: '【带水 · 失败】手指约 3 N · 胶头 1.2 MPa · 快模式（吸水 32 粒，24 s 出瓶时在指间翻转）' },
   { id: 'rec2_v3_wet_f05_strict', rec: 2, name: '【带水 · 失败】手指约 2 N · 胶头 4.0 MPa · 严格模式（只吸进 11 粒，回程偏 57 mm）' },
   { id: 'rec2_v3_f10_fast', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 接触层 1 mm · 手指约 4.5 N、摩擦 1.0 · 干跑 · 快模式' },
@@ -578,7 +580,7 @@ function buildFacts() {
     const m = R.hdr.meta, run = runById(R.id), p = el('p');
     if (key) { const i = el('i', 'k' + (key === 'b' ? ' b' : '')); p.appendChild(i); p.appendChild(document.createTextNode(' ')); }
     p.appendChild(el('b', '', run ? run.name : R.id));
-    const mode = m.newton_tol >= 5e-3 ? '快模式（newton_tol 1e-2）' : '严格模式（newton_tol 1e-3）';
+    const mode = m.newton_tol >= 5e-3 ? '快模式（newton_tol 1e-2）' : m.newton_tol > 1.5e-3 ? '牛顿容差 ' + Number(m.newton_tol).toExponential(0).replace('e-', 'e-') + '（介于快模式 1e-2 和严格模式 1e-3 之间）' : '严格模式（newton_tol 1e-3）';
     const off = m.beaker_offset || [0, 0];
     const fit = !!(m.hand_mount_env && m.hand_mount_env.WUJI_MOUNT_FIT), v3 = /_v3/.test(m.scene_cal || '');
     const hd = R.hdr, dropLen = Math.round((Math.hypot(hd.top_rest[0] - hd.tip_rest[0], hd.top_rest[1] - hd.tip_rest[1], hd.top_rest[2] - hd.tip_rest[2]) + 0.035) * 1000);
