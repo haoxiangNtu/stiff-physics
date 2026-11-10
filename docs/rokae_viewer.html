@@ -134,7 +134,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // ---------------------------------------------------------------- records
-const DATA_VERSION = '4';
+const DATA_VERSION = '5';
+const SIZE_MB = {"rec1_strict":4.7,"rec2_v3_best_strict_dry":3.9,"rec2_v3_f10_mu06_fast":3.9,"rec2_low6soft_fast":7.0,"rec2_low6_fast":6.3,"rec2_v3_best_fast":5.9,"rec2_soft_dry":3.9,"rec2_low6_fast_fill45":5.4,"rec2_low6_dry":3.9,"rec2_strict":5.0,"rec2_soft_fast":6.6,"rec2_soft_strict":6.1,"rec2_low6soft_strict":5.2,"rec2_v3_best_dry":4.1,"rec2_v3_wet_f05_strict":4.1,"rec2_v3_wet_f07_fast":5.8,"rec2_v3_d1_fast":3.9,"rec2_v3_dry":4.3,"rec2_soft_fast_fill45":6.5,"rec2_fast":5.9,"rec2_v3_f05_fast":3.9,"rec2_v3_fast":6.3,"rec2_low6_strict":4.9,"rec2_v3_strict":5.4,"rec2_v3_f10_fast":3.9,"rec2_v3_d1_strict":3.6};   // download sizes, for the progress text
 const RUNS = [
   // v3 runs begin
   { id: 'rec2_v3_f05_fast', group: '11-10 重新标定的场景（三台相机按手腕端盖标定；手指约 15 N；滴管 235 mm；红球 / 红杆 = 视频实测的胶头和管身）', rec: 2, name: '胶头 4.0 MPa · 手套 2 mm · 接触层 1 mm · 手指约 2 N · 干跑 · 快模式（放回进瓶）' },
@@ -213,7 +214,17 @@ let frame = 0, playing = false, lastT = 0, acc = 0, loadToken = 0, firstLoad = t
 async function fetchRecord(id, withLiquid) {
   const res = await fetch('../media/viewer/' + id + '.bin?v=' + DATA_VERSION);
   if (!res.ok) throw new Error('HTTP ' + res.status);
-  let buf = await res.arrayBuffer();
+  let buf;
+  if (res.body && res.body.getReader) {                    // stream it so a slow connection shows progress instead of an empty scene
+    const total = SIZE_MB[id] || 0, label = msg.textContent.replace(/ …[^…]*$/, ''), rd = res.body.getReader(), parts = []; let got = 0;
+    for (;;) {
+      const { done, value } = await rd.read(); if (done) break;
+      parts.push(value); got += value.length;
+      msg.textContent = label + ' … 已下载 ' + (got / 1e6).toFixed(1) + (total ? ' / ' + total.toFixed(1) : '') + ' MB' + (total ? '（' + Math.min(99, Math.round(got / total / 1e4)) + '%）' : '');
+    }
+    const all = new Uint8Array(got); let o = 0; for (const c of parts) { all.set(c, o); o += c.length; }
+    buf = all.buffer;
+  } else buf = await res.arrayBuffer();
   const m = new Uint8Array(buf, 0, 3);
   if (m[0] === 0x1f && m[1] === 0x8b && m[2] === 0x08) {
     if (typeof DecompressionStream === 'undefined') throw new Error('这个浏览器不支持解压（需要较新的 Chrome / Edge / Firefox / Safari）');
