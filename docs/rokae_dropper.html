@@ -43,7 +43,7 @@ pre { overflow-x: auto; }
 <b>结果：</b>吸水、提起、移到烧杯上方这几步都能稳定复现。滴液能否落进烧杯，取决于滴管离开瓶颈那一刻的“甩动”，8 组带水仿真里只有 1 组把明显的水量滴进了烧杯（第四节）。</p>
 
 <div class="toc"><b>目录</b>
-  <a href="#result">结果视频</a><a href="#scene">一、场景</a><a href="#model">二、滴管模型</a><a href="#numbers">三、结果</a><a href="#runs">四、八组带水仿真</a><a href="#repro">五、复现与下载</a><a href="#limits">六、限制</a><a href="#modes">七、两种模式 × 原始轨迹</a><a href="#tuning">八、11-08 调参轮与逐帧定位</a><a href="#recal">九、11-09 重新标定（已作废）</a><a href="#recal2">十、11-10 用手腕端盖重新标定</a>
+  <a href="#result">结果视频</a><a href="#scene">一、场景</a><a href="#model">二、滴管模型</a><a href="#numbers">三、结果</a><a href="#runs">四、八组带水仿真</a><a href="#repro">五、复现与下载</a><a href="#limits">六、限制</a><a href="#modes">七、两种模式 × 原始轨迹</a><a href="#tuning">八、11-08 调参轮与逐帧定位</a><a href="#recal">九、11-09 重新标定（已作废）</a><a href="#recal2">十、11-10 用手腕端盖重新标定</a><a href="#rootcause">十一、11-11 到底卡在哪</a>
 </div>
 
 <section id="result">
@@ -538,6 +538,261 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 </ul>
 
 <!-- sec10 end -->
+
+<h2 id="rootcause">十一、11-11：到底卡在哪——手指怎么驱动、瓶口处的毫米级散布、吸液模型</h2>
+<p>第十节结尾说“握持处在临界状态，下一步是让握持不再临界，而不是继续扫参数”。这一节是这件事的结果。做法是把视频、录制的指令和仿真记录放进同一个坐标系逐项对照，找第一处偏离和它的机制，再做对照实验验证。引擎没有改，改的只有回放脚本里手指怎么驱动；这一节的回放都用直接法线性求解和确定性求和（同一配置重复运行逐帧一致），牛顿容差 1e-3，一条干跑 22–26 分钟。</p>
+<ol>
+<li><b>主因是手指的驱动模型，不是求解器，也不是标定。</b>原来的关节驱动在指令超前 0.1 rad 以后变成恒定力矩，没有位置刚度，刚度还按连杆质量缩放：仿真里拇指被推开 13–30 mm（真实拇指守在原位），胶头几乎没被压扁（仿真 33–35 mm 宽，真实 25–30 mm），滴管只被几个毫米级的接触点夹着。厂商公开规格写的是自锁关节、位置控制、电流上限。</li>
+<li><b>换成“自锁 + 力矩上限”的手指，握持稳了，干跑完整循环能走通，但回程进瓶是擦边的。</b>管口下到瓶口平面时离瓶轴的距离：旧驱动 40 mm，自锁之后 8–20 mm；直管要 ≤ 9.3 mm。换了 20 种手模型和管口（力矩 1.25–1.5 倍一族，含带水），9 条干净进瓶、4 条把烧瓶碰歪 6–8 mm 才滑进去、7 条没进。</li>
+<li><b>手指该用多大的力：管内液柱是比胶头宽度更硬的证据。</b>真实吸进约 0.6–0.7 mL、转运途中不漏。堵转力矩取厂商标称值时液体量对得上、回程偏 24 mm；取 1.5 倍时回程能进，但会多吸一倍多、刚提起就把水挤掉。出力正比于位置误差的“位置环”手模型两头都能照顾到。</li>
+<li><b>带水：位置环手模型下，吸进去的水第一次全部滴进了烧杯；吸液量和放回还不行。</b>水卡在泵模型的两处和上面那一条：管口正下方的水被吸走以后周围的水不回填（网格分辨不出这个洞），所以吸不进；管口离水以后，胶头体积的每次微小波动都被气室模型当成排液（回弹时只进空气、不回吸），水在路上被一点点推出去。</li>
+<li><b>为什么有了轨迹和视频还不够。</b>录制的轨迹是操作员看着滴管做出来的，它只对当时滴管在手里的那个姿态成立。开环回放要求仿真里滴管在手里的朝向准到约 1.5°（200 mm 长的管身，管口 5 mm）；而我们对真实抓取的了解（没有手指反馈和电流、手套是软的、几何靠相机标定到 2–3 mm）只够把它定到 3–5°。</li>
+</ol>
+
+<h3>真实的抓取是什么样（从视频里量）</h3>
+<div class="tblwrap"><table>
+<thead><tr><th>阶段（录制时间）</th><th class="num">近景相机里胶头的可见宽度（毫米）</th></tr></thead>
+<tbody>
+<tr><td>自由，还没碰到（12–14 s）</td><td class="num">34.3</td></tr>
+<tr><td>捏紧，吸液前（17.6–18.5 s）</td><td class="num">27.0</td></tr>
+<tr><td>握持，管口在水下（19.5–21 s）</td><td class="num">29.0</td></tr>
+<tr><td>转运（24–26 s）</td><td class="num">29.2</td></tr>
+<tr><td>悬停在烧杯上方（28.5–29.5 s）</td><td class="num">27.0</td></tr>
+<tr><td>滴液（30.5–31.5 s）</td><td class="num">24.7</td></tr>
+<tr><td>回程（32–34 s）</td><td class="num">26.9</td></tr>
+</tbody></table></div>
+<ul>
+<li><b>胶头一直被压着约 5 mm</b>，两次捏紧再多压 2–5 mm。仿真胶头的自由尺寸和真实一致（34.7 mm）。这个宽度同时受手指遮挡和视角影响，只能和“按同一台相机、同样遮挡渲染出来的仿真”比，不能跨阶段比。</li>
+<li><b>拇指不动，捏是食指和中指做的。</b>按指令，拇指指尖从 16.5 s 起相对手掌基本不动；吸液那一下中指指尖被要求到离胶头轴线 4 mm 处，而真实胶头此时还有 27 mm 宽——真实的手指被胶头挡住，停在离指令 1 cm 以上的地方。空中不碰东西时，手的轮廓和指令逐帧重合（偏移 ≤ 1 像素、时间差 0）。</li>
+<li><b>手套比之前用的厚：</b>每侧约 4 mm（之前 2 mm）。</li>
+<li><b>管内液柱：</b>转运途中长 27–30 mm，下端约 10 mm 在拉尖段里，折合约 0.6–0.7 mL；21.5–27.5 s 之间没有可见的缩短；滴液只滴了少量，回程时液柱还在。</li>
+<li><b>管口是拉尖的：</b>玻璃管末端 10–12 mm 收成 2.5–3 mm 粗的尖，烧瓶口有一圈外翻的边。仿真一直用的是 9.2 mm 粗的平头直管。</li>
+<li><b>两个参考量要修正：</b>握持时量到的“胶头中心”是可见部分的质心，被手指挡住后朝露出的一侧偏约 6 mm（之前说的“仿真胶头离实测位置 9–11 mm”主要是它）；由它算出的管身方向带约 2° 的偏差。管口位置不受影响。</li>
+</ul>
+
+<h3>旧驱动下发生了什么</h3>
+<ul>
+<li><b>拇指退让。</b>仿真里拇指指尖离指令 13–30 mm，食指、中指基本在指令位置——和真实正相反。驱动刚度按连杆质量缩放：手指根部关节连着 169 g 的手掌，力矩上限 3.4 N·m；拇指第二关节两侧的连杆很轻，上限只有 0.34 N·m。厂商给的是 0.62–0.65 和 0.43 N·m。</li>
+<li><b>胶头没被压扁。</b>可见宽度 33–35 mm（真实 25–30 mm），接触面只有几毫米；挤压时胶头整体被推向拇指一侧 7–14 mm。</li>
+<li><b>出瓶以后在指间转。</b>出瓶后 0.5 s 内管身转 11°，几乎全是绕“拇指接触点—中指接触点”连线的自旋，两处接触面原地打转，手指没有让位、胶头没有弯。第八到十节的现象（对容差敏感、同一配方有时进瓶有时不进、带水时翻转）都来自这里：握持没有刚度，毫米级的差别被放大成十几度。</li>
+</ul>
+
+<h3>自锁驱动：做了什么</h3>
+<p>右手 20 个关节各是一根硬弹簧，连到一个跟随录制指令的“设定点”。设定点前进时最多领先关节“堵转力矩 ÷ 弹簧刚度”（电机推不动就停在堵转力上），<b>不会因为外力后退</b>（自锁的传动推不回去）。堵转力矩取厂商公开模型里各关节的力矩值，整体乘一个倍数；这不是这次录制的实测值，录制里没有手指的反馈和电流。手套按 4 mm，胶头 1.2 MPa。</p>
+<p>效果：出瓶到回程滴管在手里的朝向变化从 7–20° 降到 1–3°；烧瓶全程位移 0.6–1.0 mm（真实 &lt; 1 mm）；悬停时管口在烧杯上方（离杯轴 2–23 mm，杯内半径 32 mm）；带水时出瓶不再翻转。<a href="rokae_viewer.html?run=rec2_v4_selflock_dry&amp;cmp=rec2_v4_legacy_exact_dry&amp;t=20.00&amp;cam=neck">查看器里对比新旧驱动（20 s，握持）</a>：橙色是旧驱动的滴管，拇指和胶头的位置差得最明显。</p>
+
+<h3>回程：全都落在允许误差的边上</h3>
+<p>决定进不进瓶的量是：管口下到瓶口平面那一刻，管中心离瓶轴多远。仿真的直管外半径 4.7 mm、瓶颈内半径 14 mm，几何上要 ≤ 9.3 mm（实际 10.6 mm 以内还能贴着瓶沿滑进去，11.5 mm 起卡住）；视频里真实是 4–7 mm。</p>
+<div class="fig"><div style="overflow-x:auto"><div style="min-width:620px">
+<svg viewBox="0 0 760 642" width="100%" role="img" aria-label="各手模型下管口过瓶口平面时离瓶轴的距离" style="max-width:760px;display:block;margin:0 auto;font:13px/1.2 system-ui,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">
+<style>.ax{stroke:var(--e300);stroke-width:1}.gr{stroke:var(--e200);stroke-width:1}.tx{fill:var(--ink)}.sb{fill:var(--sub)}.dot{fill:var(--primary);stroke:var(--surface);stroke-width:2}.ring{fill:var(--surface);stroke:var(--primary);stroke-width:2}.half{fill:var(--primary);fill-opacity:.38;stroke:var(--primary);stroke-width:2}.band{fill:var(--primary);opacity:.13}.lim{stroke:var(--ink);stroke-width:1.2;stroke-dasharray:4 3}.val{fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;font-variant-numeric:tabular-nums}</style>
+<rect class="band" x="334.7" y="38" width="26.0" height="560"><title>视频里真实的管口：离瓶轴 4–7 mm</title></rect>
+<line class="gr" x1="300.0" y1="38" x2="300.0" y2="598"/><text class="sb" x="300.0" y="616" text-anchor="middle">0</text>
+<line class="gr" x1="386.7" y1="38" x2="386.7" y2="598"/><text class="sb" x="386.7" y="616" text-anchor="middle">10</text>
+<line class="gr" x1="473.3" y1="38" x2="473.3" y2="598"/><text class="sb" x="473.3" y="616" text-anchor="middle">20</text>
+<line class="gr" x1="560.0" y1="38" x2="560.0" y2="598"/><text class="sb" x="560.0" y="616" text-anchor="middle">30</text>
+<line class="gr" x1="646.7" y1="38" x2="646.7" y2="598"/><text class="sb" x="646.7" y="616" text-anchor="middle">40</text>
+<line class="lim" x1="380.6" y1="24" x2="380.6" y2="598"><title>直管：管中心要在离瓶轴 9.3 mm 以内（瓶颈内半径 14 mm − 管外半径 4.7 mm）</title></line>
+<text class="sb" x="347.7" y="20" text-anchor="middle">真实 4–7</text>
+<text class="tx" x="385.6" y="20">直管上限 9.3 mm</text>
+<text class="sb" x="482.0" y="636" text-anchor="middle">管口下到瓶口平面时，管中心离瓶轴的距离（mm）</text>
+<text class="tx" x="288" y="62.5" text-anchor="end">旧驱动（恒力矩）</text>
+<line class="gr" x1="300" y1="58.0" x2="644.9" y2="58.0"/>
+<circle class="ring" cx="644.9" cy="58.0" r="5"><title>旧驱动（恒力矩）：39.8 mm，没进</title></circle>
+<text class="val" x="655.9" y="62.5">39.8</text>
+<line class="ax" x1="8" y1="70.0" x2="664" y2="70.0"/>
+<text class="tx" x="288" y="86.5" text-anchor="end">自锁 · 标称力矩 · 刚度 100</text>
+<line class="gr" x1="300" y1="82.0" x2="508.0" y2="82.0"/>
+<circle class="ring" cx="508.0" cy="82.0" r="5"><title>自锁 · 标称力矩 · 刚度 100：24.0 mm，没进</title></circle>
+<text class="val" x="519.0" y="86.5">24.0</text>
+<text class="tx" x="288" y="110.5" text-anchor="end">自锁 · 标称力矩 · 刚度 1000</text>
+<line class="gr" x1="300" y1="106.0" x2="497.6" y2="106.0"/>
+<circle class="ring" cx="497.6" cy="106.0" r="5"><title>自锁 · 标称力矩 · 刚度 1000：22.8 mm，没进</title></circle>
+<text class="val" x="508.6" y="110.5">22.8</text>
+<line class="ax" x1="8" y1="118.0" x2="664" y2="118.0"/>
+<text class="tx" x="288" y="134.5" text-anchor="end">自锁 · 1.25 倍 · 刚度 1000 *</text>
+<line class="gr" x1="300" y1="130.0" x2="445.6" y2="130.0"/>
+<circle class="ring" cx="445.6" cy="130.0" r="5"><title>自锁 · 1.25 倍 · 刚度 1000 *：16.8 mm，没进</title></circle>
+<text class="val" x="456.6" y="134.5">16.8</text>
+<text class="tx" x="288" y="158.5" text-anchor="end">自锁 · 1.5 倍 · 刚度 1000 *</text>
+<line class="gr" x1="300" y1="154.0" x2="369.3" y2="154.0"/>
+<circle class="dot" cx="369.3" cy="154.0" r="6"><title>自锁 · 1.5 倍 · 刚度 1000 *：8.0 mm，进瓶</title></circle>
+<text class="val" x="380.3" y="158.5">8.0 · 进瓶</text>
+<text class="tx" x="288" y="182.5" text-anchor="end">自锁 · 1.5 倍 · 刚度 400 *</text>
+<line class="gr" x1="300" y1="178.0" x2="385.8" y2="178.0"/>
+<circle class="dot" cx="385.8" cy="178.0" r="6"><title>自锁 · 1.5 倍 · 刚度 400 *：9.9 mm，进瓶</title></circle>
+<text class="val" x="396.8" y="182.5">9.9 · 进瓶</text>
+<text class="tx" x="288" y="206.5" text-anchor="end">自锁 · 1.5 倍 · 刚度 100</text>
+<line class="gr" x1="300" y1="202.0" x2="386.7" y2="202.0"/>
+<circle class="dot" cx="386.7" cy="202.0" r="6"><title>自锁 · 1.5 倍 · 刚度 100：10.0 mm，进瓶</title></circle>
+<text class="val" x="397.7" y="206.5">10.0 · 进瓶</text>
+<text class="tx" x="288" y="230.5" text-anchor="end">自锁 · 1.5 倍 · 刚度 1000</text>
+<line class="gr" x1="300" y1="226.0" x2="445.6" y2="226.0"/>
+<circle class="ring" cx="445.6" cy="226.0" r="5"><title>自锁 · 1.5 倍 · 刚度 1000：16.8 mm，没进</title></circle>
+<text class="val" x="456.6" y="230.5">16.8</text>
+<text class="tx" x="288" y="254.5" text-anchor="end">　+ 齿隙 ±1°</text>
+<line class="gr" x1="300" y1="250.0" x2="399.7" y2="250.0"/>
+<circle class="ring" cx="399.7" cy="250.0" r="5"><title>+ 齿隙 ±1°：11.5 mm，没进</title></circle>
+<text class="val" x="410.7" y="254.5">11.5</text>
+<text class="tx" x="288" y="278.5" text-anchor="end">　+ 齿隙 ±2°</text>
+<line class="gr" x1="300" y1="274.0" x2="391.9" y2="274.0"/>
+<circle class="dot" cx="391.9" cy="274.0" r="6"><title>+ 齿隙 ±2°：10.6 mm，进瓶</title></circle>
+<text class="val" x="402.9" y="278.5">10.6 · 进瓶</text>
+<text class="tx" x="288" y="302.5" text-anchor="end">　+ 齿隙 ±3°</text>
+<line class="gr" x1="300" y1="298.0" x2="425.7" y2="298.0"/>
+<circle class="ring" cx="425.7" cy="298.0" r="5"><title>+ 齿隙 ±3°：14.5 mm，没进</title></circle>
+<text class="val" x="436.7" y="302.5">14.5</text>
+<text class="tx" x="288" y="326.5" text-anchor="end">　+ 食指 / 中指关节偏移 *</text>
+<line class="gr" x1="300" y1="322.0" x2="434.3" y2="322.0"/>
+<circle class="ring" cx="434.3" cy="322.0" r="5"><title>+ 食指 / 中指关节偏移 *：15.5 mm，没进</title></circle>
+<text class="val" x="445.3" y="326.5">15.5</text>
+<line class="ax" x1="8" y1="334.0" x2="664" y2="334.0"/>
+<text class="tx" x="288" y="350.5" text-anchor="end">位置环 4° · 上限 1.5 倍 · 刚度 100</text>
+<line class="gr" x1="300" y1="346.0" x2="382.3" y2="346.0"/>
+<circle class="dot" cx="382.3" cy="346.0" r="6"><title>位置环 4° · 上限 1.5 倍 · 刚度 100：9.5 mm，进瓶</title></circle>
+<text class="val" x="393.3" y="350.5">9.5 · 进瓶</text>
+<text class="tx" x="288" y="374.5" text-anchor="end">位置环 5° · 上限 1.5 倍 · 刚度 100</text>
+<line class="gr" x1="300" y1="370.0" x2="358.9" y2="370.0"/>
+<circle class="dot" cx="358.9" cy="370.0" r="6"><title>位置环 5° · 上限 1.5 倍 · 刚度 100：6.8 mm，进瓶</title></circle>
+<text class="val" x="369.9" y="374.5">6.8 · 进瓶</text>
+<text class="tx" x="288" y="398.5" text-anchor="end">位置环 6° · 上限 1.5 倍 · 刚度 100</text>
+<line class="gr" x1="300" y1="394.0" x2="390.1" y2="394.0"/>
+<circle class="dot" cx="390.1" cy="394.0" r="6"><title>位置环 6° · 上限 1.5 倍 · 刚度 100：10.4 mm，进瓶</title></circle>
+<text class="val" x="401.1" y="398.5">10.4 · 进瓶</text>
+<text class="tx" x="288" y="422.5" text-anchor="end">位置环 6° · 上限 1.5 倍 · 刚度 400</text>
+<line class="gr" x1="300" y1="418.0" x2="427.4" y2="418.0"/>
+<circle class="half" cx="427.4" cy="418.0" r="5"><title>位置环 6° · 上限 1.5 倍 · 刚度 400：14.7 mm，碰歪烧瓶后进</title></circle>
+<text class="val" x="438.4" y="422.5">14.7 · 碰歪烧瓶后进</text>
+<text class="tx" x="288" y="446.5" text-anchor="end">位置环 8° · 上限 1.5 倍 · 刚度 100</text>
+<line class="gr" x1="300" y1="442.0" x2="436.9" y2="442.0"/>
+<circle class="half" cx="436.9" cy="442.0" r="5"><title>位置环 8° · 上限 1.5 倍 · 刚度 100：15.8 mm，碰歪烧瓶后进</title></circle>
+<text class="val" x="447.9" y="446.5">15.8 · 碰歪烧瓶后进</text>
+<text class="tx" x="288" y="470.5" text-anchor="end">位置环 12° · 上限 2 倍 · 刚度 100</text>
+<line class="gr" x1="300" y1="466.0" x2="449.1" y2="466.0"/>
+<circle class="half" cx="449.1" cy="466.0" r="5"><title>位置环 12° · 上限 2 倍 · 刚度 100：17.2 mm，碰歪烧瓶后进</title></circle>
+<text class="val" x="460.1" y="470.5">17.2 · 碰歪烧瓶后进</text>
+<line class="ax" x1="8" y1="478.0" x2="664" y2="478.0"/>
+<text class="tx" x="288" y="494.5" text-anchor="end">拉尖管口 · 自锁 1.5 倍 · 刚度 100</text>
+<line class="gr" x1="300" y1="490.0" x2="409.2" y2="490.0"/>
+<circle class="dot" cx="409.2" cy="490.0" r="6"><title>拉尖管口 · 自锁 1.5 倍 · 刚度 100：12.6 mm，进瓶</title></circle>
+<text class="val" x="420.2" y="494.5">12.6 · 进瓶</text>
+<text class="tx" x="288" y="518.5" text-anchor="end">拉尖管口 · 1.5 倍 · 刚度 1000 · 齿隙 ±1°</text>
+<line class="gr" x1="300" y1="514.0" x2="474.2" y2="514.0"/>
+<circle class="ring" cx="474.2" cy="514.0" r="5"><title>拉尖管口 · 1.5 倍 · 刚度 1000 · 齿隙 ±1°：20.1 mm，没进</title></circle>
+<text class="val" x="485.2" y="518.5">20.1</text>
+<text class="tx" x="288" y="542.5" text-anchor="end">拉尖管口 · 位置环 4°</text>
+<line class="gr" x1="300" y1="538.0" x2="443.9" y2="538.0"/>
+<circle class="half" cx="443.9" cy="538.0" r="5"><title>拉尖管口 · 位置环 4°：16.6 mm，碰歪烧瓶后进</title></circle>
+<text class="val" x="454.9" y="542.5">16.6 · 碰歪烧瓶后进</text>
+<line class="ax" x1="8" y1="550.0" x2="664" y2="550.0"/>
+<text class="tx" x="288" y="566.5" text-anchor="end">带水 · 自锁 1.5 倍 · 刚度 1000 *</text>
+<line class="gr" x1="300" y1="562.0" x2="384.9" y2="562.0"/>
+<circle class="dot" cx="384.9" cy="562.0" r="6"><title>带水 · 自锁 1.5 倍 · 刚度 1000 *：9.8 mm，进瓶</title></circle>
+<text class="val" x="395.9" y="566.5">9.8 · 进瓶</text>
+<text class="tx" x="288" y="590.5" text-anchor="end">带水 · 位置环 6°</text>
+<line class="gr" x1="300" y1="586.0" x2="419.6" y2="586.0"/>
+<circle class="ring" cx="419.6" cy="586.0" r="5"><title>带水 · 位置环 6°：13.8 mm，没进</title></circle>
+<text class="val" x="430.6" y="590.5">13.8</text>
+<circle class="dot" cx="18" cy="14" r="6"/><text class="tx" x="30" y="18.5">进瓶</text><circle class="half" cx="80" cy="14" r="5"/><text class="tx" x="92" y="18.5">碰歪烧瓶后进</text><circle class="ring" cx="196" cy="14" r="5"/><text class="tx" x="208" y="18.5">没进</text>
+</svg>
+</div></div>
+<figcaption><b>各种手模型下，管口过瓶口平面时离瓶轴的距离。</b>实心 = 进瓶并松手后留在瓶里（烧瓶位移 ≤ 1.1 mm）；半透明 = 管身压着瓶沿、把烧瓶碰歪 6–8 mm 才滑进去；空心 = 没进。带 * 的用的是较早的设定点规则（不受力的关节也有速度上限）。浅色带是真实的 4–7 mm，虚线是直管的几何上限。倍数是堵转力矩相对厂商标称值；刚度是自锁关节的保持刚度（N·m/rad）。</figcaption></div>
+<ul>
+<li>旧驱动 40 mm → 自锁、标称力矩 23–24 mm → 力矩 1.25–1.5 倍的一族 8–20 mm。这一族 20 条里 9 条干净进瓶，其中只有一条在 9.3 mm 以内，其余是贴着瓶沿滑进去的或者靠拉尖的管口；邻近参数差 1–5 mm 结果就变。</li>
+<li>这一族过瓶口时的偏移向量：均值 (+0.6, +1.4) mm，标准差 (9.7, 9.8) mm；到瓶轴的距离 7–20 mm，中位 13 mm（图里力矩 1.25–1.5 倍一族的 20 条）。<b>没有共同的偏向，散布约 10 mm</b>，比瓶口允许的范围还大——不是某个标定量偏了。手模型的任何毫米级改动（保持刚度、齿隙、关节偏移、管口形状）都会让滴管在手里的朝向变 1–3°，回程在瓶口处随之移动 5–10 mm。走通的那几条是可重复的（确定性求和下同配置同结果），但不是稳的。</li>
+<li><b>把管口做成真实的拉尖形状</b>（末端 12 mm 收到 3 mm 粗）：允许范围变宽——过瓶口时偏 12.6 mm 的一条顺利进瓶（直管在这个偏差下会卡住），偏出去的那条也不再卡死、不再把烧瓶撞飞。但它救不了 20 mm 的偏差；而且只改了管口末端的形状，过瓶口的位置就变了 3–9 mm。<a href="rokae_viewer.html?run=rec2_v4_taper_dry&amp;cmp=rec2_v4_selflock_dry&amp;t=33.50&amp;cam=neck">查看器：拉尖管口进瓶（33.5 s）</a>，橙色是同一组参数的直管。</li>
+<li>平头直管一旦搭在瓶沿上，自锁的手会把它硬压下去：图里有 5 条是这样卡住的，握力从 20 N 涨到 40–50 N 以上，其中一条把滴管从指间挤飞、一条把烧瓶撞开 30 cm，另外三条求解迭代数暴涨后停掉。真实里不会发生：尖头会滑进去，手和手套也有顺应。</li>
+</ul>
+
+<h3>手指该用多大的力：液柱的证据，和位置环模型</h3>
+<p>之前选 1.5 倍力矩的依据是“捏紧时胶头的可见宽度和视频一致”。这个依据不够硬（见上：宽度受遮挡和视角影响，仿真去掉遮挡后的宽度在手转过去的 1 s 里变了 2.5 mm，而腔体体积没变）。液体的量只取决于胶头腔体体积的变化，可以直接和真实液柱比（表里是各阶段的腔体体积和它们的差，单位毫升）：</p>
+<div class="tblwrap"><table style="min-width:47rem">
+<thead><tr><th>手模型（干跑）</th><th class="num">捏紧最小</th><th class="num">握持</th><th class="num">转运</th><th class="num">滴液最小</th><th class="num">可吸入</th><th class="num">握持→转运</th><th class="num">滴液挤出</th><th>回程</th></tr></thead>
+<tbody>
+<tr><td>真实（由液柱推断）</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">0.6–0.7</td><td class="num">≈ 0</td><td class="num">少量</td><td>进瓶</td></tr>
+<tr><td>旧驱动</td><td class="num">12.93</td><td class="num">13.23</td><td class="num">13.23</td><td class="num">13.19</td><td class="num">0.31</td><td class="num">0.00</td><td class="num">0.03</td><td style="white-space:nowrap">偏 40 mm</td></tr>
+<tr><td>自锁，标称力矩</td><td class="num">11.91</td><td class="num">12.52</td><td class="num">12.35</td><td class="num">12.02</td><td class="num">0.60</td><td class="num">−0.17</td><td class="num">0.10</td><td style="white-space:nowrap">偏 24 mm</td></tr>
+<tr><td>自锁，1.5 倍，刚度 1000</td><td class="num">10.62</td><td class="num">12.04</td><td class="num">11.38</td><td class="num">10.66</td><td class="num">1.42</td><td class="num">−0.66</td><td class="num">0.33</td><td>进瓶</td></tr>
+<tr><td>自锁，1.5 倍，刚度 100</td><td class="num">10.31</td><td class="num">11.86</td><td class="num">11.60</td><td class="num">10.79</td><td class="num">1.55</td><td class="num">−0.26</td><td class="num">0.58</td><td>进瓶</td></tr>
+<tr class="hl"><td>位置环：误差 4° 时到力矩上限（上限 1.5 倍）</td><td class="num">11.48</td><td class="num">12.52</td><td class="num">12.43</td><td class="num">11.80</td><td class="num">1.05</td><td class="num">−0.10</td><td class="num">0.34</td><td>进瓶</td></tr>
+<tr class="hl"><td>位置环：5°</td><td class="num">11.60</td><td class="num">12.56</td><td class="num">12.53</td><td class="num">12.05</td><td class="num">0.96</td><td class="num">−0.03</td><td class="num">0.25</td><td>进瓶</td></tr>
+<tr class="hl"><td>位置环：6°</td><td class="num">11.76</td><td class="num">12.64</td><td class="num">12.63</td><td class="num">12.23</td><td class="num">0.88</td><td class="num">−0.02</td><td class="num">0.21</td><td>进瓶</td></tr>
+<tr><td>位置环：8°</td><td class="num">12.10</td><td class="num">12.66</td><td class="num">12.72</td><td class="num">12.42</td><td class="num">0.56</td><td class="num">+0.06</td><td class="num">0.16</td><td style="white-space:nowrap">碰歪烧瓶后进</td></tr>
+</tbody></table></div>
+<ul>
+<li><b>1.5 倍力矩把胶头捏得太多：</b>可吸入量是真实的 2–3 倍；刚提起（20–21 s）食指、中指跟着指令再合拢 2–3°，腔体又缩 0.3–0.7 mL，比吸进来的还多。它让回程进瓶，靠的是把胶头捏得更深、把滴管卡在手指的几何里。</li>
+<li><b>标称力矩的液体量和真实一致，</b>但滴管在手里的朝向差 5–6°，回程偏 24 mm。</li>
+<li><b>位置环：</b>同一根中指，吸液那一捏时指令超前实际 7–12°，转运时只超前 1–3°；真实里前者捏得深、后者几乎不加力。恒定的堵转力矩做不到（误差 1° 和 12° 出力一样大）。让前进时可用的力矩正比于位置误差、到一定角度才顶到上限（保持仍然自锁），就同时得到：途中腔体不变、吸入量接近真实、滴液能挤出 0.2–0.3 mL、回程进瓶。饱和角越大（手越软）吸入量越接近真实（4° 1.05、5° 0.96、6° 0.88、8° 0.56 mL）；4° / 5° / 6° 三条干净进瓶（过瓶口偏 9.5 / 6.8 / 10.4 mm），8° 起偏到 15 mm 以上。按近景相机六个阶段胶头可见宽度的总偏差，位置环 4° 最小（6.8 mm；标称力矩 7.3，位置环 5° 9.3，1.5 倍 10.7–13.3）。位置环 4–6° 是目前最均衡的手模型，但它的两个参数没有用真实的手标定过，而且同样敏感：保持刚度从 100 换成 400，过瓶口从 10.4 变成 14.7 mm；加上拉尖管口，从 9.5 变成 16.6 mm。 <a href="rokae_viewer.html?run=rec2_v4_ploop_dry&amp;cmp=rec2_v4_selflock_dry&amp;t=33.60&amp;cam=neck">查看器：位置环 5° 的回程（33.6 s）</a>，橙色是恒定 1.5 倍力矩的那条。</li>
+<li>给设定点加齿隙（±1–3°）也试了：2–3° 时途中腔体不变，但吸入量掉到 0.3–0.4 mL，回程结果随齿隙大小来回翻。物理上也不对——手指一直被胶头单向顶着，齿隙始终贴在一侧。不采用。</li>
+</ul>
+
+<h3 id="wet11">带水：手走通了，水卡在哪</h3>
+<p>自锁（1.5 倍力矩）带水的一条：有水以后手的动作和干跑一致——悬停时管口离烧杯轴线 5.5 mm，过瓶口平面时离瓶轴 9.8 mm、进瓶、松手后斜靠 13°，烧瓶位移 1.0 mm，出瓶不翻。但管里几乎没有水：</p>
+<div class="tblwrap"><table style="min-width:50rem">
+<thead><tr><th class="num">时刻</th><th class="num">腔体（毫升）</th><th class="num">管内水（粒）</th><th class="num">气室模型要的量（毫升）</th><th>管口</th><th>发生了什么</th></tr></thead>
+<tbody>
+<tr><td class="num">18.0 s</td><td class="num">10.80</td><td class="num">1</td><td class="num">0</td><td>水面上 15 mm</td><td>在空气里捏（和真实一样）</td></tr>
+<tr><td class="num">19.0 s</td><td class="num">10.93</td><td class="num">8</td><td class="num">0.52</td><td>水下 8 mm</td><td>开始放松，吸进 8 粒</td></tr>
+<tr><td class="num">20.0 s</td><td class="num">11.99</td><td class="num">8</td><td class="num">1.58</td><td>水下 8 mm</td><td>腔体已经放开 1.5 mL，水进不来</td></tr>
+<tr><td class="num">21.0 s</td><td class="num">11.42</td><td class="num">17</td><td class="num">0.11</td><td>已出水</td><td>提起时扫到几粒；同时胶头被再捏 0.57 mL</td></tr>
+<tr><td class="num">22.0 s</td><td class="num">11.36</td><td class="num">8</td><td class="num">0.08</td><td>空中</td><td>被挤出 9 粒</td></tr>
+<tr><td class="num">25.0 s</td><td class="num">11.31</td><td class="num">1</td><td class="num">0</td><td>横移中，离杯轴 7–13 cm</td><td>剩下的 8 粒被泵一路送回管口，24.5 s 排出，落在桌上</td></tr>
+<tr><td class="num">28.5–31 s</td><td class="num">10.9 → 10.55</td><td class="num">0</td><td class="num">0</td><td>烧杯上方，离杯轴 3–9 mm</td><td>滴液动作正常，没有水可滴</td></tr>
+</tbody></table></div>
+<p>1 粒 = 15.6 µL。<a href="rokae_viewer.html?run=rec2_v4_selflock_wet&amp;cmp=rec2_v4_selflock_dry&amp;t=19.50&amp;cam=neck">19.5 s 吸液</a>（右侧曲线看“管内实际水量”）→ <a href="rokae_viewer.html?run=rec2_v4_selflock_wet&amp;cmp=rec2_v4_selflock_dry&amp;t=21.00&amp;cam=neck">21 s 提起</a> → <a href="rokae_viewer.html?run=rec2_v4_selflock_wet&amp;cmp=rec2_v4_selflock_dry&amp;t=30.00&amp;cam=beaker">30 s 滴液</a> → <a href="rokae_viewer.html?run=rec2_v4_selflock_wet&amp;cmp=rec2_v4_selflock_dry&amp;t=33.50&amp;cam=neck">33.5 s 回到瓶口</a>。</p>
+<ol>
+<li><b>吸不进：管口正下方断流。</b>管口静止在水下 7–8 mm 的 1.4 s 里，泵的输送速度一直顶在上限，可管口正下方半径 2.2 mm、深 10 mm 的吸入柱里粒子数是 0，它外面一圈（半径 2.2–4.6 mm）有 18–20 粒一动不动。吸入柱里原有的 6 粒在 0.2 s 内被搬进管里，之后周围的水不往这个洞里补。原因是分辨率：液体网格 5 mm、粒子间距 2.5 mm，一个直径 4–6 mm 的空洞比网格还小，网格上的质量和压力看不出这里缺了水，静水平衡照样成立。所以吸入量只有“吸入柱里原有的 + 管口移动时扫到的”——8–17 粒。第八、十节的记录能吸到 20–66 粒，是因为滴管在手里晃，管口一直在扫新的水；手握稳以后这个问题反而露出来了。</li>
+<li><b>提起时被挤出。</b>就是上面说的 1.5 倍力矩在 20–21 s 多捏的 0.57–0.66 mL。位置环手模型下这一项是 0.02 mL。</li>
+<li><b>途中被分批排出：气室模型是单向的。</b>管口在空气里时，胶头腔体缩一点，泵就把水往管口送；腔体回弹，模型只当作“进了空气”，水不回来。于是排出的量是腔体体积所有下行波动之和，而不是净变化。第十节那条“最接近”的带水记录里，21–28 s 腔体只在 13.19–13.25 mL 之间波动（净缩 3 粒的量），泵却在 98 % 的时间里往外送，管内目标量从 24.5 粒单调降到 12.9 粒——之前把它读成“横移时甩掉”，不对。真实里管口上挂着的那一滴（约 40–65 µL）在胶头回弹时会被吸回去，小波动不排液。另外，吸液时泵把那一小段水一路抬到了管顶，所以排出还滞后 3–4 s，往往正好落在横移途中的桌面上。</li>
+</ol>
+<p>第 1 条要改引擎里泵的做法（吸入时按汇流场把管口周围的水往开口带，而不是只搬正下方那一根柱子），这一轮没有做；在它改完之前，带水回放里的“吸入量”不能用来评价手模型，评价手用腔体体积。第 3 条在回放脚本的气室模型里加了“悬滴死区”（管口在空气里、欠量不足一滴时不排液）。</p>
+<p><b>换成位置环手模型（误差 6° 到上限；泵不变）再带水回放：吸进去的水全部进了烧杯，桌上一粒没有；放回没进。</b></p>
+<div class="tblwrap"><table style="min-width:50rem">
+<thead><tr><th class="num">时刻</th><th class="num">腔体（毫升）</th><th class="num">管内（粒）</th><th class="num">烧杯里的蓝水（粒）</th><th class="num">桌上（粒）</th><th>发生了什么</th></tr></thead>
+<tbody>
+<tr><td class="num">20.0 s</td><td class="num">12.62</td><td class="num">16</td><td class="num">0</td><td class="num">0</td><td>管口在水下 6 mm；气室模型要 61 粒，只进了 16 粒（吸入口断流）</td></tr>
+<tr><td class="num">21.0 s</td><td class="num">12.70</td><td class="num">19</td><td class="num">0</td><td class="num">0</td><td>提起；胶头没有被再捏（1.5 倍力矩的手在这里缩了 0.57 mL）</td></tr>
+<tr><td class="num">25.5 s</td><td class="num">12.57</td><td class="num">16</td><td class="num">0</td><td class="num">0</td><td>横移结束，途中一粒没丢（3 粒在瓶口上方回到了瓶里）</td></tr>
+<tr><td class="num">26.5 s</td><td class="num">12.58</td><td class="num">8</td><td class="num">3（另 5 粒在空中）</td><td class="num">0</td><td>管口离杯轴 25 mm、高 110 mm；泵把水送到管口，开始排出</td></tr>
+<tr><td class="num">28.5 s</td><td class="num">12.37</td><td class="num">0</td><td class="num">16</td><td class="num">0</td><td>全部进杯</td></tr>
+<tr><td class="num">31.0 s</td><td class="num">12.15</td><td class="num">0</td><td class="num">16</td><td class="num">0</td><td>录制里的滴液动作；管里已经没水，管口漂到离杯轴 35 mm</td></tr>
+<tr><td class="num">33.7 s</td><td class="num">—</td><td class="num">0</td><td class="num">16</td><td class="num">0</td><td>过瓶口平面时离瓶轴 13.8 mm，搭在瓶沿上；手继续按录制的轨迹下压，滴管在指间歪倒，35 s 起烧瓶被推倒、瓶里的水洒到桌上</td></tr>
+</tbody></table></div>
+<ul>
+<li>这是第一条“吸进去的水全部进了烧杯、一粒没洒”的带水回放（16 粒 ≈ 0.25 mL；真实约 0.6–0.7 mL，差在吸入口断流）。位置环手模型解决了“提起时被挤出”。</li>
+<li>出水比真实早 3–4 s（25.7–28 s，真实在 30.5–31.5 s）：泵的目标量从 21 s 起一直往下走（腔体慢慢缩了 0.13 mL，加上气室模型的单向性），水被送回管口时滴管正好到了烧杯上方。要是留到 31 s 才出，那时管口已经漂到杯沿附近，会有一部分落在杯外——“全部进杯”有运气成分。</li>
+<li>放回失败：同一手模型干跑过瓶口时偏 10.4 mm、贴着瓶沿进；烧瓶里有水以后滴管在手里的朝向多偏了约 1.3°，偏到 13.8 mm——又落在上面说的散布里。</li>
+</ul>
+<p><b>位置环 4° 带水的一条说明吸入量现在由什么决定：</b>19.0 s 第一口进了 10–15 粒后同样断流；19.6–19.8 s 管口在水下往下挪了 2.4 mm、扫进新的水，管内从 15 粒跳到 37 粒（0.58 mL，碰巧和真实相当）。提起途中 9 粒回到瓶里，28 粒带到烧杯上方，到 27.5 s 已有 11 粒进杯、桌上 0 粒、管里还有 17 粒；这条回放在 28.05 s 因为一帧的牛顿迭代用完 300 次预算而被中止（之前每帧 1–2 次），没有跑到滴液和放回。它的重跑，以及位置环 5° / 6° 加悬滴死区的两条，结果出来后补在这里。</p>
+
+<h3>为什么有了轨迹和视频还不够，以及怎么补</h3>
+<p>手臂和手指的指令是逐帧回放的，器皿的位置和尺寸从三台相机标定到 2–3 mm，这些都不是问题所在。问题在“滴管在手里是什么姿态”：它由抓取前推胶头、合拢、提起时管身贴着瓶颈滑、出瓶、滴液前手指再合拢这几步的接触力学逐步决定，每一步贡献 1–2°。操作员是看着滴管把它送回瓶口的，录下来的轨迹已经包含了对当时那个姿态的修正；仿真里姿态差 3°，开环回放在瓶口就差 10 mm。可行的三条路：</p>
+<ul>
+<li><b>让任务本身有真实的容差：</b>拉尖的管口、带翻边的瓶口（已验证能把允许范围从约 10 mm 放宽到 12–13 mm），手指在回程阶段有一点顺应。</li>
+<li><b>回程阶段闭环：</b>像操作员那样，按管口相对瓶口的偏差给手腕一个几毫米的修正。这样就不再是纯粹的开环回放，是否采用需要先定下来。</li>
+<li><b>把真实抓取量得更准：</b>下次录制时记录手指的关节反馈和电流、做一次静态的捏力标定、量胶头的硬度。位置环手模型里的两个参数（力矩上限、饱和角）现在只能靠液柱和胶头宽度间接约束。</li>
+</ul>
+
+<h3>查看器里的新记录</h3>
+<ul>
+<li><a href="rokae_viewer.html?run=rec2_v4_legacy_exact_dry&amp;t=33.90&amp;cam=neck">旧驱动 · 直接法求解 · 干跑</a>：握持时拇指被推开、胶头没被压扁；回程偏 40 mm。</li>
+<li><a href="rokae_viewer.html?run=rec2_v4_selflock_dry&amp;t=33.50&amp;cam=neck">自锁 1.5 倍 · 刚度 100 · 干跑</a>：完整循环，过瓶口时离瓶轴 10.0 mm，贴着瓶沿进瓶，松手后斜靠 6°。</li>
+<li><a href="rokae_viewer.html?run=rec2_v4_ploop_dry&amp;t=33.60&amp;cam=neck">位置环手模型（5°）· 干跑</a>：完整循环，途中胶头腔体不变，过瓶口时离瓶轴 6.8 mm。</li>
+<li><a href="rokae_viewer.html?run=rec2_v4_taper_dry&amp;t=33.50&amp;cam=neck">拉尖管口 · 自锁 1.5 倍 · 干跑</a>：过瓶口时偏 12.6 mm 仍然进瓶。</li>
+<li><a href="rokae_viewer.html?run=rec2_v4_selflock_wet&amp;t=19.50&amp;cam=neck">自锁 1.5 倍 · 带水</a>：手的动作走通、放回进瓶；水吸不进，提起时被挤出，剩下的在横移途中落在桌上。</li>
+<li><a href="rokae_viewer.html?run=rec2_v4_ploop_wet&amp;t=26.50&amp;cam=beaker">位置环手模型 · 带水</a>：<a href="rokae_viewer.html?run=rec2_v4_ploop_wet&amp;t=20.00&amp;cam=neck">20 s 吸液</a> → <a href="rokae_viewer.html?run=rec2_v4_ploop_wet&amp;t=26.50&amp;cam=beaker">26.5 s 水进烧杯</a> → <a href="rokae_viewer.html?run=rec2_v4_ploop_wet&amp;cmp=rec2_v4_ploop_dry&amp;t=33.70&amp;cam=neck">33.7 s 搭在瓶沿上</a>（橙色是干跑里进瓶的那条）。</li>
+</ul>
+
+<h3>对前面各节的更正</h3>
+<ul>
+<li><b>第十节“手指太强太硬，降到约 2 N 以后进瓶”</b>：那是恒力矩驱动下碰巧的一组（同一配方后来重跑，4 次里 2 次进瓶，那时的求解还不是逐次可重复的）。问题在驱动模型没有位置刚度、拇指会退让，不在力的大小。</li>
+<li><b>“握持处在临界状态”</b>：对，但临界是驱动模型造成的，不是物理上必然；换驱动以后带水出瓶不再翻转。</li>
+<li><b>“仿真胶头离实测位置 9–11 mm”</b>：主要是参考量被手指遮挡造成的偏差，按同样的遮挡方式比较只差 1–3 mm。</li>
+<li><b>“带水能吸进约 0.45 mL”</b>：那是滴管在手里晃动时扫进去的，不是泵模型在静止的管口下能稳定吸到的量。</li>
+<li><b>仍然成立的：</b>三台相机的标定、场景尺寸、手的安装；接触层 1 mm；真实滴管出瓶后在手里基本不转、悬停前倾 9–11°。</li>
+</ul>
+
+<!-- sec11 end -->
 
 </article>
 
