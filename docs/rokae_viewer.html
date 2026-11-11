@@ -134,11 +134,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // ---------------------------------------------------------------- records
-const DATA_VERSION = '6';
-const SIZE_MB = {"rec1_strict":4.7,"rec2_v3_best_strict_dry":3.9,"rec2_v3_wet_f07_n3":4.9,"rec2_v3_f10_mu06_fast":3.9,"rec2_low6soft_fast":7.0,"rec2_low6_fast":6.3,"rec2_v3_best_fast":5.9,"rec2_soft_dry":3.9,"rec2_low6_fast_fill45":5.4,"rec2_v3_wet_f05_n3":5.1,"rec2_low6_dry":3.9,"rec2_strict":5.0,"rec2_soft_fast":6.6,"rec2_soft_strict":6.1,"rec2_low6soft_strict":5.2,"rec2_v3_best_dry":4.1,"rec2_v3_wet_f05_strict":4.1,"rec2_v3_wet_f07_fast":5.8,"rec2_v3_d1_fast":3.9,"rec2_v3_dry":4.3,"rec2_soft_fast_fill45":6.5,"rec2_fast":5.9,"rec2_v3_f05_fast":3.9,"rec2_v3_fast":6.3,"rec2_low6_strict":4.9,"rec2_v3_strict":5.4,"rec2_v3_f10_fast":3.9,"rec2_v3_d1_strict":3.6,"rec2_v4_ploop_dry":3.5,"rec2_v4_selflock_dry":3.7,"rec2_v4_taper_dry":3.6,"rec2_v4_selflock_wet":3.9,"rec2_v4_legacy_exact_dry":3.6,"rec2_v4_ploop_wet":4.1};   // download sizes, for the progress text
+const DATA_VERSION = '7';
+const SIZE_MB = {"rec1_strict":4.7,"rec2_v3_best_strict_dry":3.9,"rec2_v3_wet_f07_n3":4.9,"rec2_v3_f10_mu06_fast":3.9,"rec2_low6soft_fast":7.0,"rec2_low6_fast":6.3,"rec2_v3_best_fast":5.9,"rec2_soft_dry":3.9,"rec2_low6_fast_fill45":5.4,"rec2_v3_wet_f05_n3":5.1,"rec2_low6_dry":3.9,"rec2_strict":5.0,"rec2_soft_fast":6.6,"rec2_soft_strict":6.1,"rec2_low6soft_strict":5.2,"rec2_v3_best_dry":4.1,"rec2_v3_wet_f05_strict":4.1,"rec2_v3_wet_f07_fast":5.8,"rec2_v3_d1_fast":3.9,"rec2_v3_dry":4.3,"rec2_soft_fast_fill45":6.5,"rec2_fast":5.9,"rec2_v3_f05_fast":3.9,"rec2_v3_fast":6.3,"rec2_low6_strict":4.9,"rec2_v3_strict":5.4,"rec2_v3_f10_fast":3.9,"rec2_v3_d1_strict":3.6,"rec2_v4_ploop_dry":3.5,"rec2_v4_selflock_dry":3.7,"rec2_v4_taper_dry":3.6,"rec2_v4_selflock_wet":3.9,"rec2_v4_legacy_exact_dry":3.6,"rec2_v4_ploop_wet":4.1,"rec2_v4_ploop_wet_full":4.0};   // download sizes, for the progress text
 const RUNS = [
   // v4 runs begin
-  { id: 'rec2_v4_ploop_dry', group: '11-11 自锁手指驱动（关节推不回去 + 力矩上限；手套 4 mm；胶头 1.2 MPa；直接法求解，同配置逐帧可重复）', rec: 2, name: '位置环手模型（误差 5° 到力矩上限）· 干跑（完整循环；途中胶头腔体不变；过瓶口离瓶轴 6.8 mm）' },
+  { id: 'rec2_v4_ploop_wet_full', group: '11-11 自锁手指驱动（关节推不回去 + 力矩上限；手套 4 mm；胶头 1.2 MPa；直接法求解；干跑同配置逐帧可重复，带水不是）', rec: 2, name: '【带水 · 全程】位置环手模型（5°）+ 悬滴死区（吸进 19 粒，13 粒进烧杯、1 粒落桌；放回进瓶，松手后斜靠 11°；过瓶口时把烧瓶推开 9 mm）' },
+  { id: 'rec2_v4_ploop_dry', rec: 2, name: '位置环手模型（误差 5° 到力矩上限）· 干跑（完整循环；途中胶头腔体不变；过瓶口离瓶轴 6.8 mm）' },
   { id: 'rec2_v4_selflock_dry', rec: 2, name: '自锁 · 力矩 1.5 倍 · 刚度 100 · 干跑（完整循环；过瓶口离瓶轴 10.0 mm，贴着瓶沿进瓶）' },
   { id: 'rec2_v4_taper_dry', rec: 2, name: '拉尖管口 · 自锁 1.5 倍 · 干跑（过瓶口偏 12.6 mm 仍进瓶）' },
   { id: 'rec2_v4_ploop_wet', rec: 2, name: '【带水】位置环手模型（6°）（吸进的 16 粒全部进烧杯、桌上 0 粒；放回时偏 13.8 mm 搭在瓶沿上，烧瓶被推倒）' },
@@ -593,7 +594,7 @@ function buildFacts() {
     const fit = !!(m.hand_mount_env && m.hand_mount_env.WUJI_MOUNT_FIT), v3 = /_v3/.test(m.scene_cal || '');
     const hd = R.hdr, dropLen = Math.round((Math.hypot(hd.top_rest[0] - hd.tip_rest[0], hd.top_rest[1] - hd.tip_rest[1], hd.top_rest[2] - hd.tip_rest[2]) + 0.035) * 1000);
     const sl = /^rec2_v4/.test(R.id) && !/legacy/.test(R.id), dl = /^rec2_v4/.test(R.id);
-    const bits = ['录制 ' + m.recording, dl ? '直接法线性求解 · 牛顿容差 1e-3（同配置逐帧可重复）' : mode, sl ? '手指：自锁驱动（力矩倍数、刚度见记录名）· 手套 4 mm' : '手指强度 ' + (m.finger_strength_right ? m.finger_strength_right.toExponential().replace('e-', 'e-') : '—'), '胶头 ' + (m.e_bulb / 1e6).toFixed(1) + ' MPa',
+    const bits = ['录制 ' + m.recording, dl ? '直接法线性求解 · 牛顿容差 1e-3' + (m.liquid ? '' : '（同配置逐帧可重复）') : mode, sl ? '手指：自锁驱动（力矩倍数、刚度见记录名）· 手套 4 mm' : '手指强度 ' + (m.finger_strength_right ? m.finger_strength_right.toExponential().replace('e-', 'e-') : '—'), '胶头 ' + (m.e_bulb / 1e6).toFixed(1) + ' MPa',
       v3 ? '11-10 的场景（三台相机按手腕端盖重新标定；手的安装、桌面、烧瓶、烧杯都按新标定测量）' : fit ? '11-09 的场景（已被 11-10 取代：当时两台相机的标定有误，场景整体偏了 4–7 cm）' : '11-07 的场景（物体按手指合拢处摆放，手的安装角未修正）',
       '滴管 ' + dropLen + ' mm' + (m.lean_deg ? '，初始斜靠在瓶口' : '，初始竖直'),
       (m.flask_h_mm && Math.abs(m.flask_h_mm - 160) > 1) ? '烧瓶高 ' + m.flask_h_mm.toFixed(0) + ' mm' : '烧瓶高 160 mm',
