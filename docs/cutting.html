@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>机械臂切黄瓜：MPM 弹性体的切割与断裂</title>
-<meta name="description" content="FR3 握主厨刀把 MPM 黄瓜切下三片：88 万粒子的弹塑性体与 IPC 刚体在同一个 Newton 求解里耦合；为此给引擎补了线性粒子传输、塑性与延性损伤（只在刀碰过的粒子上断裂）、粒子摩擦，以及把刀的中面当作裂纹面的双场 CPIC，附 94 组切割测试台对照、完整场景对照与路径追踪视频。">
+<meta name="description" content="FR3 握主厨刀把 MPM 黄瓜切下三片：88 万粒子的弹塑性体与 IPC 刚体在同一个 Newton 求解里耦合；为此给引擎补了线性粒子传输、塑性与延性损伤（只在刀碰过的粒子上断裂）、粒子摩擦，以及把刀的中面当作裂纹面的双场 CPIC，11 月 12 日起黄瓜分成硬皮、果肉、软瓤三个材料区；附 94 组切割测试台对照、完整场景对照与路径追踪视频。">
 <link rel="stylesheet" href="docs.css">
 <style>
 .fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
@@ -39,8 +39,8 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 所有物体在同一个 Newton 求解里耦合，没有交替迭代。为了让刀切得开、切口不再粘回去，给引擎补了四处：线性粒子传输、损伤（只允许碰到过刀的粒子断裂）、粒子与刚体之间的摩擦，
 以及把刀的中面当作一张裂纹面（双场 CPIC）。11 月 1 日下午又做了三件事：去掉果肉的塑性（此前果肉在 3% 应变就开始流动，看上去像橡皮泥）；渲染改用原模型沿仿真里的裂纹面切开、
 随粒子移动的“切块网格”；试了更薄的片（5 / 4 / 3 mm）和更硬的果肉（E = 5 MPa）。11 月 2 日起不扶黄瓜、只移动切割位置：按黄瓜切面的实测位置瞄准，并补偿切的过程中黄瓜的滑动，三片厚度一致；当晚换了页首视频，因为原来那一组中间那片的上缘翘起一个小钩（<a href="#nick">第四节“中间那片上的小钩”</a>）。下面给出场景参数、每处改动的原因和验证、切割测试台和完整场景的对照，以及路径追踪视频和 USD 动画。
-11 月 12 日开始把黄瓜从均匀材料改成“内软外硬”的三个分区（硬皮、果肉、软瓤）：引擎加了逐粒子的材料系数（第二节第 7 条），测试台和 1 mm 间距的预览对照见<a href="#zones">第四节“内软外硬”</a>；
-页首视频目前还是 11 月 2 日的均匀材料，0.75 mm 间距的新版本正在跑。
+11 月 12 日把黄瓜从均匀材料改成“内软外硬”的三个分区（硬皮、果肉、软瓤）：引擎加了逐粒子的材料系数（第二节第 7 条），页首视频换成了分区材料的版本。
+分区以后，刀切入时黄瓜的上半圈会先被压下去几毫米、切穿后弹回，切穿以后的刀力比均匀材料低约三分之一；与均匀材料的对照、测试台和此前的均匀材料视频见<a href="#zones">第四节“内软外硬”</a>。
 刀和黄瓜都按原模型使用，没有改形状。</p>
 
 <div class="toc"><b>目录</b>
@@ -48,21 +48,21 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 </div>
 
 <section id="result">
-<p><b>11 月 12 日：</b>正在把黄瓜改成“内软外硬”的三个分区。预览的对比视频、测试台和选定的参数在<a href="#zones">第四节“内软外硬”</a>；
-下面两段页首视频还是 11 月 2 日的均匀材料，0.75 mm 间距的新版本跑完后替换。</p>
 <figure class="fig">
-  <video src="../media/cucumber_cut.mp4?v=1102b" muted loop playsinline controls preload="metadata"></video>
-  <figcaption><b>原刀 · 四刀直压 · 纯弹性果肉 · 三片约 6 mm</b> — FR3 握着原尺寸的主厨刀，每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板：先切掉细端，再切三片。
-  黄瓜没有扶住，刀往下切时会把它沿砧板推开，所以第二到第四刀按黄瓜切面的实测位置瞄准：刀落在切面外 5 mm 再加 5.0 mm 处，多出的 5.0 mm 用来抵消切的过程中黄瓜的滑动（第四节）。
-  883,562 个 MPM 粒子（间距 0.75 mm），纯弹性果肉（E = 2 MPa），只允许碰到过刀的粒子断裂；刀的中面作为超前刃口 1 mm 的裂纹面；刀模没有改。
-  三片在中轴处是 6.2 / 6.6 / 6.0 mm（按初始构型量），边缘完整，切下后平躺在砧板上叠在一起。仿真 18.1 s，一张 A800 上 4.8 小时。
-  左上角是跟着刀走的切口近景。黄瓜用原模型的切块网格渲染（第五节），切面上的籽和果肉层次是贴图。<br>
-  这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices_v2.usdc">cucumber_cut_6mm_slices_v2.usdc（675 MB）</a>（机械臂、刀、砧板、切块网格的黄瓜，以及每 0.4 s 一帧的 MPM 粒子；说明见 <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-cutting-2026-11">release 页</a>）</figcaption>
+  <video src="../media/cucumber_cut.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>原刀 · 四刀直压 · 内软外硬（硬皮、果肉、软瓤）· 三片 5–6.5 mm</b> — FR3 握着原尺寸的主厨刀，每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板：先切掉细端，再切三片。
+  黄瓜没有扶住，刀往下切时会把它沿砧板推开，所以第二到第四刀按黄瓜切面的实测位置瞄准：刀落在切面外 5 mm 再加 4.5 mm 处（第四节）。
+  883,562 个 MPM 粒子（间距 0.75 mm），纯弹性，分三个区：离表面 1.5 mm 以内的皮 E = 4 MPa，果肉 2 MPa，半径一半以内的瓤 0.6 MPa，断裂阈值相同；
+  只允许碰到过刀的粒子断裂，刀的中面作为超前刃口 1 mm 的裂纹面，刀模没有改。
+  三片在中轴处是 6.5 / 5.1 / 5.3 mm（按初始构型量），切下后叠靠在砧板上。每一刀开头，刀先把黄瓜的上半圈压下去 2–5 mm、刀力升到 22–65 N，然后切穿、顶面弹回，
+  之后约 11–14 N 切到底；均匀材料是 31–40 N、下陷 1–4 mm，切穿后 17–21 N（<a href="#zones">第四节</a>）。仿真 18.1 s，一张 A800 上 4.1 小时。
+  左上角是跟着刀走的切口近景。黄瓜用原模型的切块网格渲染（第五节），切面上的籽和果肉层次是贴图，瓤的范围与贴图里的籽腔一致。<br>
+  此前的均匀材料版本（11 月 2 日）：<a href="../media/cucumber_cut_1102.mp4">主视角</a> · <a href="../media/cucumber_cut_closeup_1102.mp4">切口近景</a>；
+  它的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices_v2.usdc">cucumber_cut_6mm_slices_v2.usdc（675 MB）</a>（说明见 <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-cutting-2026-11">release 页</a>）。分区材料版本的 USD 还没有导出。</figcaption>
 </figure>
 <figure class="fig">
-  <video src="../media/cucumber_cut_closeup.mp4?v=1102b" muted loop playsinline controls preload="metadata"></video>
-  <figcaption><b>同一次运行的切口近景</b> — 镜头跟着刀所在的平面移动，刀始终侧对镜头。
-  与上一个视频是同一次运行，USD 动画相同：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices_v2.usdc">cucumber_cut_6mm_slices_v2.usdc（675 MB）</a></figcaption>
+  <video src="../media/cucumber_cut_closeup.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>同一次运行的切口近景</b> — 镜头跟着刀所在的平面移动，刀始终侧对镜头。每一刀开头可以看到顶面被刀压下去、切穿后弹回。</figcaption>
 </figure>
 </section>
 
@@ -72,7 +72,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <tbody>
 <tr><td>黄瓜</td><td>用户提供的黄瓜模型，原尺寸（长 252 mm，粗 48–50 mm，细端 23–38 mm），按其静止姿态侧放在砧板上；
 内部按 0.75 mm 间距采样 883,562 个 MPM 粒子（背景网格 1.5 mm；第四节的对照大多用 1 mm 间距、372,600 个粒子、网格 2 mm），离表面 2 mm 内的粒子为表皮（只影响颜色）。
-fixed-corotated 弹性，E = 2 MPa（另试了 5 MPa），ν = 0.4，ρ = 960 kg/m³；11 月 1 日下午起不再用塑性，断裂见第二节</td></tr>
+fixed-corotated 弹性，E = 2 MPa（另试了 5 MPa），ν = 0.4，ρ = 960 kg/m³；11 月 1 日下午起不再用塑性，断裂见第二节。11 月 12 日起页首视频的黄瓜分成三个区：离表面 1.5 mm 以内的皮 E = 4 MPa，果肉 2 MPa，半径一半以内的瓤 0.6 MPa，断裂阈值相同（第二节第 7 条）</td></tr>
 <tr><td>刀</td><td>用户提供的主厨刀模型，原尺寸（全长 327 mm，刀背厚 4 mm，刃口约 5 mm 斜面磨到约 1 mm 的圆角刃尖），ABD 刚体，
 用三个固定约束焊在 FR3 手上，手指合拢握住刀柄。刀刃略向前倾（2.6°），使切割位置正好是刃线的最低点。碰撞和渲染都用这个原模型；切割时刀的中面作为裂纹面（第二节第 5 条）</td></tr>
 <tr><td>机械臂</td><td>Franka FR3，关节位置驱动，逆运动学跟踪刀的轨迹（全程位置误差 ≤ 0.2 mm）</td></tr>
@@ -164,7 +164,7 @@ fixed-corotated 弹性，E = 2 MPa（另试了 5 MPa），ν = 0.4，ρ = 960 kg
 刀力从 44 N 升到 80 N：塑性不再替刀“让路”，刀的楔形要把两侧的弹性材料撑开。11 月 1 日下午起的完整场景都用这一版（第四节）。</p>
 
 <h3 id="zone-api">7. 逐粒子的材料系数：硬皮、果肉、软瓤（11 月 12 日）</h3>
-<p><b>问题。</b>到第 6 条为止，整根黄瓜是同一种材料（E = 2 MPa，主拉伸超过 1.15 断裂）。页首视频里刀压上去时黄瓜没有可见的形变，切下的片像硬币一样倒下，看上去偏硬。
+<p><b>问题。</b>到第 6 条为止，整根黄瓜是同一种材料（E = 2 MPa，主拉伸超过 1.15 断裂）。11 月 2 日的页首视频里刀压上去时黄瓜没有可见的形变，切下的片像硬币一样倒下，看上去偏硬。
 真实的黄瓜不是均匀的。<a href="https://www.jircas.go.jp/sites/default/files/publication/jarq/41-02-02_0.pdf">Dan 与 Kohyama（2007）</a>用压力分布片量横切片受压时的应力：
 断裂前同一应变下，中心的籽腔是 0–0.39 MPa，果肉 0.4–0.73 MPa，靠皮的一圈超过 0.74 MPa；同文引用的穿刺试验（Thompson 等，1982）也是越靠皮越硬、越往籽腔越软。
 也就是说，同一应变下瓤的应力约为果肉的三分之一，皮比果肉高三成以上。</p>
@@ -255,7 +255,7 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 皮 2 倍时阈值取 1.3 和 1.5 结果相同，皮 3 倍时 1.3 和 1.7 也相同：先断的已经是皮下面的果肉。</li>
 <li><b>选用皮 2 倍、断裂阈值不变、瓤 0.3 倍。</b>瓤的比例取自文献（约为果肉的三分之一）；皮在文献里只有下限（比果肉高三成以上），取 2 倍。
 这一组切面最平（0.12 / 0.07 mm），测试台上刀旁的下陷约 3 mm，是均匀材料的两倍。
-<b>更正（11 月 12 日晚）：</b>这里原来写的是这一组“没有先压出一道深沟再弹回的现象”。0.75 mm 间距的完整场景里并非如此：它同样是刀先把黄瓜的上半圈压下去约 6 mm、刀力升到 54–83 N 才切穿（第四节），测试台低估了这一点。</li>
+<b>更正（11 月 12 日晚）：</b>这里原来写的是这一组“没有先压出一道深沟再弹回的现象”。0.75 mm 间距的完整场景里并非如此：三组里刀同样是先把黄瓜的上半圈压下去 2–7 mm、刀力升到 22–83 N 才切穿（第四节），测试台低估了这一点。</li>
 </ul>
 
 <h2 id="full">四、完整场景</h2>
@@ -264,49 +264,70 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 <b>门控</b>指只允许碰到过刀的粒子断裂。<b>磨尖</b>只用于对照：把<b>碰撞用的</b>刀模在刃口 5 mm 内线性收薄到 0.2 mm 的刃尖
 （330 个顶点，最多移动 0.36 mm，外形看不出差别），检验刃尖厚度在完整场景里的作用。最终视频用的是原刀模。</p>
 
-<h3 id="zones">内软外硬：硬皮、果肉、软瓤（11 月 12 日，进行中）</h3>
-<p>反馈是页首视频里的黄瓜看起来偏硬，希望像真的黄瓜那样内软外硬。11 月 1 日把果肉改成纯弹性，是为了去掉“橡皮泥”的样子，所以这次不把塑性加回来，
-而是分区：皮更硬，瓤更软，果肉不变（第二节第 7 条）。先用 1 mm 间距跑了两档预览，其余设置与页首视频相同（四刀直压，计划 5 mm，补偿 5.0 mm）。
-下面的三联近景是同一机位、同一时间轴。</p>
+<h3 id="zones">内软外硬：硬皮、果肉、软瓤（11 月 12 日）</h3>
+<p>反馈是 11 月 2 日的页首视频里黄瓜看起来偏硬，希望像真的黄瓜那样内软外硬。11 月 1 日把果肉改成纯弹性，是为了去掉“橡皮泥”的样子，所以这次不把塑性加回来，
+而是分区：皮更硬，瓤更软，果肉不变（第二节第 7 条）。页首视频现在是皮 2 倍、瓤 0.3 倍、断裂阈值不变的一组。下面的三联近景是同一机位、同一时间轴，都是 0.75 mm 间距。</p>
 <figure class="fig">
-  <video src="../media/cucumber_cut_zones_preview.mp4?v=1112a" muted loop playsinline controls preload="metadata"></video>
-  <figcaption><b>均匀材料与两档预览（切口近景）</b> — 左：11 月 2 日的页首视频，均匀材料，0.75 mm 间距。中（预览 1）：皮的模量 3 倍、断裂阈值 1.7 倍，瓤 0.3 倍。
-  右（预览 2）：皮 3 倍、阈值 1.5 倍，瓤 0.15 倍。两档预览都是 1 mm 间距，四刀都切开了，切下的片完整。</figcaption>
+  <video src="../media/cucumber_cut_zones.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>均匀材料与两种分区（切口近景，0.75 mm 间距）</b> — 左：均匀材料（11 月 2 日的页首视频）。中：现在的页首视频，皮的模量 2 倍、瓤 0.3 倍。
+  右：皮 3 倍、断裂阈值 1.7 倍、瓤 0.3 倍。分区以后每一刀开头，顶面先被刀压下去几毫米，切穿后弹回；均匀材料几乎不下陷。</figcaption>
 </figure>
 <figure class="fig">
-  <img src="../media/cucumber_cut_zones_preview.jpg?v=1112a" alt="三联近景：第三刀的同一时刻，均匀材料的刀已经切入，两档预览的表皮还没破，被刀压出一道沟" loading="lazy">
-  <figcaption><b>第三刀的同一时刻（上面视频的第 10.24 秒）</b> — 均匀材料的刀已经切进去约 9 mm；两档预览的表皮还没有破，刀把表皮连同下面的果肉压出一道 6–8 mm 深的沟，
-  随后表皮破开，顶面弹回。</figcaption>
+  <img src="../media/cucumber_cut_zones.jpg?v=1112" alt="三联近景：第四刀刀力最大的时刻，均匀材料的刀已经切入，两种分区材料的顶面被刀压下去" loading="lazy">
+  <figcaption><b>第四刀的同一时刻（上面视频的第 14.20 秒）</b> — 均匀材料的刀已经切进去；两种分区材料的顶面被刀压下去 3–5 mm，刀力在最大值附近，随后切穿、顶面弹回。</figcaption>
 </figure>
 <div class="tblwrap"><table>
-<thead><tr><th></th><th class="num">均匀（11 月 2 日的页首视频）</th><th class="num">预览 1</th><th class="num">预览 2</th></tr></thead>
+<thead><tr><th></th><th class="num">均匀（11 月 2 日）</th><th class="num">页首视频</th><th class="num">皮更硬更韧</th></tr></thead>
 <tbody>
-<tr><td>皮：模量 / 断裂阈值（相对果肉）</td><td class="num">1 / 1</td><td class="num">3 / 1.7</td><td class="num">3 / 1.5</td></tr>
-<tr><td>瓤：模量（相对果肉）</td><td class="num">1</td><td class="num">0.3</td><td class="num">0.15</td></tr>
-<tr><td>粒子间距</td><td class="num">0.75 mm</td><td class="num">1 mm</td><td class="num">1 mm</td></tr>
-<tr><td>破皮时刀已压入（四刀）</td><td class="num">2.3 / 1.3 / 0.9 / 2.4 mm</td><td class="num">10.7 / 7.8 / 7.4 / 6.8 mm</td><td class="num">10.7 / 7.7 / 7.2 / 6.5 mm</td></tr>
-<tr><td>各刀最大刀力</td><td class="num">34 / 33 / 40 / 31 N</td><td class="num">61 / 29 / 93 / 115 N</td><td class="num">62 / 72 / 102 / 116 N</td></tr>
-<tr><td>破皮以后的刀力（中位数）</td><td class="num">21 / 17 / 19 / 17 N</td><td class="num">11 / 9 / 9 / 11 N</td><td class="num">9 / 8 / 8 / 9 N</td></tr>
-<tr><td>刀下截面最多被压低</td><td class="num">1.0 / 0.8 / 1.6 / 1.0 mm</td><td class="num">3.1 / 1.8 / 6.6 / 8.3 mm</td><td class="num">4.6 / 6.6 / 9.4 / 10.7 mm</td></tr>
-<tr><td>三片厚度（中轴）</td><td class="num">6.2 / 6.6 / 6.0 mm</td><td class="num">7.1 / 7.6 / 7.9 mm</td><td class="num">7.6 / 7.9 / 8.0 mm</td></tr>
-<tr><td>碎料</td><td class="num">0.21%</td><td class="num">0.24%</td><td class="num">0.36%</td></tr>
-<tr><td>用时（一张 A800）</td><td class="num">285 min</td><td class="num">103 min</td><td class="num">103 min</td></tr>
+<tr><td style="white-space:nowrap">皮：模量 / 断裂阈值</td><td class="num">1 / 1</td><td class="num"><b>2 / 1</b></td><td class="num">3 / 1.7</td></tr>
+<tr><td style="white-space:nowrap">瓤：模量</td><td class="num">1</td><td class="num"><b>0.3</b></td><td class="num">0.3</td></tr>
+<tr><td style="white-space:nowrap">补偿量</td><td class="num">5.0 mm</td><td class="num"><b>4.5 mm</b></td><td class="num">5.0 mm</td></tr>
+<tr><td style="white-space:nowrap">三片厚度（中轴）</td><td class="num">6.2 / 6.6 / 6.0 mm</td><td class="num"><b>6.5 / 5.1 / 5.3 mm</b></td><td class="num">7.5 / 7.0 / 6.7 mm</td></tr>
+<tr><td style="white-space:nowrap">各刀最大刀力</td><td class="num">34 / 33 / 40 / 31 N</td><td class="num"><b>44 / 22 / 44 / 65 N</b></td><td class="num">56 / 76 / 47 / 53 N</td></tr>
+<tr><td style="white-space:nowrap">刀力最大时顶面已下陷</td><td class="num">3.7 / 2.3 / 2.5 / 1.3 mm</td><td class="num"><b>5.1 / 2.0 / 4.2 / 4.8 mm</b></td><td class="num">5.6 / 6.7 / 3.8 / 3.4 mm</td></tr>
+<tr><td style="white-space:nowrap">切穿以后的刀力</td><td class="num">21 / 17 / 19 / 17 N</td><td class="num"><b>14 / 13 / 11 / 11 N</b></td><td class="num">17 / 14 / 16 / 14 N</td></tr>
+<tr><td style="white-space:nowrap">碎料</td><td class="num">0.21%</td><td class="num"><b>0.20%</b></td><td class="num">0.18%</td></tr>
+<tr><td style="white-space:nowrap">用时（一张 A800）</td><td class="num">285 min</td><td class="num"><b>244 min</b></td><td class="num">233 min</td></tr>
 </tbody></table></div>
-<p>表里的量按刀平面两侧 3 mm 内的粒子逐帧（25 帧/秒，刀每帧约走 2 mm）统计：“破皮时刀已压入”是第一次出现断裂时刃口低于原来顶面的距离；
-“截面最多被压低”是这一段截面的高度在切的过程中减少的最大值（截面高 37–44 mm）；“破皮以后的刀力”取刃口在截面高度 25%–75% 之间时的中位数。
-“破皮以后的刀力”与上文表里“切到一半的刀力”口径不同：那里取刃口离砧板 20–40 mm 时的平均，分区以后这一段正好包含破皮的峰值。
-两种间距下的刀力也不能直接比（刀力随间距变化，见第六节），这里看的是量级。</p>
+<p>页首这种材料（皮 2 倍、瓤 0.3 倍）用三个补偿量各跑了一组（刀力最大时顶面下陷 2.0–6.7 mm，用时 224–246 分钟）：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>补偿量</th><th class="num">三片厚度（中轴）</th><th class="num">各刀最大刀力</th><th class="num">切穿以后的刀力</th><th class="num">碎料</th></tr></thead>
+<tbody>
+<tr><td style="white-space:nowrap">4.0 mm</td><td class="num">6.9 / 5.8 / 4.9 mm</td><td class="num">54 / 65 / 64 / 83 N</td><td class="num">15 / 12 / 12 / 10 N</td><td class="num">0.31%</td></tr>
+<tr><td style="white-space:nowrap"><b>4.5 mm（页首）</b></td><td class="num"><b>6.5 / 5.1 / 5.3 mm</b></td><td class="num"><b>44 / 22 / 44 / 65 N</b></td><td class="num"><b>14 / 13 / 11 / 11 N</b></td><td class="num"><b>0.20%</b></td></tr>
+<tr><td style="white-space:nowrap">5.0 mm</td><td class="num">7.6 / 6.6 / 6.4 mm</td><td class="num">53 / 71 / 32 / 68 N</td><td class="num">15 / 11 / 14 / 12 N</td><td class="num">0.22%</td></tr>
+</tbody></table></div>
+<p>五组都是 0.75 mm 间距、四刀直压、计划 5 mm，四刀都切开，切下的片完整。皮和瓤的数字是相对果肉的倍数。表里的量按刀平面两侧 3 mm 内的粒子逐帧（25 帧/秒，刀每帧约走 2 mm）统计：
+“顶面已下陷”是刀力最大的那一帧顶面比切之前低了多少；“切穿以后的刀力”取刃口在截面高度 25%–75% 之间时的中位数，与下文表里“切到一半的刀力”口径不同
+（那里取刃口离砧板 20–40 mm 时的平均，分区以后这一段正好包含切穿前的峰值）。</p>
 <ul>
-<li><b>两档预览都过头了。</b>刀要把表皮压下去 7–11 mm、刀力升到 60–115 N 才破皮，然后顶面一下弹回，之后只要约 10 N 就切到底。
-画面上是刀先压出一道沟、再突然穿透，像在切一段橡胶管。真实黄瓜的切割力在 20 N 的量级（第三节“和实测比较”），皮没有这么韧。</li>
-<li><b>预览 2 的瓤太软。</b>刀下的截面被压低 5–11 mm（截面高约 40 mm），又回到了 11 月 1 日反馈里“太软”的样子。</li>
-<li><b>更正（11 月 12 日晚）：原因不只在皮的断裂阈值，主要在软瓤。</b>这里原来根据测试台写的是“原因在皮的断裂阈值”，并据此选了皮只加硬、不调高阈值的一组（皮 2 倍、瓤 0.3 倍）。
-这一组在 0.75 mm 间距的完整场景里跑完了第一条：最早的一批粒子在刀压入 2–3 mm 时就断了，但刀力继续升到 54–83 N，刀压入 7–10 mm、顶面跟着下陷 5.6–6.7 mm 以后才一下切穿（再走 2 mm 刀力就掉到一半以下）。
-把预览 1 的材料（皮 3 倍、阈值 1.7 倍）也用 0.75 mm 跑了一遍，是 47–76 N、下陷 3.4–6.7 mm，两者相近。均匀材料（页首视频）是 31–40 N、下陷 1.3–3.7 mm，而且过了峰值以后刀力是逐渐下降的。
-也就是说，“先压下去再切穿”主要来自软瓤：外面一圈较硬的皮和果肉像拱一样架在软瓤上，要把这一圈切断它才塌下去，与皮的阈值关系不大。预览里更夸张的部分（下陷 6–9 mm、刀力到 115 N）还和 1 mm 的间距有关。</li>
-<li><b>片变厚了约 1.3 mm</b>：瓤软以后，切的过程中黄瓜本体被刀楔推开得少（第四节上文的补偿量是按均匀材料挑的）。</li>
-<li><b>正在跑的版本</b>：皮 2 倍（断裂阈值不变）、瓤 0.3 倍，0.75 mm 间距，补偿量 4.0 / 4.5 / 5.0 mm 各一组（每组约 4 小时）。补偿 4.0 mm 的一组已跑完，三片是 6.9 / 5.8 / 4.9 mm；另外两组即将跑完。
-之后按片厚和边缘挑一组换作页首视频，并把这一小节的预览换成 0.75 mm 的对照。</li>
+<li><b>画面上的变化。</b>分区以后，刀切入时黄瓜的上半圈先被压下去 2–7 mm（均匀材料 1–4 mm），刀再走约 2 mm 就切穿，刀力掉到一半以下，顶面弹回。切下的片和均匀材料一样完整，叠靠在砧板上。</li>
+<li><b>刀力。</b>峰值变高（各刀 22–83 N，均匀材料 31–40 N），切穿以后变低（10–15 N，均匀材料 17–21 N）。瓤软了，切穿以后阻力小；峰值高，是因为外面一圈较硬的皮和果肉像拱一样架在软瓤上，
+要把这一圈切断它才塌下去。同一材料的三组里各刀的峰值相差很大（22–83 N），和每一刀落在黄瓜的哪个位置有关。</li>
+<li><b>和皮的断裂阈值关系不大。</b>皮 3 倍、阈值 1.7 倍的一档是 47–76 N、下陷 3.4–6.7 mm，与皮 2 倍、阈值不变的三组相近。下午根据测试台写的判断（“原因在皮的断裂阈值”，并据此预计选定的一组不会先压下去再切穿）是错的，
+测试台低估了软瓤的作用，已在第三节末尾更正。</li>
+<li><b>片厚与补偿量。</b>同一材料跑了补偿 4.0 / 4.5 / 5.0 mm 三组，三片分别是 6.9 / 5.8 / 4.9、6.5 / 5.1 / 5.3、7.6 / 6.6 / 6.4 mm。和均匀材料时一样，片厚与补偿量不成比例，只能按结果挑：
+页首用的是补偿 4.5 mm 的一组，后两片只差 0.2 mm，碎料和刀力也最低；第一片上缘 7.6 mm、下缘 5.4 mm，是第一刀的切面更斜造成的楔形（下一小节）。</li>
+<li><b>和真实黄瓜比。</b>真实切割力在 20 N 的量级（第三节“和实测比较”）。这里均匀材料的峰值已经偏高（31–40 N），来自约 1 mm 的钝刃和“只有碰到刀的粒子才断”的简化；
+软瓤把这个偏高的力变成了看得见的下陷，所以画面上的下陷比真实的大。瓤和果肉的模量比取自文献，没有为了画面调过。</li>
+</ul>
+<p><b>先跑的两档 1 mm 预览。</b>换页首之前先用 1 mm 间距试了两档更强的分区（其余设置与 11 月 2 日的页首视频相同，补偿 5.0 mm）：预览 1 是皮 3 倍、阈值 1.7 倍、瓤 0.3 倍，预览 2 是皮 3 倍、阈值 1.5 倍、瓤 0.15 倍。</p>
+<figure class="fig">
+  <video src="../media/cucumber_cut_zones_preview.mp4?v=1112a" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>均匀材料与两档 1 mm 预览（切口近景）</b> — 左：均匀材料（11 月 2 日的页首视频，0.75 mm）。中：预览 1。右：预览 2。</figcaption>
+</figure>
+<div class="tblwrap"><table>
+<thead><tr><th></th><th class="num">预览 1（1 mm）</th><th class="num">预览 2（1 mm）</th><th class="num">预览 1 的材料，0.75 mm（上表最右）</th></tr></thead>
+<tbody>
+<tr><td>各刀最大刀力</td><td class="num">61 / 29 / 93 / 115 N</td><td class="num">62 / 72 / 102 / 116 N</td><td class="num">56 / 76 / 47 / 53 N</td></tr>
+<tr><td>刀力最大时顶面已下陷</td><td class="num">6.3 / 3.5 / 7.7 / 9.2 mm</td><td class="num">未统计</td><td class="num">5.6 / 6.7 / 3.8 / 3.4 mm</td></tr>
+<tr><td>刀下截面最多被压低</td><td class="num">3.1 / 1.8 / 6.6 / 8.3 mm</td><td class="num">4.6 / 6.6 / 9.4 / 10.7 mm</td><td class="num">2.7 / 4.7 / 2.8 / 3.9 mm</td></tr>
+<tr><td>三片厚度（中轴）</td><td class="num">7.1 / 7.6 / 7.9 mm</td><td class="num">7.6 / 7.9 / 8.0 mm</td><td class="num">7.5 / 7.0 / 6.7 mm</td></tr>
+<tr><td>碎料</td><td class="num">0.24%</td><td class="num">0.36%</td><td class="num">0.18%</td></tr>
+</tbody></table></div>
+<ul>
+<li><b>预览过头了。</b>后两刀里刀要把顶面压下去 8–9 mm、刀力升到 93–115 N 才切穿，像在切一段橡胶管。同一材料换成 0.75 mm 间距以后小了不少（47–76 N、下陷 3.4–6.7 mm），所以这种“先压下去再切穿”的程度还和间距有关，没有收敛。</li>
+<li><b>预览 2 的瓤太软。</b>刀下的截面被压低 5–11 mm（截面高约 40 mm），又回到了 11 月 1 日反馈里“太软”的样子，没有再跑 0.75 mm。</li>
 </ul>
 
 <h3>不扶黄瓜，只移动切割位置（11 月 2 日）</h3>
@@ -324,7 +345,7 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 <tr><td class="num">5 mm</td><td class="num">4.25 mm</td><td class="num">6.3 / 5.6 / 5.1 mm</td><td class="num">17 / 25 / 22 / 18 N</td><td class="num">58 N</td><td class="num">0.22%</td><td class="num">265 min</td></tr>
 <tr><td class="num">5 mm</td><td class="num">4.5 mm（原页首，中间那片有小钩）</td><td class="num">6.1 / 6.3 / 6.2 mm</td><td class="num">17 / 20 / 36 / 24 N</td><td class="num">79 N</td><td class="num">0.29%</td><td class="num">260 min</td></tr>
 <tr><td class="num">5 mm</td><td class="num">4.6 mm</td><td class="num">6.7 / 5.3 / 5.2 mm</td><td class="num">18 / 21 / 21 / 20 N</td><td class="num">38 N</td><td class="num">0.20%</td><td class="num">257 min</td></tr>
-<tr><td class="num">5 mm</td><td class="num"><b>5.0 mm（页首视频）</b></td><td class="num"><b>6.2 / 6.6 / 6.0 mm</b></td><td class="num">18 / 20 / 22 / 20 N</td><td class="num">40 N</td><td class="num">0.21%</td><td class="num">285 min</td></tr>
+<tr><td class="num">5 mm</td><td class="num"><b>5.0 mm（11 月 2 日的页首视频）</b></td><td class="num"><b>6.2 / 6.6 / 6.0 mm</b></td><td class="num">18 / 20 / 22 / 20 N</td><td class="num">40 N</td><td class="num">0.21%</td><td class="num">285 min</td></tr>
 <tr><td class="num">5 mm</td><td class="num">5.5 mm</td><td class="num">7.7 / 7.2 / 7.7 mm</td><td class="num">18 / 30 / 22 / 22 N</td><td class="num">81 N</td><td class="num">0.21%</td><td class="num">271 min</td></tr>
 <tr><td class="num">4 mm</td><td class="num">4.5 mm</td><td class="num">4.5 / 2.8 / 1.1 mm</td><td class="num">18 / 15 / 12 / 8 N</td><td class="num">35 N</td><td class="num">0.17%</td><td class="num">262 min</td></tr>
 <tr><td class="num">4 mm</td><td class="num">4.75 mm</td><td class="num">6.0 / 4.2 / 3.6 mm</td><td class="num">18 / 25 / 22 / 18 N</td><td class="num">65 N</td><td class="num">0.25%</td><td class="num">277 min</td></tr>
@@ -334,15 +355,15 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 </tbody></table></div>
 <figure class="fig">
   <img src="../media/cucumber_cut_comp.jpg?v=1102a" alt="四宫格：补偿量 4.0、4.5、5.0、5.5 mm 时切下的三片" loading="lazy">
-  <figcaption><b>补偿量的对照（计划 5 mm，结束时刻，切口近景）</b> — 四组都切下了完整的三片。起初选了补偿 4.5 mm 的一组作页首视频（6.1 / 6.3 / 6.2 mm），后来发现它中间那片的上缘有一个小钩，现在页首用的是补偿 5.0 mm 的一组（下文）。</figcaption>
+  <figcaption><b>补偿量的对照（计划 5 mm，结束时刻，切口近景）</b> — 四组都切下了完整的三片。起初选了补偿 4.5 mm 的一组作页首视频（6.1 / 6.3 / 6.2 mm），后来发现它中间那片的上缘有一个小钩，11 月 2 日晚页首换成了补偿 5.0 mm 的一组（下文）。</figcaption>
 </figure>
 <ul>
-<li><b>中轴处的片厚。</b>页首这一组（补偿 5.0 mm）三片是 6.2 / 6.6 / 6.0 mm，比计划厚约 1 mm，但三片一致，上一版那种特别薄的一片没有了。
+<li><b>中轴处的片厚。</b>11 月 2 日的页首这一组（补偿 5.0 mm）三片是 6.2 / 6.6 / 6.0 mm，比计划厚约 1 mm，但三片一致，上一版那种特别薄的一片没有了。
 补偿量和结果不成比例：补偿 3.25–3.5 mm 时第二片只有约 3 mm；从 4.0 加到 5.5 mm，三片的平均厚度是 5.6 / 6.2 / 6.3 / 7.5 mm，同一组里各片也可以相差 2 mm（补偿 4.0 mm 时是 6.8 / 5.4 / 4.6 mm）。
 刀落点离切面的距离减去实际片厚，就是切的过程中黄瓜滑开的距离；计划 5 mm 的四组里，各刀在 2–4.5 mm 之间变化，所以只能按结果挑一组。
 仿真本身是确定的：同一配置重跑，片厚相差 0.1 mm 以内。</li>
 <li><b>楔形。</b>切面在黄瓜自身的坐标里都倾斜约 10°，因为刀往下走时黄瓜还在滑。第二到第四刀的切面彼此接近平行，所以第二、三片上下缘的厚度相差不超过 0.6 mm；
-第一片的另一面是第一刀的切面（倾斜 7°），上下缘相差约 3 mm（页首视频：上缘 7.6 mm、下缘 4.9 mm；上一版是上缘 4.7 mm、下缘 1.4 mm）。</li>
+第一片的另一面是第一刀的切面（倾斜 7°），上下缘相差约 3 mm（11 月 2 日的页首视频：上缘 7.6 mm、下缘 4.9 mm；上一版是上缘 4.7 mm、下缘 1.4 mm）。</li>
 <li><b>让刀跟着黄瓜走不行。</b>也试过在刀插在黄瓜里时让刀跟着黄瓜的位移沿轴向移动：刀身本身就在推黄瓜，刀一跟，黄瓜被推得更远，第一刀就把黄瓜推出了 87 mm，已放弃。
 不扶住黄瓜，刀和黄瓜之间的相对滑动就去不掉，楔形也就去不掉。</li>
 <li><b>能切多薄。</b>计划 4 mm 的两组是 4.5 / 2.8 / 1.1 mm 和 6.3 / 5.7 / 4.5 mm，片厚随刀数递减；计划 3 mm 时第二片只削下一层，第四刀没有切下东西（表中这一组的片厚按粒子数估算）。
@@ -363,7 +384,7 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 </tbody></table></div>
 <figure class="fig">
   <img src="../media/cucumber_cut_nick.jpg?v=1102b" alt="左：补偿 4.5 mm，中间那片上缘有小钩；右：补偿 5.0 mm，三片边缘完整" loading="lazy">
-  <figcaption><b>小钩（结束前，切口近景）</b> — 左：补偿 4.5 mm，中间那片上缘的表皮翘起；右：补偿 5.0 mm（现页首视频），三片边缘完整。</figcaption>
+  <figcaption><b>小钩（结束前，切口近景）</b> — 左：补偿 4.5 mm，中间那片上缘的表皮翘起；右：补偿 5.0 mm（11 月 2 日起的页首视频），三片边缘完整。</figcaption>
 </figure>
 <p>没有小钩的设置不止一组：上表里损伤阈值 0.25 和裂纹超前 1.5 mm 两组，补偿量表里的 4.25、4.6、5.0 mm 三组也没有（逐帧近景检查）。
 其中三片厚度最一致的是补偿 5.0 mm 的一组（6.2 / 6.6 / 6.0 mm，刀力最大 40 N），换作页首视频；它的材料和刀与原页首完全相同，只是刀多留了 0.5 mm。
@@ -519,7 +540,7 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 <li><b>随粒子移动。</b>每个顶点取同一块里最近的 64 个粒子，用仿射移动最小二乘（核半径不小于 5 个粒子间距，约 2.5 个网格单元）组合它们的位置。权重在初始构型里一次算好，
 每一帧只做一次稀疏矩阵乘法；在初始构型里重现顶点位置的误差小于 10 µm。刀经过之前，切口附近的顶点用两块的粒子一起插值，所以切口只在刀刃（裂纹前沿）经过的地方张开。</li>
 <li><b>外观。</b>表皮用程序纹理：深浅纵向条纹、浅色小疣点（加 0.3 mm 的凹凸）和一层清漆高光。切面用程序生成的横截面纹理：表皮边、果肉、维管束环、三瓣籽腔和种子。
-这些只是贴图：页首视频的仿真里果肉是均匀材料；11 月 12 日起的分区材料（硬皮、果肉、软瓤）见第四节，瓤的范围取得与贴图里的籽腔一致。</li>
+这些只是贴图，不随仿真变化；11 月 12 日起页首视频的仿真里也分了皮、果肉、瓤三个区（第四节），瓤的范围取得与贴图里的籽腔一致。</li>
 <li><b>近景机位</b>跟着刀所在的平面移动，刀始终侧对镜头，不会挡住切口。</li>
 </ul>
 <p>Mitsuba 3 路径追踪，每帧 64 spp 加 Intel Open Image Denoise 去噪，1280×720。机械臂用 FR3 的视觉网格，按仿真记录的各连杆<b>实际</b>运动摆放，所以手和刀始终贴合。
@@ -527,12 +548,13 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 
 <h2 id="status">六、状态与限制</h2>
 <ul>
-<li><b>内软外硬（11 月 12 日，进行中）。</b>引擎已支持逐粒子的模量和断裂阈值系数（第二节第 7 条），测试台和 1 mm 间距的两档预览已完成（第三节末尾、第四节）。
-两档预览过头，页首视频还没有替换；皮 2 倍、瓤 0.3 倍的 0.75 mm 版本正在跑，已跑完的一条里刀同样先把上半圈压下去约 6 mm 才切穿，只是比预览小（第四节的更正）。分区材料仍是纯弹性的：瓤再软也不会流动或出水，材料本身没有永久形变。</li>
+<li><b>内软外硬（11 月 12 日）。</b>页首视频已换成分区材料（皮 2 倍、瓤 0.3 倍，断裂阈值不变；第二节第 7 条、第四节）。分区材料仍是纯弹性的：瓤再软也不会流动或出水，材料本身没有永久形变。
+刀切入时黄瓜上半圈先被压下去 2–7 mm 再切穿，这个下陷比真实的大：切割力的峰值本来就偏高（钝刃，只有碰到刀的粒子才断），软瓤把它变成了看得见的形变；它的大小还和粒子间距有关（1 mm 时更大）。
+三片厚度 6.5 / 5.1 / 5.3 mm，不如 11 月 2 日的均匀材料版本一致（6.2 / 6.6 / 6.0 mm）。USD 动画还是均匀材料那一版，分区材料的没有导出。</li>
 <li>这些引擎改动在 StiffGIPC 的开发版本里，<b>尚未</b>进入公开发布的 wheel。</li>
 <li>USD 动画在 GitHub release <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-cutting-2026-11">demo-assets-cutting-2026-11</a> 里：机械臂、刀、砧板、切块网格的黄瓜（顶点颜色取自贴图），以及每 0.4 s 一帧的 MPM 粒子（默认隐藏），可用 usdview、Houdini、Blender 或 Omniverse 打开。</li>
 <li>刀背厚 4 mm，切下的片会被推开并向外倾倒，这和真实切片相近。刀模的刃尖是约 1 mm 的圆角，比测试台得出的门槛（1 mm 间距时约 0.5 mm，即半个粒子间距）厚，单靠门控和加密间距，切面上一直有坑洼。11 月 1 日起把刀的中面当作裂纹面（第二节第 5 条），原刀模切出的切面与磨尖的刀相近。刀模一直没有改。</li>
-<li>果肉改成纯弹性后，切下的块被刀楔推得更远，黄瓜头会倒下，薄片平躺在砧板上。每一刀还会把整根黄瓜沿砧板推开（第三、四刀前累计 15–25 mm）。场景里不扶黄瓜，薄片改为按切面的实测位置瞄准并补偿切的过程中的滑动：三片厚度一致（约 6 mm），但比计划厚约 1 mm，第一片上下缘相差约 3 mm；4 mm 以下的片不稳定（第四节）。</li>
+<li>果肉改成纯弹性后，切下的块被刀楔推得更远，黄瓜头会倒下，薄片平躺在砧板上。每一刀还会把整根黄瓜沿砧板推开（第三、四刀前累计 15–25 mm）。场景里不扶黄瓜，薄片改为按切面的实测位置瞄准并补偿切的过程中的滑动：三片厚度一致（11 月 2 日的均匀材料版本，约 6 mm），但比计划厚约 1 mm，第一片上下缘相差约 3 mm；4 mm 以下的片不稳定（第四节）。</li>
 <li>切块网格渲染里，切面画成平面：它是仿真里相邻两块的分界在初始构型里的最佳拟合平面，细小的起伏和断裂的粒子不显示；切面上的籽和果肉层次只是贴图。片很薄、最薄处只剩一两层粒子时，网格跟随粒子的误差变大，片的边缘会出现尖角。</li>
 <li>裂纹超前刃口的距离（1 mm）是一个数值参数，不是测出来的材料性质：取 0 时只在刀平面恰好落在网格节点面上时有用，取 2 mm 时有一种网格对齐下挤压峰又回来了；完整场景里取 0.5 mm 和 1 mm 的结果相近。裂纹面上的分离不消耗能量，所以加了裂纹面以后，刀力里没有断裂韧度这一项（第四节）。</li>
 <li>0.75 mm 间距时网格 1.5 mm：15 mm 的片约 10 个网格单元厚，页首视频的 5 mm 片约 3 个，3 mm 的片 2 个；1 mm 间距（网格 2 mm）时 15 mm 的片约 7.5 个。粒子间距放大到 1.5 mm（网格 3 mm）时，改动前（磨尖刀拉切）第三刀切不断，加了刀中面裂纹后三刀都切断了，但切面粗、最外那片会侧倒；改动前磨尖刀切 7 mm 的片，1 mm 间距时约 17% 的粒子断裂，0.75 mm 时约 12%；加刀中面裂纹后，1 mm 间距时是 9–11%。</li>

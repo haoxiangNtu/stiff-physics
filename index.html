@@ -511,23 +511,24 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <p class="lead">FR3 握着主厨刀，在砧板上从黄瓜的细端直压切片。黄瓜是 88 万个 MPM 粒子组成的弹性体，刀、砧板和机械臂是 IPC 刚体，在同一个 Newton 求解里耦合。
     为此给引擎补了四处：线性粒子传输、损伤（只允许碰到过刀的粒子断裂）、粒子摩擦，以及刀中面裂纹（双场 CPIC，把刀的中面当作一张超前刃口 1 mm 的裂纹面）。
     11 月 1 日下午去掉了果肉的塑性（此前果肉在 3% 应变就开始流动，看上去像橡皮泥），渲染改用原模型沿仿真裂纹面切开、随粒子移动的切块网格，并把片切到 5 mm。11 月 2 日改为按黄瓜切面的实测位置瞄准、补偿切的过程中黄瓜的滑动，三片厚度一致（约 6 mm）；当晚换了页首视频：原来那一组中间那片的上缘翘起一个小钩，补偿量从 4.5 mm 改为 5.0 mm 后三片边缘完整。
-    11 月 12 日开始把黄瓜改成“内软外硬”的三个分区（硬皮、果肉、软瓤）：引擎加了逐粒子的材料系数；1 mm 间距的两档预览过头（刀先把黄瓜压出一道沟才切穿），
-    没有替换下面的视频，<a href="docs/cutting.html#zones">预览对照与测试台 →</a>；皮 2 倍、瓤 0.3 倍的 0.75 mm 版本正在跑，已跑完的一条里也有同类现象，只是小一些（下陷约 6 mm，预览 6–9 mm）。
+    11 月 12 日把黄瓜从均匀材料改成“内软外硬”的三个分区（硬皮、果肉、软瓤）：引擎加了逐粒子的材料系数，下面的视频换成了分区材料的版本。
+    分区以后，刀切入时黄瓜的上半圈会先被压下去几毫米、切穿后弹回；<a href="docs/cutting.html#zones">与均匀材料的对照 →</a>
     刀和黄瓜都按原模型使用，没有改形状。
     <a class="more" href="docs/cutting.html">阅读场景、引擎改动、测试台与对照 →</a></p>
   </div>
   <figure class="fig">
-    <video src="media/cucumber_cut.mp4?v=1102b" muted loop playsinline controls preload="metadata"></video>
-    <figcaption><b>原刀 · 四刀直压 · 纯弹性果肉 · 三片约 6 mm</b> — 每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板，先切掉细端，再切三片。
-    黄瓜没有扶住，刀往下切时会把它沿砧板推开，所以按切面的实测位置瞄准，并多留 5.0 mm 抵消这段滑动；三片在中轴处是 6.2 / 6.6 / 6.0 mm，边缘完整。
-    粒子间距 0.75 mm，果肉 E = 2 MPa；切下的薄片平躺叠在砧板上，碎料 0.21%。仿真 18.1 s，一张 A800 上 4.8 小时。左上角是跟着刀走的切口近景；切面上的籽是贴图。
-    这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices_v2.usdc">cucumber_cut_6mm_slices_v2.usdc（675 MB）</a>；1 mm 间距、三片 15 mm 的视频和 USD 见详情页。
+    <video src="media/cucumber_cut.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>原刀 · 四刀直压 · 内软外硬（硬皮、果肉、软瓤）· 三片 5–6.5 mm</b> — 每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板，先切掉细端，再切三片。
+    黄瓜没有扶住，按切面的实测位置瞄准，并多留 4.5 mm 抵消切的过程中黄瓜的滑动；三片在中轴处是 6.5 / 5.1 / 5.3 mm。
+    粒子间距 0.75 mm，纯弹性，分三个区：皮 E = 4 MPa，果肉 2 MPa，瓤 0.6 MPa；碎料 0.20%。每一刀开头，刀先把黄瓜的上半圈压下去 2–5 mm、刀力升到 22–65 N，然后切穿、顶面弹回。
+    仿真 18.1 s，一张 A800 上 4.1 小时。左上角是跟着刀走的切口近景；切面上的籽是贴图。
+    此前的均匀材料版本（11 月 2 日）：<a href="media/cucumber_cut_1102.mp4">视频</a> · <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices_v2.usdc">USD（675 MB）</a>；分区材料版本的 USD 还没有导出。
     MPM 切割的改动在引擎开发分支上，尚未进入公开发布的 wheel。<a href="docs/cutting.html#full">薄片、硬度与渲染的对照 →</a></figcaption>
   </figure>
   <figure class="fig">
-    <video src="media/cucumber_cut_zones_preview.mp4?v=1112a" muted loop playsinline controls preload="metadata"></video>
-    <figcaption><b>内软外硬（11 月 12 日，进行中）：均匀材料与两档 1 mm 预览的切口近景</b> — 左：上面这段视频的均匀材料。中、右：皮更硬更韧、瓤更软的两档预览，刀先把黄瓜压出一道沟才切穿，过头了，没有采用。
-    选定的是皮 2 倍硬、瓤 0.3 倍，0.75 mm 间距的版本正在跑，跑完后替换上面的视频；它也会先压下去约 6 mm 再切穿，这主要来自软瓤，不是皮。<a href="docs/cutting.html#zones">对照表与测试台 →</a></figcaption>
+    <video src="media/cucumber_cut_zones.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>均匀材料与两种分区的切口近景（同一机位，0.75 mm 间距）</b> — 左：均匀材料（11 月 2 日）。中：上面这段视频，皮 2 倍、瓤 0.3 倍。右：皮 3 倍且更韧、瓤 0.3 倍。
+    分区以后每一刀开头顶面先被压下去几毫米，切穿后弹回；各刀的最大刀力 22–83 N（均匀 31–40 N），切穿以后 10–15 N（均匀 17–21 N）。这个下陷比真实的大，原因和数据见<a href="docs/cutting.html#zones">详情页 →</a></figcaption>
   </figure>
   <figure class="fig">
     <img src="media/cucumber_cut_2x2.jpg?v=1101p" alt="四宫格：塑性果肉与纯弹性果肉，粒子重建表面与切块网格" loading="lazy">
