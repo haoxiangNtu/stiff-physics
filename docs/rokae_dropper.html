@@ -39,7 +39,7 @@ pre { overflow-x: auto; }
 <h1>双臂灵巧手滴管取液：Rokae AR5 + Wuji 手遥操作回放</h1>
 <p class="lead"><b>现状（11 月 12 日）：</b>带水的完整流程（抓取、吸液、提出、转运、滴液、放回并松手）在严格和快两种模式下都能走完，各跑 3 次、6 次全部完成；
 滴管在手里不再摆动（悬停时管口摆幅 4 mm，修正前 22–140 mm）。吸入 1.23–1.28 mL，0.67–0.75 mL 滴进烧杯，桌上没有洒水；手臂和手指的指令是原始录制，纯开环回放。
-还没解决的：严格模式放回的余量很小，滴液时管口向杯壁偏，吸入量约为真实的两倍（<a href="#pump">第十二节</a>）。页首的前两段视频是这一版；再往下是 11 月 5 日第一版的介绍和视频。</p>
+还没解决的：严格模式放回的余量很小，滴液时管口向杯壁偏，吸入量约为真实的两倍（<a href="#pump">第十二节</a>）。页首的前三段视频是这一版（严格模式、快模式的完整回放，以及修正前后的对比）；再往下是 11 月 5 日第一版的介绍和视频。</p>
 <p class="lead">实验台演示里的“滴管取液”原来由 FR3 机械臂完成，动作是按脚本生成的。这次换成一段<b>真实的遥操作录制</b>：
 双臂 Rokae AR5，每条臂末端一只 20 自由度的 Wuji 灵巧手，录制里有全部关节角。我们把这段录制逐关节回放进 StiffGIPC。右手捏住立在烧瓶里的玻璃滴管胶头，挤压、松开，吸进蓝水；
 接着把滴管提出瓶口，移到装黄水的烧杯上方挤压滴液，最后放回烧瓶（这一步没有复现成功，见第六节）。机器人、玻璃器皿、硅胶胶头和水在同一个 IPC Newton 求解里双向耦合，水用 MPM。
@@ -56,6 +56,13 @@ pre { overflow-x: auto; }
   再把滴管放回烧瓶并松手；桌上没有洒水，烧瓶只被带动 1.1 mm。手臂和手指的指令是原始录制，纯开环回放。
   这是预览画质的渲染（光栅化，水画成粒子，滴管的玻璃管加深了颜色以便看清），不是路径追踪。
   做法和六次回放的逐项结果见<a href="#pump">第十二节</a>；<a href="rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=29.00&amp;cam=beaker">在查看器里打开这一次 →</a></figcaption>
+</figure>
+<figure class="fig">
+  <video src="../media/rokae_dropper_pump_fast.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>带水完整回放，快模式（11 月 12 日，修正后）</b> — 同一段录制、同样的手臂和手指指令，只把牛顿迭代的收敛容差从 10<sup>−3</sup> 放宽到 10<sup>−2</sup>。吸进 82 粒蓝水（1.28 mL），挤出 47 粒（0.73 mL）进烧杯，
+  桌上没有洒水，放回烧瓶并松手，烧瓶位移 1.0 mm；滴管在手里的摆幅悬停 4 mm、滴液约 1.5 mm。快模式跑了 3 次，3 次都走完全程，放回时管口离瓶轴 7.1–7.3 mm（瓶口允许 9.3 mm），余量比严格模式（8.9 / 9.9 / 9.4 mm）大；
+  每帧最多 5–7 次牛顿迭代（严格 12–14 次），一次回放 69–70 分钟（严格 90–94 分钟）。六次回放的逐项结果见<a href="#pump-runs">第十二节</a>。
+  <a href="rokae_viewer.html?run=rec2_v5_pump_fast&amp;t=29.00&amp;cam=beaker">在查看器里打开这一次 →</a></figcaption>
 </figure>
 <figure class="fig">
   <video src="../media/rokae_dropper_swing_fix.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>

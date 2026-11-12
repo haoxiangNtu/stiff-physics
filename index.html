@@ -422,7 +422,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <div class="kicker kicker--data">Teleop replay · Dexterous hand · Liquids</div>
     <h2>双臂灵巧手滴管取液：真实遥操作录制回放</h2>
     <p class="lead"><b>现状（11 月 12 日）：</b>带水的完整流程（抓取、吸液、转运、滴液、放回并松手）在严格和快两种模式下都能走完（各 3 次，6 次全部完成），滴管在手里不再摆动；
-    下面前两段视频是这一版，<a href="docs/rokae_dropper.html#pump">做法和逐次结果 →</a>。以下文字从 11 月 5 日的第一版开始，按日期记录到现在。</p>
+    下面前三段视频是这一版（严格模式、快模式、修正前后对比），<a href="docs/rokae_dropper.html#pump">做法和逐次结果 →</a>。以下文字从 11 月 5 日的第一版开始，按日期记录到现在。</p>
     <p class="lead">把一段真实遥操作录制（Rokae AR5 双臂 + Wuji 灵巧手，全部关节角）逐关节回放进 StiffGIPC：右手捏住玻璃滴管的硅胶胶头，挤压、松开，从烧瓶吸进约 0.9 ml 蓝水，
     提出瓶口，移到烧杯上方挤压滴液，再放回（放回这一步没有复现成功）。机器人、玻璃器皿、硅胶胶头和 MPM 水在同一个 IPC Newton 求解里耦合；胶头腔体是封闭空气，吸多少水由腔体体积的变化决定。
     吸水、提起、移到烧杯上方都能稳定复现，烧瓶只被带动 1 mm。<b>还没解决的：</b>滴管离开瓶颈时胶头存下的扭转会把它甩一下，约 2/3 的水甩到桌上，之后的管口位置每组都不同；8 组带水仿真里只有发布的这一组把明显的水量（11 个粒子，0.17 ml）滴进了烧杯。左手摇烧杯那一段没有做。
@@ -442,6 +442,13 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     再把滴管放回烧瓶并松手；桌上没有洒水，烧瓶只被带动 1.1 mm。手臂和手指的指令是原始录制，纯开环回放。
     这是预览画质的渲染（光栅化，水画成粒子，滴管的玻璃管加深了颜色以便看清），不是路径追踪。
     <a href="docs/rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=29.00&amp;cam=beaker">在查看器里打开这一次 →</a></figcaption>
+  </figure>
+  <figure class="fig">
+    <video src="media/rokae_dropper_pump_fast.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>带水完整回放，快模式（11 月 12 日，修正后）</b> — 同一段录制、同样的手臂和手指指令，只把牛顿迭代的收敛容差从 10<sup>−3</sup> 放宽到 10<sup>−2</sup>。吸进 82 粒蓝水（1.28 mL），挤出 47 粒（0.73 mL）进烧杯，
+    桌上没有洒水，放回烧瓶并松手，烧瓶位移 1.0 mm；滴管在手里的摆幅悬停 4 mm、滴液约 1.5 mm。快模式跑了 3 次，3 次都走完全程，放回时管口离瓶轴 7.1–7.3 mm（瓶口允许 9.3 mm），余量比严格模式（8.9 / 9.9 / 9.4 mm）大；
+    每帧最多 5–7 次牛顿迭代（严格 12–14 次），一次回放 69–70 分钟（严格 90–94 分钟）。<a href="docs/rokae_dropper.html#pump-runs">六次回放的逐项结果 →</a>
+    <a href="docs/rokae_viewer.html?run=rec2_v5_pump_fast&amp;t=29.00&amp;cam=beaker">在查看器里打开这一次 →</a></figcaption>
   </figure>
   <figure class="fig">
     <video src="media/rokae_dropper_swing_fix.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
