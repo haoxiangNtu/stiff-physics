@@ -37,6 +37,9 @@ pre { overflow-x: auto; }
 <div class="crumb"><a href="../">首页</a> / 技术详解 / 双臂灵巧手滴管取液</div>
 <div class="kicker">Teleop replay · Dexterous hand · Liquids</div>
 <h1>双臂灵巧手滴管取液：Rokae AR5 + Wuji 手遥操作回放</h1>
+<p class="lead"><b>现状（11 月 12 日）：</b>带水的完整流程（抓取、吸液、提出、转运、滴液、放回并松手）在严格和快两种模式下都能走完，各跑 3 次、6 次全部完成；
+滴管在手里不再摆动（悬停时管口摆幅 4 mm，修正前 22–140 mm）。吸入 1.23–1.28 mL，0.67–0.75 mL 滴进烧杯，桌上没有洒水；手臂和手指的指令是原始录制，纯开环回放。
+还没解决的：严格模式放回的余量很小，滴液时管口向杯壁偏，吸入量约为真实的两倍（<a href="#pump">第十二节</a>）。页首的前两段视频是这一版；再往下是 11 月 5 日第一版的介绍和视频。</p>
 <p class="lead">实验台演示里的“滴管取液”原来由 FR3 机械臂完成，动作是按脚本生成的。这次换成一段<b>真实的遥操作录制</b>：
 双臂 Rokae AR5，每条臂末端一只 20 自由度的 Wuji 灵巧手，录制里有全部关节角。我们把这段录制逐关节回放进 StiffGIPC。右手捏住立在烧瓶里的玻璃滴管胶头，挤压、松开，吸进蓝水；
 接着把滴管提出瓶口，移到装黄水的烧杯上方挤压滴液，最后放回烧瓶（这一步没有复现成功，见第六节）。机器人、玻璃器皿、硅胶胶头和水在同一个 IPC Newton 求解里双向耦合，水用 MPM。
@@ -48,8 +51,21 @@ pre { overflow-x: auto; }
 
 <section id="result">
 <figure class="fig">
+  <video src="../media/rokae_dropper_pump_strict.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>带水完整回放，严格模式（11 月 12 日，修正后）</b> — 录制时间 9–40 s，实时速度。右手捏住胶头，从烧瓶吸进 81 粒蓝水（1.27 mL），提出瓶口，移到烧杯上方挤出 44 粒（0.69 mL），
+  再把滴管放回烧瓶并松手；桌上没有洒水，烧瓶只被带动 1.1 mm。手臂和手指的指令是原始录制，纯开环回放。
+  这是预览画质的渲染（光栅化，水画成粒子，滴管的玻璃管加深了颜色以便看清），不是路径追踪。
+  做法和六次回放的逐项结果见<a href="#pump">第十二节</a>；<a href="rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=29.00&amp;cam=beaker">在查看器里打开这一次 →</a></figcaption>
+</figure>
+<figure class="fig">
+  <video src="../media/rokae_dropper_swing_fix.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>滴管在手里的摆动：修正前 / 修正后（严格模式，录制时间 20–33 s，同一机位）</b> — 左：泵让管里的水整体跟随管口的速度，水吸满以后滴管在手里以约 3 Hz 摆动，
+  悬停时管口摆幅 34 mm、滴液时 43 mm（真实视频约 2.5 mm 和 1.4 mm）。右：改成跟随管子的刚体运动以后，悬停 4 mm、滴液 10 mm（捏胶头开始时的瞬态，一秒内衰减）。
+  两边的手臂和手指指令完全相同。摆幅的定义和各次的数值见<a href="#pump-swing">第十二节“摆动：修正前后”</a>；<a href="rokae_viewer.html?run=rec2_v5_pump_strict_swing&amp;t=27.00&amp;cam=beaker">在查看器里打开修正前的那一次 →</a></figcaption>
+</figure>
+<figure class="fig">
   <video src="../media/rokae_dropper.mp4?v=1105a" muted loop playsinline controls preload="metadata"></video>
-  <figcaption><b>录制时间 8–35 s · 实时速度 · 路径追踪</b> — 上方依次显示阶段、胶头腔体体积、管内水量和烧杯里的蓝水粒子数（1 个粒子 = 0.0156 ml）。
+  <figcaption><b>11 月 5 日的第一版（保留作记录：这一次水被甩出、放回失败）· 录制时间 8–35 s · 实时速度 · 路径追踪</b> — 上方依次显示阶段、胶头腔体体积、管内水量和烧杯里的蓝水粒子数（1 个粒子 = 0.0156 ml）。
   16–18 s 松开胶头吸进约 0.9 ml 蓝水；20.7 s 滴管离开瓶颈时被胶头存下的扭转甩了一下，约 2/3 的水甩到桌上；23–26 s 挤压，11 个粒子（0.17 ml）落进烧杯；32–33 s 往烧瓶放回，但管口落在离瓶口中心约 4.5 cm 的桌面上，没有进瓶；34.5 s 手指松开，滴管倒在桌上。</figcaption>
 </figure>
 </section>
@@ -865,6 +881,12 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 <p class="note">屏障只在一个网格单元被压到原体积的 0.3 以下时才起作用，正常流动不受影响。</p>
 
 <h3 id="pump-swing">摆动：修正前后</h3>
+<figure class="fig">
+  <video src="../media/rokae_dropper_swing_fix.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>滴管在手里的摆动：修正前 / 修正后（严格模式，录制时间 20–33 s，同一机位）</b> — 左：泵让管里的水整体跟随管口的速度，水吸满以后滴管在手里以约 3 Hz 摆动，
+  悬停时管口摆幅 34 mm、滴液时 43 mm（真实视频约 2.5 mm 和 1.4 mm）。右：改成跟随管子的刚体运动以后，悬停 4 mm、滴液 10 mm（捏胶头开始时的瞬态，一秒内衰减）。
+  两边的手臂和手指指令完全相同。修正前的这一次是下面完整回放表里的“修正前 · 严格 1”，修正后是“严格 1”。</figcaption>
+</figure>
 <p>下表是管口在手掌坐标系里的位置减去 0.6 s 滑动平均后的摆幅（峰到峰，毫米）。滴管如果刚性地固定在手里，这个量是 0。悬停阶段手掌几乎不动（自身的残差 0.1–2 mm），所以这一列最能说明问题：修正前它在变大，修正后回到干跑的水平。</p>
 <div class="tblwrap"><table style="min-width:48rem">
 <thead><tr><th>运行</th><th class="num">转运（21.5–25 s）</th><th class="num">悬停（25.5–26.8 s）</th><th class="num">滴液（27–31 s）</th><th>说明</th></tr></thead>
@@ -880,6 +902,18 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 </tbody></table></div>
 
 <h3 id="pump-runs">完整回放：严格模式和快模式</h3>
+<figure class="fig">
+  <video src="../media/rokae_dropper_pump_strict.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>带水完整回放，严格模式（11 月 12 日，修正后）</b> — 录制时间 9–40 s，实时速度。右手捏住胶头，从烧瓶吸进 81 粒蓝水（1.27 mL），提出瓶口，移到烧杯上方挤出 44 粒（0.69 mL），
+  再把滴管放回烧瓶并松手；桌上没有洒水，烧瓶只被带动 1.1 mm。手臂和手指的指令是原始录制，纯开环回放。
+  这是预览画质的渲染（光栅化，水画成粒子，滴管的玻璃管加深了颜色以便看清），不是路径追踪。下表的“严格 1”。</figcaption>
+</figure>
+<figure class="fig">
+  <video src="../media/rokae_dropper_pump_fast.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>带水完整回放，快模式（11 月 12 日，修正后）</b> — 录制时间 9–40 s，实时速度。右手捏住胶头，从烧瓶吸进 82 粒蓝水（1.28 mL），提出瓶口，移到烧杯上方挤出 47 粒（0.73 mL），
+  再把滴管放回烧瓶并松手；桌上没有洒水，烧瓶只被带动 1.0 mm。手臂和手指的指令是原始录制，纯开环回放。
+  这是预览画质的渲染（光栅化，水画成粒子，滴管的玻璃管加深了颜色以便看清），不是路径追踪。下表的“快 1”。</figcaption>
+</figure>
 <p>两种模式只差牛顿迭代的收敛容差：严格 10<sup>−3</sup>，快 10<sup>−2</sup>；都用粒子位移做收敛判据，线性方程都用直接法求解。手模型是第十一节最好的那一个（位置环 4°，力矩上限 1.5 倍，手套 4 mm，胶头 1.2 MPa，悬滴死区 47 µL），没有再调。一粒水是 15.6 µL。“修正前”各行是只改了吸入和卡帧、水还跟随管口速度的版本。</p>
 <div class="tblwrap"><table style="min-width:88rem">
 <thead><tr><th>运行</th><th>结果</th><th class="num">吸入（粒 / mL）</th><th class="num">带过横移（粒）</th><th class="num">滴进烧杯（粒 / mL）</th><th class="num">落在桌上（粒）</th><th class="num">摆幅：悬停 / 滴液（mm）</th><th class="num">滴液时管口离杯轴（mm）</th><th class="num">过瓶口离瓶轴（mm）</th><th class="num">烧瓶位移（mm）</th><th class="num">松手后斜靠</th><th class="num">每帧牛顿迭代最大 / 跑满上限的帧</th><th class="num">用时（分钟）</th></tr></thead>

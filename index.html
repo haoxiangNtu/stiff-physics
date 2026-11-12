@@ -421,6 +421,8 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <div class="section-intro">
     <div class="kicker kicker--data">Teleop replay · Dexterous hand · Liquids</div>
     <h2>双臂灵巧手滴管取液：真实遥操作录制回放</h2>
+    <p class="lead"><b>现状（11 月 12 日）：</b>带水的完整流程（抓取、吸液、转运、滴液、放回并松手）在严格和快两种模式下都能走完（各 3 次，6 次全部完成），滴管在手里不再摆动；
+    下面前两段视频是这一版，<a href="docs/rokae_dropper.html#pump">做法和逐次结果 →</a>。以下文字从 11 月 5 日的第一版开始，按日期记录到现在。</p>
     <p class="lead">把一段真实遥操作录制（Rokae AR5 双臂 + Wuji 灵巧手，全部关节角）逐关节回放进 StiffGIPC：右手捏住玻璃滴管的硅胶胶头，挤压、松开，从烧瓶吸进约 0.9 ml 蓝水，
     提出瓶口，移到烧杯上方挤压滴液，再放回（放回这一步没有复现成功）。机器人、玻璃器皿、硅胶胶头和 MPM 水在同一个 IPC Newton 求解里耦合；胶头腔体是封闭空气，吸多少水由腔体体积的变化决定。
     吸水、提起、移到烧杯上方都能稳定复现，烧瓶只被带动 1 mm。<b>还没解决的：</b>滴管离开瓶颈时胶头存下的扭转会把它甩一下，约 2/3 的水甩到桌上，之后的管口位置每组都不同；8 组带水仿真里只有发布的这一组把明显的水量（11 个粒子，0.17 ml）滴进了烧杯。左手摇烧杯那一段没有做。
@@ -435,8 +437,21 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <a class="more" href="docs/rokae_dropper.html">阅读场景、滴管模型、八组结果、限制、两种模式的回放与 11-08 的逐帧定位 →</a></p>
   </div>
   <figure class="fig">
+    <video src="media/rokae_dropper_pump_strict.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>带水完整回放，严格模式（11 月 12 日，修正后）</b> — 录制时间 9–40 s，实时速度。右手捏住胶头，从烧瓶吸进 81 粒蓝水（1.27 mL），提出瓶口，移到烧杯上方挤出 44 粒（0.69 mL），
+    再把滴管放回烧瓶并松手；桌上没有洒水，烧瓶只被带动 1.1 mm。手臂和手指的指令是原始录制，纯开环回放。
+    这是预览画质的渲染（光栅化，水画成粒子，滴管的玻璃管加深了颜色以便看清），不是路径追踪。
+    <a href="docs/rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=29.00&amp;cam=beaker">在查看器里打开这一次 →</a></figcaption>
+  </figure>
+  <figure class="fig">
+    <video src="media/rokae_dropper_swing_fix.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>滴管在手里的摆动：修正前 / 修正后（严格模式，录制时间 20–33 s，同一机位）</b> — 左：泵让管里的水整体跟随管口的速度，水吸满以后滴管在手里以约 3 Hz 摆动，
+    悬停时管口摆幅 34 mm、滴液时 43 mm（真实视频约 2.5 mm 和 1.4 mm）。右：改成跟随管子的刚体运动以后，悬停 4 mm、滴液 10 mm（捏胶头开始时的瞬态，一秒内衰减）。
+    两边的手臂和手指指令完全相同。<a href="docs/rokae_dropper.html#pump-swing">摆幅的定义和各次的数值 →</a></figcaption>
+  </figure>
+  <figure class="fig">
     <video src="media/rokae_dropper.mp4?v=1105a" muted loop playsinline controls preload="metadata"></video>
-    <figcaption><b>Rokae AR5 + Wuji 手 · 滴管取液（录制时间 8–35 s，实时速度，路径追踪）</b> — 上方显示阶段、胶头腔体体积、管内水量和烧杯里的蓝水粒子数。
+    <figcaption><b>11 月 5 日的第一版（保留作记录：这一次水被甩出、放回失败）· Rokae AR5 + Wuji 手 · 滴管取液（录制时间 8–35 s，实时速度，路径追踪）</b> — 上方显示阶段、胶头腔体体积、管内水量和烧杯里的蓝水粒子数。
     下载：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-rokae-dropper-2026-11/rokae_dropper_repro.zip">rokae_dropper_repro.zip（20 MB）</a> · <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-rokae-dropper-2026-11/rokae_dropper_water.usdc">USD（142 MB）</a> · <a href="docs/rokae_dropper.html#repro">怎么复现 →</a>（水需要尚未发布的液体模块）</figcaption>
   </figure>
 </div></section>
@@ -501,6 +516,11 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     粒子间距 0.75 mm，果肉 E = 2 MPa；切下的薄片平躺叠在砧板上，碎料 0.21%。仿真 18.1 s，一张 A800 上 4.8 小时。左上角是跟着刀走的切口近景；切面上的籽是贴图。
     这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices_v2.usdc">cucumber_cut_6mm_slices_v2.usdc（675 MB）</a>；1 mm 间距、三片 15 mm 的视频和 USD 见详情页。
     MPM 切割的改动在引擎开发分支上，尚未进入公开发布的 wheel。<a href="docs/cutting.html#full">薄片、硬度与渲染的对照 →</a></figcaption>
+  </figure>
+  <figure class="fig">
+    <video src="media/cucumber_cut_zones_preview.mp4?v=1112a" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>内软外硬（11 月 12 日，进行中）：均匀材料与两档 1 mm 预览的切口近景</b> — 左：上面这段视频的均匀材料。中、右：皮更硬更韧、瓤更软的两档预览，刀先把表皮压出一道沟才破皮，过头了，没有采用。
+    选定的是皮 2 倍硬、瓤 0.3 倍，0.75 mm 间距的版本正在跑，跑完后替换上面的视频。<a href="docs/cutting.html#zones">对照表与测试台 →</a></figcaption>
   </figure>
   <figure class="fig">
     <img src="media/cucumber_cut_2x2.jpg?v=1101p" alt="四宫格：塑性果肉与纯弹性果肉，粒子重建表面与切块网格" loading="lazy">
