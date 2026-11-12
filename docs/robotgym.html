@@ -41,6 +41,7 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <div class="crumb"><a href="../">首页</a> / 技术详解 / 三个操作任务的复现</div>
 <div class="kicker">Benchmarks · Cloth · Shell plasticity · Porous liquid</div>
 <h1>三个操作任务的复现：床单对折、捏瘪水瓶、海绵吸水拧水</h1>
+<!-- bottle-modes-lead:begin --><p class="lead"><b>现状（11 月 13 日）：</b>三个任务都已复现（换新资产的版本见<a href="#fbx">第五节</a>）。最新一项是把捏方瓶用 11 月 7 日起的严格 / 快两种求解模式重跑：洒水量和凹痕与 10 月 26 日的版本相同，严格模式连水流下来的过程都几乎逐帧一致，快模式快 14 倍但水流得慢；捏之前瓶里的水在两种模式下都不静止：机械臂一动，瓶里就冒出 2–18 mm/s 的流动（手没碰到瓶子，是数值串扰）；10 月 26 日的版本是靠静止拖曳压住的，拖曳在快模式下不起作用。对比视频在下面，数据在<a href="#fbx-bottle-modes">第五节 5b</a>。</p><!-- bottle-modes-lead:end -->
 <p class="lead">robotgym.io 首页用三个任务展示它的物理栈（刚体 MuJoCo、VBD 布料与海绵、PBF 液体）：双臂把床单抬起对折、机械臂捏瘪一只装满水的 PET 瓶、
 机械臂把海绵在水碗里浸湿再到杯子上方拧三次。我们用 StiffGIPC 把这三个任务各做了一遍——同一个 IPC 求解器里的布料、薄壳、软体和水，
 接触全部是障碍函数 + 连续碰撞检测，不用任何附着约束。这一页记录做法、与原站的差异、数值上踩过的坑，以及每个任务的视频与 USD。</p>
@@ -51,9 +52,20 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 视频为路径追踪成片，USD 为时间采样的几何（刚体变换 + 变形体顶点 + 液体粒子）。</div>
 
 <div class="toc"><b>目录</b>
-<a href="#overview">一览</a><a href="#wheel">6 wheel 重跑</a><a href="#fbx">5 新资产重跑</a><a href="#fbx-bottle-modes">5b 水瓶 · 严格 / 快模式（11-12）</a><a href="#sheet">1 床单对折</a><a href="#bottle">2 捏瘪水瓶</a><a href="#bottle-fast">2b 装满涌出</a><a href="#sponge">3 海绵吸水拧水</a><a href="#sponge-regrasp">3b 换位再拧</a><a href="#tactile">4 触觉版</a><a href="#round2">改进轮次 10-20</a><a href="#round3">改进轮次 10-21</a>
+<a href="#latest">最新视频</a><a href="#overview">一览</a><a href="#wheel">6 wheel 重跑</a><a href="#fbx">5 新资产重跑</a><a href="#fbx-bottle-modes">5b 水瓶 · 严格 / 快模式（11-12/13）</a><a href="#fbx-bottle-still">5c 水瓶 · 静水排查（11-13）</a><a href="#sheet">1 床单对折</a><a href="#bottle">2 捏瘪水瓶</a><a href="#bottle-fast">2b 装满涌出</a><a href="#sponge">3 海绵吸水拧水</a><a href="#sponge-regrasp">3b 换位再拧</a><a href="#tactile">4 触觉版</a><a href="#round2">改进轮次 10-20</a><a href="#round3">改进轮次 10-21</a>
 <a href="#traps">数值陷阱</a><a href="#downloads">下载 USD</a><a href="#repro">怎样复现</a>
 </div>
+
+<!-- bottle-modes-latest:begin -->
+<section id="latest">
+<figure class="fig">
+  <video src="../media/robotgym_fbx_bottle_modes.mp4?v=1113" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>最新：捏方瓶用现在的严格 / 快模式重跑（11 月 12–13 日，同一条命令、同一机位）</b> — 左上：10 月 26 日的版本（当时的默认设置 + 静止拖曳）。右上：严格模式。左下：快模式。右下：快模式 + 静止拖曳。
+  四组洒多少、凹多少一样；严格模式与 10 月 26 日的版本几乎逐帧一致（129 分钟）；快模式只要 10.6–11.9 分钟，但水流下来得慢（第 7–8 秒）。捏之前瓶里的水在两种模式下都不静止：机械臂一动，瓶里就冒出 2–18 mm/s 的流动（手没碰到瓶子，是数值串扰）；10 月 26 日的版本是靠静止拖曳压住的，拖曳在快模式下不起作用。
+  <a href="#fbx-bottle-modes">数据与原因 →</a></figcaption>
+</figure>
+</section>
+<!-- bottle-modes-latest:end -->
 
 <h2 id="overview">一览</h2>
 <div class="tblwrap"><table>
@@ -71,6 +83,9 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <!-- fbx-overview:begin -->
 <tr><td><a href="#fbx">三个任务 · 换新资产（10-26）</a></td><td>—</td><td>床与毛毯、厨房水槽、方形 PET 瓶（FBX，只做等比缩放）；床上的力控捏取；水瓶和毛毯改用物理尺度的弯曲</td><td>力控捏取；弯曲尺度开关 <span class="mono">GIPC_BEND_PHYS</span></td><td><span class="tag ok">三个任务都有结果 · 床：走圆弧、只动床尾那根手指并让手掌顺着被面微倾，床头只被带动 0.7 mm（重跑与换参数的五组都在 1 mm 以内）· 厨房：换位再拧、每次都抓低 10 mm，四个周期 67.2–71.7 ml（三个种子；只换位的三个种子 45.6–48.2 ml，原站 33.5 ml）</span></td></tr>
 <!-- fbx-overview:end -->
+<!-- modes-overview:begin -->
+<tr><td><a href="#fbx-bottle-modes">水瓶 · 现在的严格 / 快模式（11-12）</a></td><td>—</td><td>同一条捏瓶命令，换成 11 月 7 日起的两种求解模式（不开静止拖曳，与滴管回放相同）</td><td>无</td><td><span class="tag ok">洒水量、凹痕与 10-26 相同 · 严格模式逐帧一致</span> <span class="tag part">快模式快 14 倍，水流得慢</span> <span class="tag no">捏之前的静水不达标</span></td></tr>
+<!-- modes-overview:end -->
 </tbody></table></div>
 
 <!-- wheel-rerun:begin -->
@@ -324,36 +339,65 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 <p><b>瓶颈支撑环的处理。</b>支撑环是实心的塑料凸缘，单层壳却把它表示成一圈 1.1 mm 高、向瓶内敞开的夹层；捏瓶把水压上瓶颈时，二三十个水粒子钻进这个夹层卡住求解（捏到 18 mm 和装满的两组停在松手阶段）。
 所以水会冲到瓶颈的运行（捏到 18 mm 或装满的）在计算时把支撑环压平到瓶颈半径，渲染时再把原模型的支撑环按瓶颈的刚体运动画回去；434 ml 捏到 20 mm 的那组水到不了瓶颈，用的是带支撑环的壳。</p>
 
-<h3 id="fbx-bottle-modes">水瓶：用现在的严格模式和快模式重跑（11 月 12 日）</h3>
+<h3 id="fbx-bottle-modes">水瓶：用现在的严格模式和快模式重跑（11 月 12–13 日）</h3>
 <p>上面 451 ml、捏到 16 mm 的那一组（10 月 26 日）用的是当时的默认求解设置：牛顿迭代按网格节点的位移判断收敛，容差 10<sup>−3</sup>，线性求解容差 10<sup>−5</sup>；
 液体还开着“静止拖曳”（慢速的网格节点额外加惯性，让静水停下来）。11 月 7 日起液体有两种工作模式（<a href="ug_compare.html#modes">MPM 液体对照页第七节</a>）：
 都按粒子的位移判断收敛、线性求解容差 10<sup>−4</sup>，牛顿容差严格模式 10<sup>−3</sup>、快模式 10<sup>−2</sup>。滴管回放用的就是这两种模式，而且不开静止拖曳。
-这里用同一条命令重跑：瓶子、装水量、捏的速度和深度、壳的弯曲与屈服都不变，只换求解设置和液体设置；另加一组“快模式 + 保留静止拖曳”，把两处改动分开。各组用同一个机位、同样的渲染设置。</p>
+这里用同一条命令重跑：瓶子、装水量、捏的速度和深度、壳的弯曲与屈服都不变，只换求解设置和液体设置；另加一组“快模式 + 保留静止拖曳”，把两处改动分开。
+严格模式和快模式之间只差牛顿容差。各组用同一个机位、同样的渲染设置。</p>
 <figure class="fig">
-  <video src="../media/robotgym_fbx_bottle_modes.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
-  <figcaption><b>同一条命令、不同的求解设置（451 ml，80 mm/s 捏到 16 mm，同一机位）</b> — 左：10 月 26 日的版本（当时的默认设置 + 静止拖曳）。中：快模式。右：快模式 + 静止拖曳。严格模式还在跑，跑完后加进来。
-  注意第 7–8 秒：10 月 26 日的版本冲出瓶口的水顺着瓶身流到桌上；快模式的水大部分退回瓶颈，松手后才流下来；快模式 + 拖曳有一柱水在瓶口上方立着不动，松手后才落下。</figcaption>
+  <video src="../media/robotgym_fbx_bottle_modes.mp4?v=1113" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>同一条命令、不同的求解设置（451 ml，80 mm/s 捏到 16 mm，同一机位）</b> — 左上：10 月 26 日的版本（当时的默认设置 + 静止拖曳）。右上：严格模式。左下：快模式。右下：快模式 + 静止拖曳。
+  注意第 7–8 秒：10 月 26 日的版本和严格模式冲出瓶口的水在捏住时就顺着瓶身流到桌上；两组快模式的水停在瓶口上方或退回瓶颈，松手后才流下来。</figcaption>
 </figure>
 <div class="tblwrap"><table>
-<thead><tr><th>运行</th><th class="num">用时</th><th class="num">迭代 / 步</th><th class="num">冲出瓶口</th><th class="num">桌上</th><th class="num">凹痕</th><th class="num">静水 p99</th></tr></thead>
+<thead><tr><th>运行</th><th class="num">用时</th><th class="num">迭代 / 步</th><th class="num">冲出瓶口</th><th class="num">7 s 瓶口上方</th><th class="num">8 s 桌上</th><th class="num">最后桌上</th><th class="num">凹痕</th><th class="num">静水 p99</th></tr></thead>
 <tbody>
-<tr><td style="white-space:nowrap">10 月 26 日</td><td class="num">158 min</td><td class="num">68–73</td><td class="num">17.3 ml</td><td class="num">12.7 ml</td><td class="num">33.7 / 16.6 mm</td><td class="num">0.3–0.6 mm/s</td></tr>
-<tr><td style="white-space:nowrap">严格模式</td><td class="num">还在跑</td><td class="num">35–41</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
-<tr class="hl"><td style="white-space:nowrap">快模式</td><td class="num">10.6 min</td><td class="num">1.6–4.5</td><td class="num">18.2 ml</td><td class="num">10.7 ml</td><td class="num">33.7 / 17.3 mm</td><td class="num">3.5–16 mm/s</td></tr>
-<tr><td style="white-space:nowrap">快模式 + 拖曳</td><td class="num">11.9 min</td><td class="num">1.4–6.2</td><td class="num">18.9 ml</td><td class="num">10.8 ml</td><td class="num">33.6 / 16.6 mm</td><td class="num">1.8–18 mm/s</td></tr>
+<tr><td style="white-space:nowrap">10 月 26 日</td><td class="num">158 min</td><td class="num">68–73</td><td class="num">17.3 ml</td><td class="num">0.9 ml</td><td class="num">8.6 ml</td><td class="num">12.7 ml</td><td class="num">33.7 / 16.6 mm</td><td class="num">0.3–0.6 mm/s</td></tr>
+<tr class="hl"><td style="white-space:nowrap">严格模式</td><td class="num">129 min</td><td class="num">42–111</td><td class="num">18.2 ml</td><td class="num">0.6 ml</td><td class="num">7.3 ml</td><td class="num">12.5 ml</td><td class="num">33.7 / 16.6 mm</td><td class="num">1.9–11 mm/s</td></tr>
+<tr class="hl"><td style="white-space:nowrap">快模式</td><td class="num">10.6 min</td><td class="num">1.6–4.5</td><td class="num">18.2 ml</td><td class="num">8.2 ml</td><td class="num">0 ml</td><td class="num">10.7 ml</td><td class="num">33.7 / 17.3 mm</td><td class="num">3.5–16 mm/s</td></tr>
+<tr><td style="white-space:nowrap">快模式 + 拖曳</td><td class="num">11.9 min</td><td class="num">1.4–6.2</td><td class="num">18.9 ml</td><td class="num">15.1 ml</td><td class="num">0 ml</td><td class="num">10.8 ml</td><td class="num">33.6 / 16.6 mm</td><td class="num">1.8–18 mm/s</td></tr>
 </tbody></table></div>
 <p>“10 月 26 日”是当时的默认设置加静止拖曳；严格模式和快模式不开拖曳，与滴管回放相同；最后一行是快模式但保留静止拖曳。用时是一张 A800 上的墙钟时间。
-“迭代 / 步”是捏住、松开、手退开这三段（6.8–11.8 s）里每步牛顿迭代次数的平均值，按段给出范围。“冲出瓶口”是高出瓶口的水最多时的量，“桌上”是结束时落在桌上的水。
+“迭代 / 步”是捏住、松开、手退开这三段（6.8–11.8 s）里每步牛顿迭代次数的平均值，按段给出范围。“冲出瓶口”是高出瓶口的水最多时（捏到底的 6.8 s）的量；
+“7 s 瓶口上方”“8 s 桌上”看的是水流下来的快慢（手指 6.8–8.3 s 一直捏住）；“最后桌上”是结束时落在桌上的水。
 “凹痕”是捏住时 / 松开后瓶身在指垫处少了多少宽度。“静水 p99”是捏之前（3–6 s，手指还没碰到瓶子）瓶里的水每 0.4 s 窗口的速度 p99 的范围。</p>
 <ul>
-<li><b>洒多少、凹多少是一样的。</b>三组都挤走 90–92 ml，冲出瓶口最多 17–19 ml，凹痕捏住时 33.6–33.8 mm、松开后 16.6–17.3 mm；最后落在桌上 10.7–12.7 ml。
+<li><b>洒多少、凹多少是一样的。</b>四组都挤走 90–92 ml，冲出瓶口最多 17–19 ml，凹痕捏住时 33.6–33.7 mm、松开后 16.6–17.3 mm；最后落在桌上 10.7–12.7 ml。
 10 月 26 日那组原样重跑过一次，是 18.1 ml、12.8 ml，所以这些差别在重跑的波动范围内。</li>
-<li><b>快模式快了 13–15 倍。</b>10 月 26 日的版本在捏住、松开、手退开这 5 秒里每步要 68–73 次牛顿迭代，这一段就算了 140 分钟；快模式每步 1.4–6 次。
-保留静止拖曳的快模式也一样快，所以提速来自求解设置，不是去掉拖曳。</li>
-<li><b>水流下来的快慢不一样。</b>10 月 26 日的版本冲出瓶口的水在捏住的 1.5 秒里就顺着瓶身流到桌上（第 8 秒桌上已有 8.6 ml）；快模式的水大部分退回瓶颈，松手后才流下来；
-快模式 + 拖曳有约 15 ml 水在瓶口上方立了 1.5 秒，松手后才落下，这是拖曳把慢下来的水“冻住”了，不真实。快模式提前停下牛顿迭代，相当于多了一份数值阻尼，流动被放慢，很可能就是这个原因。</li>
-<li><b>静水不达标。</b>快模式下，捏之前瓶里的水一直没有停下来：中间区域每隔一两秒冒出一阵 10–18 mm/s 的流动，保留拖曳也一样；10 月 26 日的版本 6 秒内就降到 0.3 mm/s 以下。
-滴管例子里烧杯的水（深 16 mm）在快模式下是安静的（1 秒位移中位数 0.14 mm），这里是 15 cm 高的水柱，问题明显得多。</li>
+<li><b>严格模式和 10 月 26 日的版本几乎逐帧一致。</b>7 秒时瓶口上方只剩 0.6 / 0.9 ml，8 秒时桌上 7.3 / 8.6 ml，最后 12.5 / 12.7 ml，松手后瓶里水位 150.8 / 151.8 mm。
+两者之间改了收敛判据、线性求解容差，还去掉了静止拖曳，这些在捏的过程里看不出差别。</li>
+<li><b>快模式的水流得慢，原因是放宽的牛顿容差。</b>严格模式和快模式只差牛顿容差（10<sup>−3</sup> 和 10<sup>−2</sup>），严格模式的水在捏住时就流下来，快模式 7 秒时瓶口上方还有 8.2 ml（加拖曳 15.1 ml），
+8 秒时桌上还没有水，松手后才流下。快模式提前停下牛顿迭代，相当于多了一份数值阻尼，把流动放慢了。快模式 + 拖曳有约 15 ml 水在瓶口上方立了 1.5 秒，这是拖曳把慢下来的水“冻住”了，不真实。</li>
+<li><b>快模式快 13–15 倍，严格模式只快 1.2 倍。</b>10 月 26 日的版本在捏住、松开、手退开这 5 秒里每步要 68–73 次牛顿迭代，这一段就算了 140 分钟；
+严格模式在捏住时少一些（42 次），手退开时反而更多（111 次，这 2 秒算了 66 分钟），整段 129 分钟；快模式每步 1.4–6 次，10.6–11.9 分钟。
+所以省下的时间几乎都来自放宽的牛顿容差，而放宽容差正是水流变慢的原因。这个场景里快模式适合看洒多少、凹多少，不适合看水怎么流下来。</li>
+</ul>
+<h4 id="fbx-bottle-still">捏之前的静水为什么不达标（11 月 13 日排查）</h4>
+<p>三组新运行捏之前瓶里的水都在冒流：严格模式 1.9–11 mm/s，快模式 3.5–16 mm/s，快模式加拖曳 1.8–18 mm/s，而 10 月 26 日的版本是 0.3–0.6 mm/s（6 秒内衰减下来）。
+冒流的时刻在三组里完全相同，都是机械臂动得最快的时候：下降（2.0–3.0 s，手腕中心约 60–70 mm/s）和靠近瓶子（4.0–5.5 s，70–100 mm/s）。机械臂慢下来时（3.5–3.9 s，13 mm/s），冒流降到 2 mm/s 左右。
+下降时手离瓶子 150 mm；靠近时两指张开 78 mm，从 55 mm 宽的瓶身两侧伸过去，都没有碰到瓶子。
+为了找原因，从严格模式（不开拖曳）出发，每次只改一项，只跑捏之前这一段（到第 6 秒，每组 4–12 分钟）：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>运行（只跑到第 6 秒）</th><th class="num">机械臂动时</th><th class="num">机械臂不动时</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>严格模式，不开拖曳（上表那一组）</td><td class="num">1.9–11 mm/s</td><td class="num">—</td><td>对照</td></tr>
+<tr><td>……线性求解容差 10<sup>−5</sup></td><td class="num">1.9–8.3 mm/s</td><td class="num">—</td><td>峰值低一些，还在冒流</td></tr>
+<tr><td>……按网格节点判断收敛（10 月 26 日的判据）</td><td class="num">2.9–7.5 mm/s</td><td class="num">—</td><td>还在冒流</td></tr>
+<tr><td>……牛顿容差 10<sup>−4</sup></td><td class="num">3.2–7.3 mm/s</td><td class="num">—</td><td>还在冒流，每步迭代多 30–80 %</td></tr>
+<tr><td>……牛顿容差 10<sup>−4</sup> + 线性求解容差 10<sup>−6</sup></td><td class="num">2.8–7.7 mm/s</td><td class="num">—</td><td>还在冒流，线性求解的迭代多 2–4 倍</td></tr>
+<tr><td>……机械臂前 4 秒不动</td><td class="num">6.6–7.2 mm/s</td><td class="num">0.9–2.6 mm/s</td><td>机械臂一动就升 3–7 倍</td></tr>
+<tr><td>快模式，机械臂前 4 秒不动</td><td class="num">18–21 mm/s</td><td class="num">2.8–3.3 mm/s</td><td>同上</td></tr>
+<tr class="hl"><td>严格模式 + 静止拖曳</td><td class="num">0.3–0.7 mm/s</td><td class="num">—</td><td>静止</td></tr>
+<tr class="hl"><td>10 月 26 日的设置，今天的引擎</td><td class="num">0.3–0.5 mm/s</td><td class="num">—</td><td>静止：引擎版本不是原因</td></tr>
+</tbody></table></div>
+<p>表里是瓶里的水每 0.4 s 窗口速度 p99 的范围：“机械臂动时”是 3–6 s（机械臂前 4 秒不动的两组是 4.5–5.4 s），“机械臂不动时”是 2–4 s。</p>
+<ul>
+<li><b>引擎版本、线性求解容差、收敛判据、牛顿容差都不是原因。</b>10 月 26 日的设置在今天的引擎上照样静止；把这几项逐个改回去，或者把牛顿和线性求解都收紧 10–100 倍，水还在冒流。所以冒流不是“没解准”，而是方程本身的解里就有。</li>
+<li><b>让 10 月 26 日的版本静下来的是静止拖曳，而且拖曳只在严格模式下起作用。</b>严格模式加上拖曳是 0.3–0.7 mm/s，和 10 月 26 日一样；快模式加拖曳仍有 1.8–18 mm/s。</li>
+<li><b>冒流的主要触发是机械臂的运动。</b>让机械臂前 4 秒完全不动，严格模式的水在 2–4 s 降到 0.9–2.6 mm/s，机械臂一动就升到 6.6–7.2 mm/s（快模式 2.8–3.3 → 18–21 mm/s）。
+手离瓶子很远、没有接触，这是机械臂和水在同一个牛顿求解里的数值串扰，不是物理效应；具体通过哪一步传过去，还没定位。</li>
+<li><b>机械臂不动时，不开拖曳也达不到 0.3 mm/s。</b>严格模式 0.9–2.6 mm/s，快模式约 3 mm/s。这是液体本身静止不下来的老问题（<a href="liquid.html">液体开发日志</a>），在 15 cm 高的水柱里比在滴管烧杯（16 mm 深）里明显得多。</li>
 </ul>
 
 <h3 id="fbx-kitchen">厨房：在左边水盆里泡湿海绵，拿到右边水盆上方拧</h3>
