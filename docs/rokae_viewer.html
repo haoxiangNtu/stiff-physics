@@ -134,12 +134,13 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // ---------------------------------------------------------------- records
-const DATA_VERSION = '10';
-const SIZE_MB = {"rec1_strict":4.7,"rec2_v3_best_strict_dry":3.9,"rec2_v3_wet_f07_n3":4.9,"rec2_v3_f10_mu06_fast":3.9,"rec2_low6soft_fast":7.0,"rec2_low6_fast":6.3,"rec2_v3_best_fast":5.9,"rec2_soft_dry":3.9,"rec2_low6_fast_fill45":5.4,"rec2_v3_wet_f05_n3":5.1,"rec2_low6_dry":3.9,"rec2_strict":5.0,"rec2_soft_fast":6.6,"rec2_soft_strict":6.1,"rec2_low6soft_strict":5.2,"rec2_v3_best_dry":4.1,"rec2_v3_wet_f05_strict":4.1,"rec2_v3_wet_f07_fast":5.8,"rec2_v3_d1_fast":3.9,"rec2_v3_dry":4.3,"rec2_soft_fast_fill45":6.5,"rec2_fast":5.9,"rec2_v3_f05_fast":3.9,"rec2_v3_fast":6.3,"rec2_low6_strict":4.9,"rec2_v3_strict":5.4,"rec2_v3_f10_fast":3.9,"rec2_v3_d1_strict":3.6,"rec2_v4_ploop_dry":3.5,"rec2_v4_selflock_dry":3.7,"rec2_v4_taper_dry":3.6,"rec2_v4_selflock_wet":3.9,"rec2_v4_legacy_exact_dry":3.6,"rec2_v4_ploop_wet":4.1,"rec2_v4_ploop_wet_full":4.0,"rec2_v5_pump_strict":4.6,"rec2_v5_pump_fast":4.1};   // download sizes, for the progress text
+const DATA_VERSION = '11';
+const SIZE_MB = {"rec1_strict":4.7,"rec2_v3_best_strict_dry":3.9,"rec2_v3_wet_f07_n3":4.9,"rec2_v3_f10_mu06_fast":3.9,"rec2_low6soft_fast":7.0,"rec2_low6_fast":6.3,"rec2_v3_best_fast":5.9,"rec2_soft_dry":3.9,"rec2_low6_fast_fill45":5.4,"rec2_v3_wet_f05_n3":5.1,"rec2_low6_dry":3.9,"rec2_strict":5.0,"rec2_soft_fast":6.6,"rec2_soft_strict":6.1,"rec2_low6soft_strict":5.2,"rec2_v3_best_dry":4.1,"rec2_v3_wet_f05_strict":4.1,"rec2_v3_wet_f07_fast":5.8,"rec2_v3_d1_fast":3.9,"rec2_v3_dry":4.3,"rec2_soft_fast_fill45":6.5,"rec2_fast":5.9,"rec2_v3_f05_fast":3.9,"rec2_v3_fast":6.3,"rec2_low6_strict":4.9,"rec2_v3_strict":5.4,"rec2_v3_f10_fast":3.9,"rec2_v3_d1_strict":3.6,"rec2_v4_ploop_dry":3.5,"rec2_v4_selflock_dry":3.7,"rec2_v4_taper_dry":3.6,"rec2_v4_selflock_wet":3.9,"rec2_v4_legacy_exact_dry":3.6,"rec2_v4_ploop_wet":4.1,"rec2_v4_ploop_wet_full":4.0,"rec2_v5_pump_strict":4.0,"rec2_v5_pump_fast":4.0,"rec2_v5_pump_strict_swing":4.6};   // download sizes, for the progress text
 const RUNS = [
   // v5 runs begin
-  { id: 'rec2_v5_pump_strict', group: '11-12 泵的吸入模型 + 落水卡帧修复（手模型同 11-11 最好的一个；纯开环回放；带水不是逐次可重复的）', rec: 2, name: '【带水】严格模式（牛顿容差 1e-3）· 新泵 + 体积比屏障（吸入 80 粒，46 粒进烧杯，过瓶口 7.9 mm 进瓶）' },
-  { id: 'rec2_v5_pump_fast', rec: 2, name: '【带水】快模式（牛顿容差 1e-2）· 新泵 + 体积比屏障（吸入 82 粒，43 粒进烧杯，过瓶口 6.9 mm 进瓶）' },
+  { id: 'rec2_v5_pump_strict', group: '11-12 泵（吸入 + 刚体跟随）+ 落水卡帧修复（手模型同 11-11 最好的一个；纯开环回放；带水不是逐次可重复的）', rec: 2, name: '【带水】严格模式（牛顿容差 1e-3）· 新泵（吸入 + 刚体跟随）+ 体积比屏障（吸入 81 粒，44 粒进烧杯，悬停摆幅 4 mm，过瓶口 8.9 mm 进瓶）' },
+  { id: 'rec2_v5_pump_fast', rec: 2, name: '【带水】快模式（牛顿容差 1e-2）· 新泵（吸入 + 刚体跟随）+ 体积比屏障（吸入 82 粒，47 粒进烧杯，悬停摆幅 4 mm，过瓶口 7.3 mm 进瓶）' },
+  { id: 'rec2_v5_pump_strict_swing', rec: 2, name: '【带水 · 对照】严格模式 · 修正前：水跟随管口速度，滴管在手里摆动（悬停 34 mm、滴液 43 mm，真实约 2 mm）' },
   // v5 runs end
   // v4 runs begin
   { id: 'rec2_v4_ploop_wet_full', group: '11-11 自锁手指驱动（关节推不回去 + 力矩上限；手套 4 mm；胶头 1.2 MPa；直接法求解；干跑同配置逐帧可重复，带水不是）', rec: 2, name: '【带水 · 全程】位置环手模型（4°）+ 悬滴死区（吸进 0.56 mL，0.42 mL 滴进烧杯、桌上 0 粒；放回过瓶口偏 8.1 mm 进瓶，烧瓶位移 1.0 mm，松手后斜靠 10.5°）' },

@@ -830,18 +830,18 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 
 <!-- sec11 end -->
 
-<h2 id="pump">十二、11-12：泵的吸入模型和“落水卡帧”；快模式 4/4、严格模式 2/3 走完全程</h2>
-<p>第十一节留下两处液体这一侧的问题：管口下方的水被吸走以后周围的水不回填，吸进多少取决于管口在水下挪了多少；排水时偶尔有一帧迭代跑满上限。这一节把两处都解决了。前一处改了引擎里的泵。后一处查下来不是排水的问题，而是水滴落进水面时的一种求解停滞，引擎里已经有对应的保护，这个场景一直没有打开。改完之后带水回放跑了严格模式 3 次、快模式 4 次，快模式 4 次全部走完，严格模式 3 次里 2 次走完“吸水、提起、转运、滴进烧杯、放回烧瓶、松手”。手臂和手指的指令仍然是原始录制，没有任何修正。<b>但这一版的记录里，滴管在手里有真实没有的摆动，严格模式在悬停和滴液阶段尤其明显，其中一次因此失败，见第 6 条；修正正在验证。</b></p>
+<h2 id="pump">十二、11-12：泵（吸入、跟随）和“落水卡帧”；修正后严格模式 1/1、快模式 1/1 走完全程</h2>
+<p>第十一节留下两处液体这一侧的问题：管口下方的水被吸走以后周围的水不回填，吸进多少取决于管口在水下挪了多少；排水时偶尔有一帧迭代跑满上限。这一节先解决了这两处：前一处改了引擎里的泵；后一处查下来不是排水的问题，而是水滴落进水面时的一种求解停滞，引擎里已经有对应的保护，这个场景一直没有打开。泵能吸满水以后，暴露出第三个问题：滴管在手里摆动，真实里没有，严格模式有一次因此失败。原因也在泵里——它让管里的水整体跟随管口的速度，而滴管摆动时是绕握持点转的；改成跟随管子的刚体运动以后摆动消失。三处都改完以后，带水回放跑了严格模式 1 次、快模式 1 次，2 次全部走完“吸水、提起、转运、滴进烧杯、放回烧瓶、松手”（修正后目前各 1 次，重复还在跑）。手臂和手指的指令仍然是原始录制，没有任何修正。</p>
 <ol>
 <li><b>回放是纯开环的。</b>回放读的轨迹文件，和从原始录制文件重新抽取的结果逐位相同；仿真里下发给手臂和右手的指令与录制的差是 0；手臂实际关节角偏离指令最大 0.18°。手指的实际位置会偏离指令（最大 13°），那是手指驱动模型在接触下让位，指令本身没有动。第十一节提到过“回程时按管口偏差修正手腕”，没有做，也不做：录制的轨迹不改，要改进的是被它驱动的模型。</li>
 <li><b>吸不进水，是因为泵只搬管口正下方的一小根水柱。</b>那根水柱只有约 6 粒，0.2 s 搬空，留下的空洞比液体网格的一格还窄，网格看不出这里缺水，周围的水不会补进来。现在泵在搬水的同时，把管口周围的水按一个不可压的汇流场往开口带，搬走多少就补进多少。刚性滴管的小台架上，同样释放 1.0 mL（64 粒），旧泵吸进 11–13 粒，新泵 64 粒。</li>
-<li><b>“排水卡帧”卡的是水滴落进水面的那一帧。</b>第十一节里卡住的那一帧，管口附近没有粒子，是 0.16 s 前排出的一粒水从 178 mm 高落进烧杯水面的时刻。只有几粒水的稀疏网格单元在撞击里被压翻，液体能量对“翻转”直接拒绝，而牛顿方向看不到这堵墙，线搜索只能把步长一路减半到 10<sup>−15</sup>，整帧原地迭代到上限。引擎里十月就为这种情况做过“体积比屏障”，这个场景没有打开；打开后，复现它的小场景里那一帧从 300 次迭代降到 13 次。</li>
-<li><b>结果：快模式 4 次全部走完，严格模式 3 次里 2 次走完。</b>没走完的那一次（严格模式第 3 次）是第 6 条的摆动发散：悬停时管口摆幅长到 127 mm，滴管在手里错了位，管口停在杯外（离杯轴 40 mm，杯内半径 32 mm），49 粒落在桌上、只有 7 粒进杯；放回时偏 11.9 mm 搭在瓶沿上，烧瓶被推开 27 mm，滴管倒了。走完的 6 次：吸入 79–82 粒（1.23–1.28 mL，等于胶头腔体放开的体积；改之前是 16–47 粒），管内液柱从管口起连续、长 71–77 mm；提起时十几粒滴回烧瓶，66–68 粒带过横移；42–48 粒（0.66–0.75 mL）在 27–31 s 滴进烧杯，2 次有 1–3 粒（一滴）掉在桌上，其余桌上没有水；放回时管口过瓶口平面离瓶轴 6.8–8.6 mm（要求 ≤ 9.3，真实 4–7），直接进瓶，烧瓶位移 1.0–1.1 mm；松手后斜靠 11–12°（真实约 10°）。所有运行（包括失败的那次）都没有一帧迭代跑满上限：严格模式每帧最多 34 次，快模式最多 6 次。</li>
-<li><b>水量现在由胶头决定，比真实多约一倍。</b>真实吸进约 0.6–0.7 mL，仿真 1.23–1.28 mL。第十一节里“吸进 0.56 mL、和真实相当”是吸入断流碰巧凑出来的；泵修好以后，差距回到它真正的来源：同样的手指动作下，仿真的胶头排开的体积是真实的约两倍（胶头壁厚没有量过，手指的出力没有标定）。这一项要靠真实的手指反馈、电流，或者量一下胶头，才能定下来。</li>
-<li><b>已知问题：滴管在手里摆动，这是仿真的假象。</b>严格模式的记录里，从转运后半段起滴管相对手掌以约 3 Hz 来回摆，手掌静止的悬停阶段还在变大：走完的两次，滴液开始时管口摆幅（峰到峰）到 29–43 mm，管身约 ±3°，随着水滴出去才衰减；第三次长到 127 mm，滴管在手里错位，这一次失败；快模式在转运和悬停时是 12–17 mm，滴液时 3–4 mm；第十一节的带水记录是 9–17 mm，干跑 3–8 mm。真实的滴管在手里是稳的：三台相机量到的管身方向，24–28.7 s 的起伏只有 0.35–0.62°（均方根，折合管口约 2 mm，和测量噪声同量级）。原因已经初步定位：泵让管里所有的水都跟随“管口”的速度，而滴管摆动时是绕握持点转的，管身上部比管口慢，于是液柱上部的水比管壁跑得快（记录里离管口 60–90 mm 处的水平均超前管壁 0.4 mm，靠近管口处反而落后），撞在前进方向的管壁上给摆动加能量；管里的水越多越明显，所以泵修好、水吸满以后才暴露出来。改法是让水跟随管子的刚体速度（平移加转动），正在验证，结果出来后更新这一节和查看器记录。</li>
+<li><b>“排水卡帧”卡的是水滴落进水面的那一帧。</b>第十一节里卡住的那一帧，管口附近没有粒子，是 0.16 s 前排出的一粒水从 178 mm 高落进烧杯水面的时刻。只有几粒水的稀疏网格单元在撞击里被压翻，液体能量对“翻转”直接拒绝，而牛顿方向看不到这堵墙，线搜索只能把步长一路减半到 10<sup>−15</sup>，整帧原地迭代到上限。引擎里十月就为这种情况做过“体积比屏障”，这个场景没有打开；打开后，复现它的小场景里那一帧从 300 次迭代降到 13 次。这一轮的所有回放都没有一帧跑满上限。</li>
+<li><b>滴管在手里摆动：泵让水跟随了错误的速度。</b>水吸满以后（管里 66 粒、液柱 77 mm），滴管相对手掌以约 3 Hz 来回摆：严格模式在手掌静止的悬停阶段摆幅还在变大，滴液开始时管口摆到 29–43 mm（峰到峰），有一次发散到 127 mm，滴管在手里错位，水洒在桌上、放回失败。真实的滴管在手里是稳的：三台相机量到的管身方向，24–28.7 s 的起伏只有 0.35–0.62°（均方根，折合管口约 2 mm，和测量噪声同量级）。原因：泵把管里所有的水的速度都拉向“管口”的速度。滴管平移时这是对的；摆动时它是绕握持点转的，管身上部比管口慢，液柱上部的水就比管壁跑得快（记录里离管口 60–90 mm 处的水平均超前管壁 0.4 mm，靠近管口处反而落后），撞在前进方向的管壁上给摆动加能量，水越多越强。改成跟随管子在该处的刚体速度（管口和管顶的速度按位置线性插值）以后，悬停时的摆幅是 4 mm，和干跑（3 mm）相当。</li>
+<li><b>结果：2 次全部走完（修正后目前各 1 次，重复还在跑）。</b>吸入 81–82 粒（1.27–1.28 mL，等于胶头腔体放开的体积；第十一节是 16–47 粒），管内液柱从管口起连续；提起时十几粒滴回烧瓶，64–67 粒带过横移；44–47 粒（0.69–0.73 mL）在 27–31 s 滴进烧杯，桌上一粒没有；放回时管口过瓶口平面离瓶轴 7.3–8.9 mm（要求 ≤ 9.3，真实 4–7），进瓶，烧瓶位移 1.0–1.1 mm；松手后斜靠 11–12°（真实约 10°）。跟随速度修正之前的 7 次（表里“修正前”各行）：快模式 4 次都走完，严格模式 3 次里 2 次走完。</li>
+<li><b>水量现在由胶头决定，比真实多约一倍。</b>真实吸进约 0.6–0.7 mL，仿真 1.27–1.28 mL。第十一节里“吸进 0.56 mL、和真实相当”是吸入断流碰巧凑出来的；泵修好以后，差距回到它真正的来源：同样的手指动作下，仿真的胶头排开的体积是真实的约两倍（胶头壁厚没有量过，手指的出力没有标定）。这一项要靠真实的手指反馈、电流，或者量一下胶头，才能定下来。</li>
 </ol>
 
-<h3>泵：改了什么</h3>
+<h3>泵：吸入改了什么</h3>
 <p>滴管的内孔只有 6.4 mm，比液体网格的一格（5 mm）大不了多少，网格解不出孔里的流动，所以孔里的水由一条“输送带”沿管轴搬运，搬多少由胶头腔体的体积决定。旧的输送带只作用在管口正下方、半径 2.2 mm 的一根柱子上。新的做法是：管口浸在水里时，把管口平面以下 10 mm 厚的一层水一起带动——柱子里的水边上升边向轴线收拢，柱子外面的水按“线汇”向柱子流，流量正好等于被搬走的量，整个速度场无散，所以水的疏密不变。管口不在水里时还是原来的输送带。另外加了两条保护：只有水确实跟进了开口，管内的液柱才上移（不会再把一小段水一路抬到管顶）；只有水确实在出管口，才推开管口外的水。</p>
 <div class="tblwrap"><table style="min-width:36rem">
 <thead><tr><th>刚性滴管台架：胶头腔体 1 s 内放开 1.0 mL（64 粒），管口在水下 8 mm</th><th class="num">旧泵</th><th class="num">新泵</th></tr></thead>
@@ -864,34 +864,52 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 </tbody></table></div>
 <p class="note">屏障只在一个网格单元被压到原体积的 0.3 以下时才起作用，正常流动不受影响。</p>
 
-<h3>完整回放：严格模式和快模式</h3>
-<p>两种模式只差牛顿迭代的收敛容差：严格 10<sup>−3</sup>，快 10<sup>−2</sup>；都用粒子位移做收敛判据，线性方程都用直接法求解。手模型是第十一节最好的那一个（位置环 4°，力矩上限 1.5 倍，手套 4 mm，胶头 1.2 MPa，悬滴死区 47 µL），没有再调。一粒水是 15.6 µL。</p>
-<div class="tblwrap"><table style="min-width:82rem">
-<thead><tr><th>运行</th><th>结果</th><th class="num">吸入（粒 / mL）</th><th class="num">液柱长（mm）</th><th class="num">带过横移（粒）</th><th class="num">滴进烧杯（粒 / mL）</th><th class="num">落在桌上（粒）</th><th class="num">滴液时管口离杯轴（mm）</th><th class="num">过瓶口离瓶轴（mm）</th><th class="num">烧瓶位移（mm）</th><th class="num">松手后斜靠</th><th class="num">每帧牛顿迭代最大 / 跑满上限的帧</th><th class="num">用时（分钟）</th></tr></thead>
+<h3>摆动：修正前后</h3>
+<p>下表是管口在手掌坐标系里的位置减去 0.6 s 滑动平均后的摆幅（峰到峰，毫米）。滴管如果刚性地固定在手里，这个量是 0。悬停阶段手掌几乎不动（自身的残差 0.1–2 mm），所以这一列最能说明问题：修正前它在变大，修正后回到干跑的水平。</p>
+<div class="tblwrap"><table style="min-width:48rem">
+<thead><tr><th>运行</th><th class="num">转运（21.5–25 s）</th><th class="num">悬停（25.5–26.8 s）</th><th class="num">滴液（27–31 s）</th><th>说明</th></tr></thead>
 <tbody>
-<tr><td style="white-space:nowrap">严格 1</td><td style="white-space:nowrap">走完</td><td class="num">80（1.25）</td><td class="num">76</td><td class="num">67</td><td class="num">46（0.72）</td><td class="num">0</td><td class="num">10–31</td><td class="num">7.9</td><td class="num">1.1</td><td class="num">12°</td><td class="num">13 / 0</td><td class="num">99</td></tr>
-<tr><td style="white-space:nowrap">严格 2</td><td style="white-space:nowrap">走完</td><td class="num">79（1.23）</td><td class="num">77</td><td class="num">66</td><td class="num">48（0.75）</td><td class="num">2</td><td class="num">7–29</td><td class="num">8.6</td><td class="num">1.1</td><td class="num">11°</td><td class="num">13 / 0</td><td class="num">97</td></tr>
-<tr><td style="white-space:nowrap">严格 3</td><td style="white-space:nowrap"><b>失败</b>（摆动发散）</td><td class="num">80（1.25）</td><td class="num">78</td><td class="num">67</td><td class="num">7（0.11）</td><td class="num">49</td><td class="num">21–40</td><td class="num">11.9</td><td class="num">26.5</td><td class="num">倒了</td><td class="num">34 / 0</td><td class="num">112</td></tr>
-<tr><td style="white-space:nowrap">快 1</td><td style="white-space:nowrap">走完</td><td class="num">82（1.28）</td><td class="num">76</td><td class="num">68</td><td class="num">43（0.67）</td><td class="num">0</td><td class="num">6–20</td><td class="num">6.9</td><td class="num">1.0</td><td class="num">12°</td><td class="num">5 / 0</td><td class="num">70</td></tr>
-<tr><td style="white-space:nowrap">快 2</td><td style="white-space:nowrap">走完</td><td class="num">81（1.27）</td><td class="num">71</td><td class="num">66</td><td class="num">42（0.66）</td><td class="num">3</td><td class="num">6–20</td><td class="num">7.2</td><td class="num">1.0</td><td class="num">11°</td><td class="num">5 / 0</td><td class="num">67</td></tr>
-<tr><td style="white-space:nowrap">快 3</td><td style="white-space:nowrap">走完</td><td class="num">81（1.27）</td><td class="num">76</td><td class="num">68</td><td class="num">44（0.69）</td><td class="num">0</td><td class="num">6–20</td><td class="num">6.8</td><td class="num">1.0</td><td class="num">11°</td><td class="num">4 / 0</td><td class="num">69</td></tr>
-<tr><td style="white-space:nowrap">快 4</td><td style="white-space:nowrap">走完</td><td class="num">81（1.27）</td><td class="num">71</td><td class="num">67</td><td class="num">42（0.66）</td><td class="num">0</td><td class="num">6–20</td><td class="num">6.9</td><td class="num">1.0</td><td class="num">11°</td><td class="num">6 / 0</td><td class="num">67</td></tr>
-<tr><td style="white-space:nowrap">真实（视频）</td><td>—</td><td class="num">约 0.6–0.7 mL</td><td class="num">27–30</td><td class="num">不漏</td><td class="num">少量</td><td class="num">0</td><td class="num">2–14</td><td class="num">4–7</td><td class="num">&lt; 1</td><td class="num">约 10°</td><td class="num">—</td><td class="num">—</td></tr>
-<tr><td style="white-space:nowrap">第十一节最好的配置（3 次）</td><td>2 次走完</td><td class="num">36–41（0.56–0.64）</td><td class="num">—</td><td class="num">30</td><td class="num">27–30（0.42–0.47）</td><td class="num">0</td><td class="num">10–14</td><td class="num">8.1 / 9.7 / 12.2</td><td class="num">1.0 / 1.1 / 191</td><td class="num">10–11°（一次没放回）</td><td class="num">12 / 0（另有两条被上限中止）</td><td class="num">87–92</td></tr>
+<tr><td>修正后 · 严格模式（1 次）</td><td class="num">5</td><td class="num">4</td><td class="num">10</td><td>悬停时不再增长；捏胶头开始时有一个瞬态，一秒内衰减</td></tr>
+<tr><td>修正后 · 快模式（1 次）</td><td class="num">11</td><td class="num">4</td><td class="num">1</td><td></td></tr>
+<tr><td>修正前 · 严格模式，走完的 2 次</td><td class="num">12</td><td class="num">22–34</td><td class="num">29–43</td><td>手掌静止的悬停阶段还在变大</td></tr>
+<tr><td>修正前 · 严格模式，失败的那次</td><td class="num">19</td><td class="num">140</td><td class="num">32</td><td>悬停时发散，滴管在手里错位</td></tr>
+<tr><td>修正前 · 快模式（4 次）</td><td class="num">16–17</td><td class="num">12–13</td><td class="num">3–4</td><td></td></tr>
+<tr><td>第十一节的带水记录（泵没改，管里约 30 粒）</td><td class="num">10–11</td><td class="num">9–10</td><td class="num">14–17</td><td>水少，处在边缘</td></tr>
+<tr><td>干跑</td><td class="num">4–5</td><td class="num">3</td><td class="num">7–8</td><td>滴液这一列里有手指合拢带来的转动</td></tr>
+<tr><td>真实（三台相机，23.9–28.7 s）</td><td class="num">约 2.5</td><td class="num">约 2.5</td><td class="num">约 1.4</td><td>管身方向起伏 0.35–0.62°，和测量噪声同量级</td></tr>
+</tbody></table></div>
+
+<h3>完整回放：严格模式和快模式</h3>
+<p>两种模式只差牛顿迭代的收敛容差：严格 10<sup>−3</sup>，快 10<sup>−2</sup>；都用粒子位移做收敛判据，线性方程都用直接法求解。手模型是第十一节最好的那一个（位置环 4°，力矩上限 1.5 倍，手套 4 mm，胶头 1.2 MPa，悬滴死区 47 µL），没有再调。一粒水是 15.6 µL。“修正前”各行是只改了吸入和卡帧、水还跟随管口速度的版本。</p>
+<div class="tblwrap"><table style="min-width:88rem">
+<thead><tr><th>运行</th><th>结果</th><th class="num">吸入（粒 / mL）</th><th class="num">带过横移（粒）</th><th class="num">滴进烧杯（粒 / mL）</th><th class="num">落在桌上（粒）</th><th class="num">摆幅：悬停 / 滴液（mm）</th><th class="num">滴液时管口离杯轴（mm）</th><th class="num">过瓶口离瓶轴（mm）</th><th class="num">烧瓶位移（mm）</th><th class="num">松手后斜靠</th><th class="num">每帧牛顿迭代最大 / 跑满上限的帧</th><th class="num">用时（分钟）</th></tr></thead>
+<tbody>
+<tr><td style="white-space:nowrap">严格 1</td><td style="white-space:nowrap">走完</td><td class="num">81（1.27）</td><td class="num">67</td><td class="num">44（0.69）</td><td class="num">0</td><td class="num">4 / 10</td><td class="num">10–29</td><td class="num">8.9</td><td class="num">1.1</td><td class="num">11°</td><td class="num">13 / 0</td><td class="num">92</td></tr>
+<tr><td style="white-space:nowrap">快 1</td><td style="white-space:nowrap">走完</td><td class="num">82（1.28）</td><td class="num">64</td><td class="num">47（0.73）</td><td class="num">0</td><td class="num">4 / 1</td><td class="num">7–20</td><td class="num">7.3</td><td class="num">1.0</td><td class="num">12°</td><td class="num">5 / 0</td><td class="num">69</td></tr>
+<tr><td style="white-space:nowrap">修正前 · 严格 1</td><td style="white-space:nowrap">走完</td><td class="num">80（1.25）</td><td class="num">67</td><td class="num">46（0.72）</td><td class="num">0</td><td class="num">34 / 43</td><td class="num">10–31</td><td class="num">7.9</td><td class="num">1.1</td><td class="num">12°</td><td class="num">13 / 0</td><td class="num">99</td></tr>
+<tr><td style="white-space:nowrap">修正前 · 严格 2</td><td style="white-space:nowrap">走完</td><td class="num">79（1.23）</td><td class="num">66</td><td class="num">48（0.75）</td><td class="num">2</td><td class="num">22 / 29</td><td class="num">7–29</td><td class="num">8.6</td><td class="num">1.1</td><td class="num">11°</td><td class="num">13 / 0</td><td class="num">97</td></tr>
+<tr><td style="white-space:nowrap">修正前 · 严格 3</td><td style="white-space:nowrap"><b>失败</b>（摆动发散）</td><td class="num">80（1.25）</td><td class="num">67</td><td class="num">7（0.11）</td><td class="num">49</td><td class="num">140 / 32</td><td class="num">21–40</td><td class="num">11.9</td><td class="num">26.5</td><td class="num">倒了</td><td class="num">34 / 0</td><td class="num">112</td></tr>
+<tr><td style="white-space:nowrap">修正前 · 快 1</td><td style="white-space:nowrap">走完</td><td class="num">82（1.28）</td><td class="num">68</td><td class="num">43（0.67）</td><td class="num">0</td><td class="num">12 / 3</td><td class="num">6–20</td><td class="num">6.9</td><td class="num">1.0</td><td class="num">12°</td><td class="num">5 / 0</td><td class="num">70</td></tr>
+<tr><td style="white-space:nowrap">修正前 · 快 2</td><td style="white-space:nowrap">走完</td><td class="num">81（1.27）</td><td class="num">66</td><td class="num">42（0.66）</td><td class="num">3</td><td class="num">12 / 4</td><td class="num">6–20</td><td class="num">7.2</td><td class="num">1.0</td><td class="num">11°</td><td class="num">5 / 0</td><td class="num">67</td></tr>
+<tr><td style="white-space:nowrap">修正前 · 快 3</td><td style="white-space:nowrap">走完</td><td class="num">81（1.27）</td><td class="num">68</td><td class="num">44（0.69）</td><td class="num">0</td><td class="num">13 / 4</td><td class="num">6–20</td><td class="num">6.8</td><td class="num">1.0</td><td class="num">11°</td><td class="num">4 / 0</td><td class="num">69</td></tr>
+<tr><td style="white-space:nowrap">修正前 · 快 4</td><td style="white-space:nowrap">走完</td><td class="num">81（1.27）</td><td class="num">67</td><td class="num">42（0.66）</td><td class="num">0</td><td class="num">13 / 4</td><td class="num">6–20</td><td class="num">6.9</td><td class="num">1.0</td><td class="num">11°</td><td class="num">6 / 0</td><td class="num">67</td></tr>
+<tr><td style="white-space:nowrap">真实（视频）</td><td>—</td><td class="num">约 0.6–0.7 mL</td><td class="num">不漏</td><td class="num">少量</td><td class="num">0</td><td class="num">约 2（测量噪声）</td><td class="num">2–14</td><td class="num">4–7</td><td class="num">&lt; 1</td><td class="num">约 10°</td><td class="num">—</td><td class="num">—</td></tr>
+<tr><td style="white-space:nowrap">第十一节最好的配置（3 次）</td><td>2 次走完</td><td class="num">36–41（0.56–0.64）</td><td class="num">30</td><td class="num">27–30（0.42–0.47）</td><td class="num">0</td><td class="num">9–10 / 14–17</td><td class="num">10–14</td><td class="num">8.1 / 9.7 / 12.2</td><td class="num">1.0 / 1.1 / 191</td><td class="num">10–11°（一次没放回）</td><td class="num">12 / 0（另有两条被上限中止）</td><td class="num">87–92</td></tr>
 </tbody></table></div>
 <ul>
-<li>放回这一步，走完的 6 次都在 6.8–8.6 mm，比第十一节的 8.1–12.2 mm 更靠里、更集中。样本只有 6 个，瓶口的余量仍然只有一两毫米，不能说放回已经稳了。</li>
-<li>滴液时管口会偏向杯沿：捏胶头的 27–31 s 里管口离杯轴从 6–10 mm 漂到 20–31 mm（烧杯内半径 32 mm），严格模式漂得更远。真实里这一捏也让滴管在手里转了约 3.5°，但管口留在离杯轴 2–14 mm。</li>
+<li>放回的余量仍然只有一两毫米：修正后是 7.3–8.9 mm，对 9.3 mm 的限度。样本少，不能说放回已经稳了。</li>
+<li>滴液时管口仍会偏向杯沿：捏胶头的 27–31 s 里管口离杯轴从 7–11 mm 漂到 20–29 mm（烧杯内半径 32 mm）。这是缓慢的转动，不是摆动——手指为滴液合拢时滴管在手里转了几度。真实里这一捏也让滴管转了约 3.5°，但管口留在离杯轴 2–14 mm。</li>
 <li>水从 27 s 起随手指合拢成滴排出，到 31 s 结束；真实的出水集中在 30.5–31.5 s。管身朝向与视频仍差 4–6°。</li>
 <li>松手以后胶头回弹，滴管又从烧瓶里吸满（管内 120–130 粒）。真实的滴管放回去松手后也会吸进水，视频里看不清有多少。</li>
 <li>带水回放仍然不是逐次可重复的：同一模式的几次，吸入差 1–2 粒，过瓶口差 0.3–0.7 mm。</li>
 </ul>
 
 <h3>查看器里的新记录</h3>
-<p><a href="rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=19.60&amp;cam=neck">严格模式 · 19.6 s 吸液</a>、<a href="rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=29.00&amp;cam=beaker">严格模式 · 29 s 滴液</a>、<a href="rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=34.00&amp;cam=neck">严格模式 · 34 s 放回</a>；<a href="rokae_viewer.html?run=rec2_v5_pump_fast&amp;t=19.60&amp;cam=neck">快模式 · 19.6 s 吸液</a>、<a href="rokae_viewer.html?run=rec2_v5_pump_fast&amp;t=29.00&amp;cam=beaker">快模式 · 29 s 滴液</a>、<a href="rokae_viewer.html?run=rec2_v5_pump_fast&amp;t=34.00&amp;cam=neck">快模式 · 34 s 放回</a>。</p>
+<p>两条都是修正后的回放。<a href="rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=19.60&amp;cam=neck">严格模式 · 19.6 s 吸液</a>、<a href="rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=29.00&amp;cam=beaker">严格模式 · 29 s 滴液</a>、<a href="rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=34.00&amp;cam=neck">严格模式 · 34 s 放回</a>；<a href="rokae_viewer.html?run=rec2_v5_pump_fast&amp;t=19.60&amp;cam=neck">快模式 · 19.6 s 吸液</a>、<a href="rokae_viewer.html?run=rec2_v5_pump_fast&amp;t=29.00&amp;cam=beaker">快模式 · 29 s 滴液</a>、<a href="rokae_viewer.html?run=rec2_v5_pump_fast&amp;t=34.00&amp;cam=neck">快模式 · 34 s 放回</a>。修正前摆动的那条严格模式记录留作对照：<a href="rokae_viewer.html?run=rec2_v5_pump_strict_swing&amp;t=27.00&amp;cam=beaker">27 s，管口摆幅 43 mm</a>。</p>
 
-<h3>对前面各节的更正</h3>
+<h3>对前面各节和这一节早先版本的更正</h3>
 <ul>
+<li>这一节当天的第一版写“严格模式和快模式都走完全程”，依据是严格 2 次、快 2 次。之后严格模式的第三次重复因为摆动发散而失败，查看器里也能看到滴管在抖。那一版没有检查滴管在手里的摆动，只看了离散时刻的姿态和粒子计数。现在每条回放都量摆幅。</li>
 <li>第十一节“带水最好的一条吸进 0.56 mL，和真实相当”：这个量是吸入断流凑出来的，不是模型对了。泵修好以后是 1.2–1.3 mL。</li>
 <li>第十一节把卡帧写成“泵正把粒子从管口往外送的时候，输送带把粒子放到离管口端面很近的位置”：不对。卡住的是排出的水滴落进烧杯水面的那一帧，和输送带无关。</li>
 <li>第十一节“出水比真实早约 1 s”：现在的出水时间是 27–31 s，跟着手指合拢的过程走，开始得仍然比真实早。</li>
