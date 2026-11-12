@@ -57,12 +57,13 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
   三片在中轴处是 6.5 / 5.1 / 5.3 mm（按初始构型量），切下后叠靠在砧板上。每一刀开头，刀先把黄瓜的上半圈压下去 2–5 mm、刀力升到 22–65 N，然后切穿、顶面弹回，
   之后约 11–14 N 切到底；均匀材料是 31–40 N、下陷 1–4 mm，切穿后 17–21 N（<a href="#zones">第四节</a>）。仿真 18.1 s，一张 A800 上 4.1 小时。
   左上角是跟着刀走的切口近景。黄瓜用原模型的切块网格渲染（第五节），切面上的籽和果肉层次是贴图，瓤的范围与贴图里的籽腔一致。<br>
-  此前的均匀材料版本（11 月 2 日）：<a href="../media/cucumber_cut_1102.mp4">主视角</a> · <a href="../media/cucumber_cut_closeup_1102.mp4">切口近景</a>；
-  它的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices_v2.usdc">cucumber_cut_6mm_slices_v2.usdc（675 MB）</a>（说明见 <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-cutting-2026-11">release 页</a>）。分区材料版本的 USD 还没有导出。</figcaption>
+  这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_zones.usdc">cucumber_cut_zones.usdc（675 MB）</a>（机械臂、刀、砧板、切块网格的黄瓜，以及每 0.4 s 一帧的 MPM 粒子；三个材料区的参数写在文件的说明里，详见 <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-cutting-2026-11">release 页</a>）。<br>
+  此前的均匀材料版本（11 月 2 日）：<a href="../media/cucumber_cut_1102.mp4">主视角</a> · <a href="../media/cucumber_cut_closeup_1102.mp4">切口近景</a> · USD 动画 <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices_v2.usdc">cucumber_cut_6mm_slices_v2.usdc（675 MB）</a>。</figcaption>
 </figure>
 <figure class="fig">
   <video src="../media/cucumber_cut_closeup.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
-  <figcaption><b>同一次运行的切口近景</b> — 镜头跟着刀所在的平面移动，刀始终侧对镜头。每一刀开头可以看到顶面被刀压下去、切穿后弹回。</figcaption>
+  <figcaption><b>同一次运行的切口近景</b> — 镜头跟着刀所在的平面移动，刀始终侧对镜头。每一刀开头可以看到顶面被刀压下去、切穿后弹回。
+  与上一个视频是同一次运行，USD 动画相同：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_zones.usdc">cucumber_cut_zones.usdc（675 MB）</a></figcaption>
 </figure>
 </section>
 
@@ -550,7 +551,7 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 <ul>
 <li><b>内软外硬（11 月 12 日）。</b>页首视频已换成分区材料（皮 2 倍、瓤 0.3 倍，断裂阈值不变；第二节第 7 条、第四节）。分区材料仍是纯弹性的：瓤再软也不会流动或出水，材料本身没有永久形变。
 刀切入时黄瓜上半圈先被压下去 2–7 mm 再切穿，这个下陷比真实的大：切割力的峰值本来就偏高（钝刃，只有碰到刀的粒子才断），软瓤把它变成了看得见的形变；它的大小还和粒子间距有关（1 mm 时更大）。
-三片厚度 6.5 / 5.1 / 5.3 mm，不如 11 月 2 日的均匀材料版本一致（6.2 / 6.6 / 6.0 mm）。USD 动画还是均匀材料那一版，分区材料的没有导出。</li>
+三片厚度 6.5 / 5.1 / 5.3 mm，不如 11 月 2 日的均匀材料版本一致（6.2 / 6.6 / 6.0 mm）。USD 动画是 <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_zones.usdc">cucumber_cut_zones.usdc</a>（11 月 12 日起），均匀材料版本的 cucumber_cut_6mm_slices_v2.usdc 也留在 release 里。</li>
 <li>这些引擎改动在 StiffGIPC 的开发版本里，<b>尚未</b>进入公开发布的 wheel。</li>
 <li>USD 动画在 GitHub release <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-cutting-2026-11">demo-assets-cutting-2026-11</a> 里：机械臂、刀、砧板、切块网格的黄瓜（顶点颜色取自贴图），以及每 0.4 s 一帧的 MPM 粒子（默认隐藏），可用 usdview、Houdini、Blender 或 Omniverse 打开。</li>
 <li>刀背厚 4 mm，切下的片会被推开并向外倾倒，这和真实切片相近。刀模的刃尖是约 1 mm 的圆角，比测试台得出的门槛（1 mm 间距时约 0.5 mm，即半个粒子间距）厚，单靠门控和加密间距，切面上一直有坑洼。11 月 1 日起把刀的中面当作裂纹面（第二节第 5 条），原刀模切出的切面与磨尖的刀相近。刀模一直没有改。</li>
