@@ -949,6 +949,24 @@ PYOPENGL_PLATFORM=egl python examples/rokae_dropper/render_preview.py out/rokae_
 <li>带水回放仍然不是逐次可重复的：同一模式的几次，吸入差 1–2 粒，过瓶口差 0.3–0.7 mm。</li>
 </ul>
 
+<h3 id="pump-bdf2">二阶时间积分（BDF2）：同样走完全程，没有可见的差别（11 月 12 日晚）</h3>
+<p>引擎里的液体还有几项改进没有用在这个例子里，其中能直接打开的是二阶时间积分（BDF2）：在烧杯晃荡测试里，它把阻尼比从 0.092 降到 0.037（这条液体路径、去掉各项稳定措施、2.5 mm 网格；真实的水约 0.008）。
+10 月 23 日在滴管台架上试过一次：那次和 BDF2 一起去掉了静止拖曳等几项，横移时管里 15 粒水丢了 12 粒，当时管里的水是靠拖曳和表面张力撑着的。现在管里的水跟随滴管的刚体运动，不再靠拖曳，
+所以用上面的设置原样各跑了一次，只多打开 BDF2：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>运行</th><th>结果</th><th class="num">吸入（粒）</th><th class="num">带过横移</th><th class="num">滴进烧杯</th><th class="num">桌上</th><th class="num">摆幅：悬停 / 滴液（mm）</th><th class="num">过瓶口离瓶轴（mm）</th><th class="num">烧杯里静水 1 s 位移（中位数）</th><th class="num">每帧牛顿迭代最大</th><th class="num">用时（分钟）</th></tr></thead>
+<tbody>
+<tr><td style="white-space:nowrap">快 · BDF2</td><td>走完</td><td class="num">82</td><td class="num">64</td><td class="num">42</td><td class="num">0</td><td class="num">4 / 2</td><td class="num">6.4</td><td class="num">0.14 mm</td><td class="num">5</td><td class="num">69</td></tr>
+<tr><td style="white-space:nowrap">快（上表 3 次）</td><td>走完</td><td class="num">81–82</td><td class="num">64–66</td><td class="num">43–47</td><td class="num">0</td><td class="num">4 / 1–2</td><td class="num">7.1–7.3</td><td class="num">0.14 mm</td><td class="num">5–7</td><td class="num">69–70</td></tr>
+<tr><td style="white-space:nowrap">严格 · BDF2</td><td>走完</td><td class="num">79</td><td class="num">63</td><td class="num">45</td><td class="num">0</td><td class="num">4 / 10</td><td class="num">10.1</td><td class="num">0.14 mm</td><td class="num">13</td><td class="num">88</td></tr>
+<tr><td style="white-space:nowrap">严格（上表 3 次）</td><td>走完</td><td class="num">79–81</td><td class="num">64–67</td><td class="num">44–48</td><td class="num">0</td><td class="num">4 / 10</td><td class="num">8.9–9.9</td><td class="num">0.14 mm</td><td class="num">12–14</td><td class="num">90–94</td></tr>
+</tbody></table></div>
+<p>两次都走完了全程，管里的水不再丢（带过横移 63–64 粒），各项都在不开 BDF2 的三次的范围内或紧挨着它；严格模式这次过瓶口离瓶轴 10.1 mm，同样是贴着瓶沿滑进去的。
+静水没有变好：烧杯里没人碰的那 15 秒，粒子 1 秒位移的中位数还是 0.14 mm。BDF2 减小的是水晃动时的数值阻尼，这个任务里水几乎不晃，所以看不出差别。</p>
+<p>其余几项没有用，是因为它们在另一条液体路径上：二次 B 样条核和体积可行步只在照着恢复出来的引擎写的那条路径里，那条路径没有网格上的壁面条件、表面张力和体积比屏障，
+敞口盒子里的静水 2 秒内液面就掉 28 %（恢复出来的引擎也一样），装在薄玻璃烧瓶、烧杯里的水用不了；要用在这里，得先把它们改写到现在这条路径上。
+粒子推开这一项现在这条路径本来就有，这个例子一直开着。</p>
+
 <h3>查看器里的新记录</h3>
 <p>两条都是修正后的回放。<a href="rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=19.60&amp;cam=neck">严格模式 · 19.6 s 吸液</a>、<a href="rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=29.00&amp;cam=beaker">严格模式 · 29 s 滴液</a>、<a href="rokae_viewer.html?run=rec2_v5_pump_strict&amp;t=34.00&amp;cam=neck">严格模式 · 34 s 放回</a>；<a href="rokae_viewer.html?run=rec2_v5_pump_fast&amp;t=19.60&amp;cam=neck">快模式 · 19.6 s 吸液</a>、<a href="rokae_viewer.html?run=rec2_v5_pump_fast&amp;t=29.00&amp;cam=beaker">快模式 · 29 s 滴液</a>、<a href="rokae_viewer.html?run=rec2_v5_pump_fast&amp;t=34.00&amp;cam=neck">快模式 · 34 s 放回</a>。修正前摆动的那条严格模式记录留作对照：<a href="rokae_viewer.html?run=rec2_v5_pump_strict_swing&amp;t=27.00&amp;cam=beaker">27 s，管口摆幅 43 mm</a>。</p>
 
