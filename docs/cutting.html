@@ -44,10 +44,16 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 刀和黄瓜都按原模型使用，没有改形状。</p>
 
 <!-- gap-note:begin -->
-<div class="note warn"><b>11 月 13 日：切下的片“隔着一段距离就互相顶住”——已定位，引擎已改</b>
-页首视频里，片倒下靠到相邻那片时，两片之间还隔着约 2 mm 就停住了。量出来相邻两片最近的粒子相距 2.2–2.7 mm（粒子间距 0.75 mm），没有一对小于 2 mm。
-原因是同一个粒子体里切开的块只通过背景网格相互作用，相距不到约两格（3 mm）就开始互推、互粘。现在给每一块一个编号，不同的块只有在粒子真的贴上时才通过网格相互作用；
-两块对照实验里静止时的距离从 1.59 mm 降到 0.68 mm（贴上应为 0.75 mm）。页首视频还是改动之前的版本；0.75 mm 的完整场景正在用这项改动重跑（约 4 小时），跑完后换视频。 <a href="#gap">原因、对照实验和做法 →</a></div>
+<div class="note warn"><b>11 月 13 日：切下的片“隔着一段距离就互相顶住”——已改，下面两个页首视频已换成重跑的结果</b>
+这个现象属实：11 月 12 日的视频里，切下的片斜立着排成一排，相邻两片最近的粒子也相距 2.3–2.5 mm（粒子间距 0.75 mm），没有任何粒子进到邻片 2.25 mm 以内。
+原因是同一个粒子体里切开的块只通过背景网格相互作用，相距不到约两格（3 mm）就开始互推、互粘。现在给每一块一个编号，不同的块只有在粒子真的贴上时才通过网格相互作用。
+同一条命令重跑一次以后，片倒下并叠在一起：相邻两片最近的粒子相距 0.36–0.60 mm，黄瓜头与三片之间的三处各有 10 / 191 / 102 个粒子离邻片不到 1.1 mm。
+重跑变的不只是缝：三片厚度从 6.5 / 5.1 / 5.3 mm 变成 6.4 / 6.3 / 6.4 mm，各刀最大刀力从 44 / 22 / 44 / 65 N 变成 46 / 35 / 89 / 84 N，这些是不是这项改动造成的，一次运行分不出来。
+<a href="#gap">原因、对照实验、重跑前后的对照 →</a></div>
+<figure class="fig">
+  <video src="../media/cucumber_cut_gap_fix.mp4?v=1113" poster="../media/cucumber_cut_gap_fix.jpg?v=1113" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>改动前 / 改动后（同一条命令、同一机位、同一时间轴）</b> — 上：11 月 12 日的版本，切下的片斜立着排成一排，彼此不接触。下：11 月 13 日重跑，片倒下后一片叠一片。</figcaption>
+</figure>
 <!-- gap-note:end -->
 <div class="toc"><b>目录</b>
   <a href="#result">结果视频</a><a href="#gap">片与片之间的空隙（11 月 13 日）</a><a href="#zones">内软外硬（11 月 12 日）</a><a href="#scene">一、场景</a><a href="#engine">二、引擎改动</a><a href="#rig">三、切割测试台</a><a href="#full">四、完整场景</a><a href="#render">五、渲染</a><a href="#status">六、状态与限制</a>
@@ -55,21 +61,22 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 
 <section id="result">
 <figure class="fig">
-  <video src="../media/cucumber_cut.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
-  <figcaption><b>原刀 · 四刀直压 · 内软外硬（硬皮、果肉、软瓤）· 三片 5–6.5 mm</b> — FR3 握着原尺寸的主厨刀，每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板：先切掉细端，再切三片。
+  <video src="../media/cucumber_cut.mp4?v=1113" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>原刀 · 四刀直压 · 内软外硬（硬皮、果肉、软瓤）· 三片约 6.4 mm（11 月 13 日重跑）</b> — FR3 握着原尺寸的主厨刀，每刀从黄瓜上方 12 mm 以 30 mm/s 压到砧板：先切掉细端，再切三片。
   黄瓜没有扶住，刀往下切时会把它沿砧板推开，所以第二到第四刀按黄瓜切面的实测位置瞄准：刀落在切面外 5 mm 再加 4.5 mm 处（第四节）。
   883,562 个 MPM 粒子（间距 0.75 mm），纯弹性，分三个区：离表面 1.5 mm 以内的皮 E = 4 MPa，果肉 2 MPa，半径一半以内的瓤 0.6 MPa，断裂阈值相同；
   只允许碰到过刀的粒子断裂，刀的中面作为超前刃口 1 mm 的裂纹面，刀模没有改。
-  三片在中轴处是 6.5 / 5.1 / 5.3 mm（按初始构型量），切下后叠靠在砧板上。每一刀开头，刀先把黄瓜的上半圈压下去 2–5 mm、刀力升到 22–65 N，然后切穿、顶面弹回，
-  之后约 11–14 N 切到底；均匀材料是 31–40 N、下陷 1–4 mm，切穿后 17–21 N（<a href="#zones">第四节</a>）。仿真 18.1 s，一张 A800 上 4.1 小时。
+  三片在中轴处是 6.4 / 6.3 / 6.4 mm（按初始构型量），切下后倒在砧板上、一片叠一片。每一刀开头，刀先把黄瓜的顶面压下去 1.9–2.8 mm 才出现第一处断裂（这时刀力 9–22 N），
+  各刀最大刀力 46 / 35 / 89 / 84 N，切穿、顶面弹回以后约 11–16 N 切到底。与 11 月 12 日那一版（片之间留着缝）的对照见<a href="#gap">第四节“片与片之间的空隙”</a>；
+  与均匀材料的对照（<a href="#zones">第四节</a>）用的仍是 11 月 12 日那一版。仿真 18.1 s，一张 A800 上 3.9 小时。
   左上角是跟着刀走的切口近景。黄瓜用原模型的切块网格渲染（第五节），切面上的籽和果肉层次是贴图，瓤的范围与贴图里的籽腔一致。<br>
-  这个视频的 USD 动画：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_zones.usdc">cucumber_cut_zones.usdc（675 MB）</a>（机械臂、刀、砧板、切块网格的黄瓜，以及每 0.4 s 一帧的 MPM 粒子；三个材料区的参数写在文件的说明里，详见 <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-cutting-2026-11">release 页</a>）。<br>
+  USD 动画目前只有 11 月 12 日那一版（改动前，片之间留着缝；<a href="../media/cucumber_cut_1112.mp4">主视角</a> · <a href="../media/cucumber_cut_closeup_1112.mp4">切口近景</a>），这次重跑的 USD 还没有导出：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_zones.usdc">cucumber_cut_zones.usdc（675 MB）</a>（机械臂、刀、砧板、切块网格的黄瓜，以及每 0.4 s 一帧的 MPM 粒子；三个材料区的参数写在文件的说明里，详见 <a href="https://github.com/haoxiangNtu/stiff-physics/releases/tag/demo-assets-cutting-2026-11">release 页</a>）。<br>
   此前的均匀材料版本（11 月 2 日）：<a href="../media/cucumber_cut_1102.mp4">主视角</a> · <a href="../media/cucumber_cut_closeup_1102.mp4">切口近景</a> · USD 动画 <a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_6mm_slices_v2.usdc">cucumber_cut_6mm_slices_v2.usdc（675 MB）</a>。</figcaption>
 </figure>
 <figure class="fig">
-  <video src="../media/cucumber_cut_closeup.mp4?v=1112" muted loop playsinline controls preload="metadata"></video>
+  <video src="../media/cucumber_cut_closeup.mp4?v=1113" muted loop playsinline controls preload="metadata"></video>
   <figcaption><b>同一次运行的切口近景</b> — 镜头跟着刀所在的平面移动，刀始终侧对镜头。每一刀开头可以看到顶面被刀压下去、切穿后弹回。
-  与上一个视频是同一次运行，USD 动画相同：<a class="dl" href="https://github.com/haoxiangNtu/stiff-physics/releases/download/demo-assets-cutting-2026-11/cucumber_cut_zones.usdc">cucumber_cut_zones.usdc（675 MB）</a></figcaption>
+  与上一个视频是同一次运行（11 月 13 日重跑）；USD 动画见上，目前只有 11 月 12 日那一版。</figcaption>
 </figure>
 </section>
 
@@ -273,9 +280,9 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 
 <!-- gap-sec:begin -->
 <h3 id="gap">片与片之间的空隙：隔着约 2 mm 就互相顶住（11 月 13 日）</h3>
-<p><b>现象。</b>页首视频（11 月 12 日的版本）里，切下的片向外倒、靠到相邻那片或黄瓜头上时，中间留着一条看得见的缝就停住了。
-按粒子量：相邻两块最近的粒子中心相距 2.2–2.7 mm，没有一对小于 2 mm，而粒子间距是 0.75 mm；画面上的缝约 1.5–2 mm，差不多是片厚（5–6.5 mm）的三分之一。
-第一片和黄瓜头之间没有碎屑，所以不是被碎屑垫着。</p>
+<p><b>现象。</b>11 月 12 日的页首视频里，切下的片向外倒、靠到相邻那片或黄瓜头上时，中间留着一条看得见的缝就停住了。
+按粒子量（最后一帧，粒子按刀平面的哪一侧归片，碎料不计）：相邻两块最近的粒子中心相距 2.3–2.5 mm，没有任何粒子进到邻片 2.25 mm 以内，而粒子间距是 0.75 mm；
+画面上的缝约 1.5–2 mm，差不多是片厚（5–6.5 mm）的三分之一。第一片和黄瓜头之间没有碎屑，所以不是被碎屑垫着。</p>
 <p><b>原因。</b>黄瓜是一个 MPM 粒子体。切开以后的各块之间没有单独的接触，只通过背景网格相互作用：两块的粒子只要用到同一个网格节点，就共用那个节点的速度。
 网格是 1.5 mm，所以两块相距不到约两格（3 mm）就开始互推，并且粘在一起，不需要真的贴上。刀的“双场”裂纹面（第二节第 5 条）只在刀还在切口里时把刀面两侧分开，刀一离开，各块又回到同一张网格上。</p>
 <p><b>对照实验。</b>两块同样材料的方块（20 × 8 × 20 mm，属于同一个粒子体），上面一块从 4 mm 高处掉到下面一块上，看它停在多远的地方：</p>
@@ -297,7 +304,37 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 <li>两块都用到、但没有接触的节点分成两份，每块各用一份，互不影响；接触的节点仍是一份，和原来一样是粘着接触。</li>
 </ol>
 <p>所以两块在粒子贴上之前完全自由，贴上以后才互相顶住。刀还在切口里时，刀面两侧仍由原来的裂纹面处理。同一条命令、粒子间距 1.5 mm 的完整场景先验证了一遍：四刀切完后，相邻的片最近的粒子相距 1.2–1.4 mm，即 0.8–0.95 个粒子间距。</p>
-<p><b>状态。</b>页首视频还是改动之前的版本；0.75 mm 的完整场景正在用这项改动重跑（约 4 小时），跑完后换视频。 这项改动和其余切割改动一样在引擎开发分支上。两块之间是“贴上就粘住”的接触，没有滑动摩擦的模型；三块同时挤在一个节点上时，其中两块仍会共用一份。</p>
+<p><b>完整场景重跑（粒子间距 0.75 mm，与 11 月 12 日同一条命令，一次运行）。</b>页首两个视频已换成这次重跑。画面上，切下的片不再斜立着隔空排成一排，而是倒下后一片叠一片：</p>
+<figure class="fig">
+  <video src="../media/cucumber_cut_gap_fix.mp4?v=1113" poster="../media/cucumber_cut_gap_fix.jpg?v=1113" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>改动前 / 改动后（同一条命令、同一机位、同一时间轴）</b> — 上：11 月 12 日的版本，切下的片斜立着排成一排，彼此不接触。下：11 月 13 日重跑，片倒下后一片叠一片。</figcaption>
+</figure>
+<p>片与片之间的距离，两次运行用同一个脚本、同一种归片办法在最后一帧量：</p>
+<div class="tblwrap"><table>
+<thead><tr><th>相邻的两块</th><th>改动前：最近的一对粒子</th><th>改动前：离邻块 1.1 / 2.25 mm 以内的粒子数</th><th>改动后：最近的一对粒子</th><th>改动后：离邻块 1.1 / 2.25 mm 以内的粒子数</th></tr></thead>
+<tbody>
+<tr><td>黄瓜头 – 第一片</td><td>2.28 mm</td><td>0 / 0</td><td>0.58 mm</td><td>10 / 105</td></tr>
+<tr><td>第一片 – 第二片</td><td>2.27 mm</td><td>0 / 0</td><td>0.60 mm</td><td>191 / 2116</td></tr>
+<tr><td>第二片 – 第三片</td><td>2.52 mm</td><td>0 / 0</td><td>0.36 mm</td><td>102 / 823</td></tr>
+</tbody></table></div>
+<p class="small">改动后片与片只在一小块面积上贴住（离邻块不到一个粒子间距的粒子各有 2 / 13 / 17 个），其余的面离得更远——片是斜靠着叠在一起的（见视频，没有另外量倾角）；黄瓜头和第一片之间贴得最少。
+按引擎自己的块编号归片，量出来的最近距离相同（0.58 / 0.60 / 0.36 mm）。</p>
+<p><b>重跑里其他变了的量。</b>两次运行用同一个统计脚本：</p>
+<div class="tblwrap"><table>
+<thead><tr><th></th><th>改动前（11 月 12 日）</th><th>改动后（11 月 13 日）</th></tr></thead>
+<tbody>
+<tr><td>三片厚度（中轴）</td><td>6.5 / 5.1 / 5.3 mm</td><td>6.4 / 6.3 / 6.4 mm</td></tr>
+<tr><td>首次断裂时的刀力（四刀）</td><td>9 / 18 / 25 / 38 N</td><td>9 / 21 / 22 / 22 N</td></tr>
+<tr><td>各刀最大刀力</td><td>44 / 22 / 44 / 65 N</td><td>46 / 35 / 89 / 84 N</td></tr>
+<tr><td>切穿以后的刀力</td><td>14 / 13 / 11 / 11 N</td><td>16 / 11 / 11 / 11 N</td></tr>
+<tr><td>碎料（断开的粒子）</td><td>1790 个，0.20 %</td><td>2163 个，0.24 %</td></tr>
+<tr><td>用时（一张 A800）</td><td>4.1 小时</td><td>3.9 小时</td></tr>
+</tbody></table></div>
+<p class="small">第一刀下去时还没有切下任何一块，两次运行几乎相同（最大刀力 44 对 46 N，首次断裂 9.2 对 9.3 N），这与这项改动在第一刀抬刀之前不起作用是一致的。
+第二到第四刀的片厚、刀力、碎料都变了。变化的幅度与上面“片厚与补偿量”表里相邻补偿量之间的差别相当（同一材料、补偿 4.0 / 4.5 / 5.0 mm 三组的最大刀力在 22–83 N 之间，片厚相差约 1 mm），
+第三刀的 89 N 略高于此前各组的最大值 83 N。这些变化是这项改动造成的，还是这个场景本来对小扰动就敏感，只有一次运行，分不出来。
+本页第四节其余的表和对照视频仍是 11 月 12 日那一版的数据。</p>
+<p><b>状态。</b>0.75 mm 的完整场景已用这项改动重跑（一次运行），页首两个视频已换：片倒下后叠在一起，相邻两片最近的粒子相距 0.36–0.60 mm（改动前 2.3–2.5 mm）。重跑里第二、三片厚了约 1.2 mm，第二到第四刀的最大刀力也更高，原因没有分清。 这项改动和其余切割改动一样在引擎开发分支上。两块之间是“贴上就粘住”的接触，没有滑动摩擦的模型；三块同时挤在一个节点上时，其中两块仍会共用一份。</p>
 <!-- gap-sec:end -->
 <h3 id="zones">内软外硬：硬皮、果肉、软瓤（11 月 12 日）</h3>
 <p>反馈是 11 月 2 日的页首视频里黄瓜看起来偏硬，希望像真的黄瓜那样内软外硬。11 月 1 日把果肉改成纯弹性，是为了去掉“橡皮泥”的样子，所以这次不把塑性加回来，
@@ -583,7 +620,7 @@ v·dt 相同的组相差不超过 2 N。例如 50 mm/s × 2.5 ms、100 mm/s × 1
 
 <h2 id="status">六、状态与限制</h2>
 <ul>
-<!-- gap-status:begin --><li><b>片与片之间的空隙（11 月 13 日）。</b>改动前切下的块相距约 2 mm 就互相顶住（网格耦合）；已改成按块分开、粒子贴上才相互作用，对照实验里的空隙从 1.59 mm 降到 0.68 mm。页首视频还是改动之前的版本；0.75 mm 的完整场景正在用这项改动重跑（约 4 小时），跑完后换视频。（<a href="#gap">第四节</a>）</li>
+<!-- gap-status:begin --><li><b>片与片之间的空隙（11 月 13 日）。</b>改动前切下的块相距约 2 mm 就互相顶住（网格耦合）；已改成按块分开、粒子贴上才相互作用，对照实验里的空隙从 1.59 mm 降到 0.68 mm。0.75 mm 的完整场景已用这项改动重跑（一次运行），页首两个视频已换：片倒下后叠在一起，相邻两片最近的粒子相距 0.36–0.60 mm（改动前 2.3–2.5 mm）。重跑里第二、三片厚了约 1.2 mm，第二到第四刀的最大刀力也更高，原因没有分清。（<a href="#gap">第四节</a>）</li>
 <!-- gap-status:end -->
 <li><b>内软外硬（11 月 12 日）。</b>页首视频已换成分区材料（皮 2 倍、瓤 0.3 倍，断裂阈值不变；第二节第 7 条、第四节）。分区材料仍是纯弹性的：瓤再软也不会流动或出水，材料本身没有永久形变。
 刀切入时黄瓜上半圈先被压下去 2–7 mm 再切穿，这个下陷比真实的大：切割力的峰值本来就偏高（钝刃，只有碰到刀的粒子才断），软瓤把它变成了看得见的形变；它的大小还和粒子间距有关（1 mm 时更大）。
