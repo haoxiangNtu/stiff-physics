@@ -463,6 +463,24 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   </figure>
 </div></section>
 
+<section class="block" id="alloy"><div class="container">
+  <div class="section-intro">
+    <div class="kicker kicker--sdk">Engine comparison · 11-13</div>
+    <h2>对照 Alloy：同样的场景，两个引擎并排</h2>
+    <p class="lead"><b>11 月 13 日：</b>Argon Robotics 开源的 <a href="https://www.argonrobotics.ai/alloy">Alloy</a> 是把 Newton、MuJoCo Warp 两套引擎内嵌、再加一个 SPH 液体求解器的编排层，
+    各求解器分开算、定时交换，接触用罚函数 / 软约束，没有无穿透保证。我们在同一张 A800 上把六个场景在两边各跑一遍：
+    高速球打薄板（Alloy 10 m/s 起穿板）、小球压铝片（Alloy 从顶点之间穿过）、两指夹泡沫（Alloy 手指陷进 6.3 mm）这三组我们都没有穿透；
+    多层布落下两边都没有穿插；Alloy 的长处是速度与并行（单场景布料快约 3 倍，一张卡上同时跑上千个场景）；杯中水这组暴露了我们的问题——小容器里水面偏高 13–19 %。
+    <a class="more" href="docs/alloy.html">六组视频、方法对照与测试条件 →</a></p>
+  </div>
+  <figure class="fig">
+    <video src="media/alloy_tunnel.mp4?v=1113" poster="media/alloy_tunnel_poster.jpg?v=1113" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>直径 20 mm 钢球以 10 m/s（上）和 20 m/s（下）落到 10 mm 厚的钢板上</b> — 左 Alloy 0.1.2，右 StiffGIPC；慢放 1/32，板画成半透明。
+    Alloy 的球连续三个刚体步陷到板面下 1.3、11.4、17.8 mm（穿出板的下表面），随后被它的健康检查判为“穿隧”并冻结；我们的球停在板面上。
+    <a href="docs/alloy.html#film">小球压铝片、两指夹泡沫、多层布、杯中水、布料速度 →</a></figcaption>
+  </figure>
+</div></section>
+
 <section class="block" id="mpm"><div class="container">
   <div class="section-intro">
     <div class="kicker kicker--sdk">Engine · MPM × IPC</div>

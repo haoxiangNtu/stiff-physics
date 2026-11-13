@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>对照 Alloy：方法与实测</title>
+<meta name="description" content="StiffGIPC 与 Argon Robotics 的 Alloy（alloy-engine 0.1.2）在同一张 A800 上跑同样的场景：Alloy 用的求解方法（源码确认）、两个引擎的区别、六组并排视频与数据。">
+<link rel="stylesheet" href="docs.css">
+<style>
+.fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
+  margin: 1.2rem 0 1.5rem; padding: .6rem; box-shadow: var(--fig-shadow); }
+.fig img, .fig video { border-radius: .4rem; width: 100%; height: auto; display: block; background: #fff; }
+.fig figcaption { color: var(--sub); text-align: center; padding: .6rem .5rem .1rem; font-size: .86rem; line-height: 1.6; }
+.fig figcaption b { color: var(--ink); font-weight: 600; }
+figure { margin: 0; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tag { display: inline-block; border-radius: 999px; padding: 0 .55rem; font-size: .76rem; font-weight: 600;
+  background: var(--e200); white-space: nowrap; }
+.tag.ok { color: var(--acc-data); } .tag.part { color: var(--acc-hw); } .tag.no { color: #d0453a; }
+</style>
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="outputs.html">技术详解</a>
+  <a class="item" href="../#alloy">返回首页 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / 对照 Alloy</div>
+<div class="kicker">Engine comparison · 2026-11-13</div>
+<h1>对照 Alloy：方法与实测</h1>
+<p class="lead"><a href="https://www.argonrobotics.ai/alloy">Alloy</a> 是 Argon Robotics 在 11 月 11 日开源的机器人学习物理引擎（Apache-2.0，<code>pip install alloy-engine</code>）。
+我们按它的说明装在自己的 A800 上，读了它的源码确认它到底用什么方法，再把同样的六个场景放进 Alloy 和 StiffGIPC 里各跑一遍，用同一个渲染器出并排视频。
+<b>结论：</b>Alloy 不是一个新的求解器，而是把 Newton 和 MuJoCo Warp 两套现成引擎内嵌、再加一个自写 SPH 液体求解器的“编排层”，各求解器分开算、定时交换数据；
+接触用罚函数或软约束，<b>没有无穿透保证</b>。在高速球打板、小球压薄片、两指夹泡沫三组里，Alloy 的物体穿进或穿过了对方，我们三组都没有穿透。
+它的长处是速度和并行：单个场景的布料快约 3 倍，一张卡上同时跑上千个场景。另一方面，杯中水这组暴露了我们自己的问题：小容器里我们的水面偏高 13–19 %。</p>
+
+<div class="toc"><b>目录</b>
+  <a href="#summary">一、结论一览</a><a href="#method">二、Alloy 用的方法</a><a href="#tunnel">三、高速球打薄板</a><a href="#film">四、小球压薄片</a>
+  <a href="#squeeze">五、两指夹泡沫</a><a href="#sheets">六、多层布落下</a><a href="#cup">七、杯中水</a><a href="#speed">八、布料下垂与速度</a>
+  <a href="#ours">九、我们的问题与可借鉴之处</a><a href="#setup">十、测试条件</a>
+</div>
+
+<h2 id="summary">一、结论一览</h2>
+<div class="tblwrap"><table>
+<thead><tr><th>场景（两边设置相同）</th><th>Alloy 0.1.2</th><th>StiffGIPC</th></tr></thead>
+<tbody>
+<tr><td><a href="#tunnel">直径 20 mm 钢球落到 10 mm 钢板上</a></td><td><span class="tag no">10 m/s 起穿板</span> 自己的健康检查判为“穿隧”，该场景被冻结；8–9 m/s 球底已低于板的下表面再被推回</td><td><span class="tag ok">5–40 m/s 都停在板面上</span> 球的最低点在板面以上 0.02 mm 以内</td></tr>
+<tr><td><a href="#film">2 g、直径 6 mm 小球放在 0.25 mm 铝片上（网格 4.6 mm）</a></td><td><span class="tag no">从顶点之间穿过</span> 落到地上，健康检查只报“未收敛”</td><td><span class="tag ok">停在铝片上</span> 铝片下沉约 2 mm</td></tr>
+<tr><td><a href="#squeeze">两块手指各推 9 mm 夹 40 mm 泡沫块（Alloy 文档里的例子）</a></td><td><span class="tag no">手指陷进泡沫 6.3 mm</span> 58 个泡沫顶点在手指里面，健康检查为“正常”</td><td><span class="tag ok">无穿透</span> 泡沫被压到 23.7 mm，与手指间隙 0.15 mm</td></tr>
+<tr><td><a href="#sheets">12 张棉布同时落下</a></td><td><span class="tag ok">无穿插</span> 布堆皱成 89 mm 高</td><td><span class="tag ok">无穿插</span> 平铺成 10 mm 高的一叠</td></tr>
+<tr><td><a href="#cup">32 ml 水块放进 40 mm 方杯</a></td><td><span class="tag part">水深 −3 %</span> 1 % 的粒子溅出杯外</td><td><span class="tag part">水深 +19 %</span> 一粒不漏（0.3 mm 薄壁也不漏）</td></tr>
+<tr><td><a href="#speed">0.5 m 布落到方台上，模拟 1 s</a></td><td><span class="tag ok">单场景 9.5 s</span> 1024 个场景并行 391 s</td><td><span class="tag part">单场景 27 s</span></td></tr>
+</tbody></table></div>
+<p class="small">每个场景两边各跑一次，一张 A800。Alloy 在这张卡的驱动上要做两处设置改动才能用 GPU（<a href="#setup">第十节</a>），物理结果不受影响，速度是它的下限。</p>
+
+<h2 id="method">二、Alloy 用的方法（读源码确认）</h2>
+<p>我们读的是 <a href="https://github.com/argonrobotics-ai/alloy">GitHub 上的源码</a>（提交 575bf94，与 PyPI 上的 0.1.2 对应），下面每一条都在代码里找到了对应位置。</p>
+<div class="tblwrap"><table>
+<thead><tr><th></th><th>Alloy 0.1.2</th><th>StiffGIPC</th></tr></thead>
+<tbody>
+<tr><td>整体结构</td><td>内嵌 Newton（NVIDIA / DeepMind 等的开源引擎，1.8 版加 12 个自己的提交）和 MuJoCo Warp 3.17，按物体自动选求解器；各求解器分开算，每 1.25 ms 通过“代理体”交换一次位置和动量（交错迭代加松弛，或线性化 ADMM）</td><td>一个整体的隐式求解：刚体、关节、布 / 壳、软体、液体在同一个能量最小化（牛顿法）里一起算</td></tr>
+<tr><td>刚体、机器人</td><td>MuJoCo Warp：软约束接触（允许一定穿透）、牛顿法、单精度；刚体步 1.25 ms；没有连续碰撞检测</td><td>仿射体（ABD）加关节约束，双精度</td></tr>
+<tr><td>布、软体</td><td>Newton 的 VBD（顶点块下降）：每步固定迭代 40 次，没有收敛判据；布与刚体只在<b>顶点</b>上检测接触（每个顶点当成一个小球），三角面不参与</td><td>有限元壳 / 四面体，按容差收敛；点–三角、边–边都参与接触</td></tr>
+<tr><td>接触</td><td>罚函数 / 软约束；布的自接触另有“分离平面 + 每步位移上限”的截断（因此带自接触的布最快只能约 3 m/s）</td><td>IPC 障碍函数（距离趋于 0 时能量趋于无穷）+ 连续碰撞检测的线搜索：构造上不穿透</td></tr>
+<tr><td>液体</td><td>自写的 DFSPH（一种无散 SPH），粒子 4 mm（“super” 档 2 mm）；容器壁用距离场；实体壁最薄 1.25 mm，更薄的拒绝建模；默认没有表面张力</td><td>MPM（网格加粒子），与固体在同一个牛顿求解里耦合；薄壁两侧分开处理；有表面张力</td></tr>
+<tr><td>沙、膏体</td><td>Newton 的隐式 MPM（Drucker–Prager 屈服面）</td><td>没有颗粒材料</td></tr>
+<tr><td>并行</td><td>一个模型里复制成百上千个场景，GPU 上批量算</td><td>单个场景为主</td></tr>
+<tr><td>出错时</td><td>每个场景有健康评级；判为无效的场景退回上一个正常状态并<b>冻结</b>，不纠正</td><td>求解本身保证不穿透；初始就穿透的场景直接报错</td></tr>
+</tbody></table></div>
+<p>Alloy 自己的文档把这些限制写得很清楚：它的“已知问题”页列了 90 条，例如<a href="https://alloy.argonrobotics.ai/docs/known_gaps/rigid-tunnelling.md">快速小物体会穿过薄板</a>、
+<a href="https://alloy.argonrobotics.ai/docs/known_gaps/cloth-small-body-passes-through.md">比布的网格小的物体会从布里穿过</a>。下面的实测就是照着这些页面的场景做的。</p>
+
+<h2 id="tunnel">三、高速球打薄板</h2>
+<figure class="fig">
+  <video src="../media/alloy_tunnel.mp4?v=1113" poster="../media/alloy_tunnel_poster.jpg?v=1113" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>直径 20 mm 钢球分别以 10 m/s（上）和 20 m/s（下）落到 10 mm 厚的静止钢板上</b> — 左 Alloy，右 StiffGIPC；每帧 1.25 ms，慢放 1/32，板画成半透明。
+  Alloy 的球碰板后连续三个刚体步，球底分别到板面下 1.3、11.4、17.8 mm（已从 10 mm 板的下表面穿出），随后它的健康检查判为“穿隧”并把这个场景冻结。我们的球停在板面上，轻微弹起后静止。</figcaption>
+</figure>
+<div class="tblwrap"><table>
+<thead><tr><th>落到板上的速度</th><th>Alloy：球的最低点（相对板面）</th><th>Alloy 健康检查</th><th>StiffGIPC：球的最低点</th></tr></thead>
+<tbody>
+<tr><td class="num">5 m/s</td><td>陷进板 1.6 mm</td><td>正常</td><td>板面以上 0.009 mm</td></tr>
+<tr><td class="num">8 m/s</td><td>陷进 12.0 mm（低于板的下表面，被推回）</td><td>正常</td><td>—</td></tr>
+<tr><td class="num">9 m/s</td><td>陷进 12.8 mm（同上）</td><td>正常</td><td>—</td></tr>
+<tr><td class="num">10 / 12 / 15 / 20 m/s</td><td>穿板</td><td>穿隧，场景冻结</td><td>10 m/s：0.003 mm；20 m/s：0.006 mm</td></tr>
+<tr><td class="num">30 / 40 m/s</td><td>下落途中速度超过 20 m/s</td><td>超速，场景冻结在半空</td><td>40 m/s：0.013 mm</td></tr>
+</tbody></table></div>
+<p class="small">表格这一组两边的控制步都是 10 ms（Alloy 内部刚体步 1.25 ms，我们一步就是 10 ms），视频那一组两边都是 1.25 ms。我们每个速度 2–7 秒算完。
+原因：MuJoCo 的接触只看每一步结束时的位置，不检查两步之间的路径；球一步走过的距离接近自身大小时，就会出现在板的另一侧。</p>
+
+<h2 id="film">四、小球压薄片</h2>
+<figure class="fig">
+  <video src="../media/alloy_film.mp4?v=1113" poster="../media/alloy_film_poster.jpg?v=1113" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>2 g、直径 6 mm 的钢球放在 0.25 mm 铝片正中（网格 4.6 mm，球正对一个格子中心）</b> — 左 Alloy，右 StiffGIPC；铝片搭在两根直径 10 mm 的圆柱上，实时 1/4。
+  Alloy 的球从顶点之间穿过铝片落到地上，健康检查只报“未收敛”；建模时它自己也给了警告：“铝片只在顶点上碰刚体，球比两个格子还小，可能互相穿过”。我们的球停在铝片上，铝片下沉约 2 mm。</figcaption>
+</figure>
+<p>Alloy 文档里的原例子（棉布、球被强制下压 15 mm）我们也跑了：球同样穿过，健康检查为“正常”。我们这边球放在格子中心或正对顶点上方，都停在铝片上，与铝片之间零交叉。
+（换成很软的 6 cm 棉布时，我们这边布会连同小球一起从两根圆柱之间滑下去，但布始终包着球、没有交叉。）</p>
+
+<h2 id="squeeze">五、两指夹泡沫</h2>
+<figure class="fig">
+  <video src="../media/alloy_squeeze.mp4?v=1113" poster="../media/alloy_squeeze_poster.jpg?v=1113" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>两块手指（40 × 10 × 40 mm）在 0.15 s 内各向内推 9 mm，夹住 40 mm 聚氨酯泡沫块（E = 35 kPa）</b> — 左 Alloy，右 StiffGIPC；俯视，手指画成半透明。
+  左边是 Alloy 文档“两指夹软物体”的例子原样运行：手指内表面相距 24.0 mm 时泡沫块仍宽 36.5 mm，泡沫在每块手指里陷进 6.3 mm（58 个顶点在手指里面），健康检查为“正常”。
+  右边是同样的泡沫参数，手指由两个平移关节驱动：泡沫被压到 23.7 mm，与手指之间留 0.15 mm 的间隙。</figcaption>
+</figure>
+
+<h2 id="sheets">六、多层布落下</h2>
+<figure class="fig">
+  <video src="../media/alloy_sheets.mp4?v=1113" poster="../media/alloy_sheets_poster.jpg?v=1113" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>12 张 0.4 m 棉布（16 × 16 顶点，接触厚度 2 mm）相隔 5 cm 同时放下</b> — 左 Alloy，右 StiffGIPC；两边用同一张棉布材料卡（膜刚度 660 N/m、弯曲刚度 2e-5 N·m），实时 1/2。</figcaption>
+</figure>
+<div class="tblwrap"><table>
+<thead><tr><th></th><th>Alloy</th><th>StiffGIPC</th></tr></thead>
+<tbody>
+<tr><td>真正的穿插（每 0.05 s 一帧，检查每条边是否穿过别的三角形）</td><td class="num">0</td><td class="num">0</td></tr>
+<tr><td>不同布之间最近的顶点距离</td><td class="num">1.92 mm</td><td class="num">1.40 mm</td></tr>
+<tr><td>布堆高度</td><td class="num">89 mm（皱成一团）</td><td class="num">10 mm（平铺）</td></tr>
+<tr><td>同一顶点在相邻两层之间的横向错开（中位）</td><td class="num">12.8 mm</td><td class="num">1.8 mm</td></tr>
+<tr><td>模拟 2 s 用时</td><td class="num">34 s</td><td class="num">113 s</td></tr>
+</tbody></table></div>
+<p>这一组两边都没问题。Alloy 的已知问题页说多层布落下会互相穿过，我们复现不出来：它用的判据是“同一顶点在上一层是否低于下一层”，布一横向滑动或起皱就会被算成穿过
+（同一场景两次运行这个判据给出 123 和 164，真正的穿插都是 0）。20 张布的版本结果相同。</p>
+
+<h2 id="cup">七、杯中水</h2>
+<figure class="fig">
+  <video src="../media/alloy_cup.mp4?v=1113" poster="../media/alloy_cup_poster.jpg?v=1113" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>32 ml 的立方体水块从杯底上方 4 mm 放进 40 mm 方杯（Alloy 液体指南里的杯子）</b> — 左 Alloy（2 mm 粒子），右 StiffGIPC（4 mm 网格、2 mm 粒子），实时 1/2，杯壁半透明。
+  左边有 42 个粒子溅出杯外（最远的落到杯外约 19 cm），右边一粒不漏，但水面偏高。</figcaption>
+</figure>
+<div class="tblwrap"><table>
+<thead><tr><th>设置</th><th class="num">粒子数</th><th class="num">溅出杯外</th><th class="num">水深误差</th><th class="num">最后 0.5 s 水的速度 p90</th></tr></thead>
+<tbody>
+<tr><td>Alloy 默认（4 mm 粒子）</td><td class="num">512</td><td class="num">2</td><td class="num">−5 %</td><td class="num">3.7 mm/s</td></tr>
+<tr><td>Alloy super（2 mm 粒子）</td><td class="num">4096</td><td class="num">42</td><td class="num">−3 %</td><td class="num">2.2 mm/s</td></tr>
+<tr><td>Alloy 1.25 mm 薄壁（它允许的最薄）</td><td class="num">512</td><td class="num">6</td><td class="num">—</td><td class="num">5.4 mm/s</td></tr>
+<tr><td>Alloy 1 mm 壁</td><td colspan="4">拒绝建模（实体件至少 1.25 mm）</td></tr>
+<tr><td>StiffGIPC（4 mm 网格）</td><td class="num">4096</td><td class="num">0</td><td class="num">+19 %</td><td class="num">2.9 mm/s</td></tr>
+<tr><td>StiffGIPC 1.25 mm / 0.3 mm 薄壁</td><td class="num">4096</td><td class="num">0 / 0</td><td class="num">+17 %</td><td class="num">2.2 mm/s</td></tr>
+<tr><td>StiffGIPC 2 mm 网格</td><td class="num">32768</td><td class="num">0</td><td class="num">+14 %</td><td class="num">15 mm/s（还在晃）</td></tr>
+<tr><td>StiffGIPC 引擎默认液体设置</td><td class="num">4096</td><td class="num">0</td><td class="num">−6 %</td><td class="num">7.8 mm/s</td></tr>
+</tbody></table></div>
+<p>水深误差 = 按水面实测的深度相对于“体积 ÷ 杯底面积”。我们这边的问题：贴着杯壁和杯底 2–4 mm 的粒子层偏稀（最底下 2 mm 只有应有粒子数的 64 %），所以水面偏高；
+网格加密到 2 mm 仍偏高 14 %，不是分辨率问题；换成引擎默认设置则反过来，底层粒子堆积、水面偏低 6 %。在 55 mm 宽、300 mm 高的水瓶里这个影响很小（见<a href="robotgym.html#fbx-bottle-fix">水瓶修复</a>），
+但在烧杯、试管、滴管这样的小容器里会明显，<b>这是我们接下来要查的</b>。</p>
+
+<h2 id="speed">八、布料下垂与速度</h2>
+<figure class="fig">
+  <video src="../media/alloy_drape.mp4?v=1113" poster="../media/alloy_drape_poster.jpg?v=1113" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>0.5 m 方布（961 个顶点）落到 0.2 m 方台上</b> — 左 Alloy，右 StiffGIPC，同样的面密度、膜刚度和弯曲刚度，实时 1/2。1 s 后布角下垂 0.148 m（Alloy）和 0.200 m（StiffGIPC）。</figcaption>
+</figure>
+<div class="tblwrap"><table>
+<thead><tr><th>模拟 1 s 的墙钟时间</th><th class="num">1 个场景</th><th class="num">64 个</th><th class="num">256 个</th><th class="num">1024 个</th></tr></thead>
+<tbody>
+<tr><td>Alloy（开 CUDA Graph）</td><td class="num">9.5 s</td><td class="num">37.5 s</td><td class="num">104.7 s</td><td class="num">390.7 s</td></tr>
+<tr><td>Alloy（关 CUDA Graph）</td><td class="num">43.7 s</td><td class="num">44.0 s</td><td class="num">106.9 s</td><td class="num">—</td></tr>
+<tr><td>StiffGIPC（5 ms 步长，每步约 13 次牛顿迭代）</td><td class="num">27.0 s</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+</tbody></table></div>
+<p>单个场景 Alloy 快约 3 倍；并行到 256 个以上时，它每秒能算约 2.6 个场景秒，相当于我们单个场景的 70 倍左右。这是它做强化学习的主要优势。
+哪一边的下垂更接近真实的布需要实验，Alloy 自己的已知问题页列了几条默认迭代次数下布偏软或偏硬的情况。</p>
+
+<h2 id="ours">九、我们的问题与可借鉴之处</h2>
+<ul>
+<li><b>小容器里的液体体积</b>（第七节）：贴壁、贴底的粒子层偏稀，水面偏高 13–19 %。要查清原因并修。</li>
+<li><b>速度和并行</b>：同样的布料单场景慢约 3 倍；没有“一个模型里复制上千个场景”的批量模式。</li>
+<li><b>可借鉴</b>：Alloy 每个场景都有健康评级，每条报错都带修改建议，已知问题逐条写清楚量级和绕开的办法，还给编程智能体准备了文档和工具接口。这些工程化的东西值得用到我们的发布版里。</li>
+</ul>
+
+<h2 id="setup">十、测试条件</h2>
+<ul>
+<li>Alloy：PyPI 上的 alloy-engine 0.1.2（11 月 12 日发布），装在独立的 Python 3.12 环境里；源码对照 GitHub 提交 575bf94。StiffGIPC：开发分支当前构建。</li>
+<li>硬件：一张 NVIDIA A800 80 GB，驱动 535（CUDA 12.2）。Alloy 文档要求驱动 580 以上，所以做了两处改动：
+  <ul>
+  <li>用 NVIDIA 官方发布的 CUDA 12 版 Warp 1.18.0（校验和与官方一致），并关闭它的 MathDx 编译路径；</li>
+  <li>这个驱动不支持 CUDA Graph 的条件节点，所以含液体的场景关掉了 Alloy 的 CUDA Graph；纯布料和刚体场景开着。</li>
+  </ul>
+  物理结果不受影响：Alloy 文档里的例子我们逐个对上了数值（落球最低 0.427 m、杯中水 512 粒 33 ml 全在杯内、布下垂 0.184 m、方块半埋地下判为无效）。速度是 Alloy 的下限，驱动 580 以上的机器上会更快，尤其含液体的场景。</li>
+<li>两边的场景尺寸、材料参数、控制步长对齐（具体见各节）；每个场景各跑一次。视频两边用同一个渲染器、同一机位和颜色。</li>
+<li>Alloy 里有两组跑得很慢没有完成：棉布上的 2 g 自由小球、铝片顶点正上方的 2 g 自由小球（分别 35 和 25 分钟没算完 1 s）。</li>
+<li>没有对比：机器人抓布、倒水等带机器人的场景；沙和膏体（我们没有颗粒材料）。</li>
+</ul>
+</article>
+
+<footer><div class="container">
+  <span><a href="nuka.html">← 对照 Nuka-Physics</a></span>
+  <span><a href="../">返回首页</a></span>
+</div></footer>
+</body>
+</html>
