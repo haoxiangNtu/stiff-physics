@@ -549,10 +549,10 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   </div>
   <!-- bottle-modes-home:begin -->
   <figure class="fig">
-    <video src="media/robotgym_fbx_bottle_fix.mp4?v=1113c" muted loop playsinline controls preload="metadata"></video>
-    <figcaption><b>最新：捏方瓶，修复前 / 修复后（11 月 13 日，同一条命令、同一机位）</b> — 左上：修复前的严格模式。右上：修复前的快模式。左下：修复后的严格模式（已算到 10 秒，之后画面停住；余下 3.3 秒还在算）。右下：修复后的快模式。
+    <video src="media/robotgym_fbx_bottle_fix.mp4?v=1113d" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>最新：捏方瓶，修复前 / 修复后（11 月 13 日，同一条命令、同一机位）</b> — 左上：修复前的严格模式。右上：修复前的快模式。左下：修复后的严格模式。右下：修复后的快模式。
     修复前快模式的水悬在瓶口上方、松手才落下，严格模式的水贴着瓶身慢慢滑；原因是瓶壁边界条件每步从零开始、薄壁两侧的水共用网格节点、线性求解的相对容差、快模式提前停止迭代。
-    修复后水不再悬在瓶口：落到桌面的中位用时快模式 0.36 秒、严格模式 0.20 秒（自由落体 0.19 秒），快模式共 58 ml、32 分钟；严格模式 10 秒时桌上 62 ml（快模式 56 ml，水落得慢一些），但很慢（算到 10 秒 161 分钟，余下还在算）。
+    修复后水不再悬在瓶口：落到桌面的中位用时快模式 0.32–0.36 秒、严格模式 0.20 秒（自由落体 0.19 秒），快模式共 58 ml、32 分钟；严格模式最后桌上 62 ml，但很慢（310 分钟）；现用快模式的水落得偏慢，时间步减半后接近严格模式。
     <a href="docs/robotgym.html#fbx-bottle-fix">原因、对照实验、还不对的地方 →</a></figcaption>
   </figure>
   <!-- bottle-modes-home:end -->
