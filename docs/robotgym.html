@@ -387,6 +387,11 @@ td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: t
 把重建调得更平滑（闭运算 3 mm、高斯 3 mm、半径 0.8 倍间距），同一份数据看起来就是一滩水（上面视频的右上格），但画出来的体积更夸张：网格 5 mm 时约 6 倍，3.5 mm 时约 3 倍。
 这几个体积是对重建出的水面网格直接算的，包含桌面以下的那一小部分，没有用第二种方法核对；网格 2.5 mm 的没有量。</li>
 </ol>
+<figure class="fig">
+  <video src="../media/robotgym_fbx_bottle_wall.mp4?v=1115a" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>瓶壁加厚的对照（网格都是 5 mm，已发布的渲染设置）</b> — 上排：快模式，瓶壁 0.3 mm（已发布）/ 0.6 mm / 1.0 mm；加厚后挤出的水在捏住期间挂在瓶身外面，松手才落下。
+  下排：严格模式 0.3 mm / 液体阈值收紧后的 0.6 mm / 1.0 mm；水正常落下，但桌上的水一样是碎的。</figcaption>
+</figure>
 <div class="note warn"><b>还不对的地方</b>
 <ul>
 <li>桌上的水摊得太薄。真实的水在桌面上受表面张力和接触角限制，水洼通常有几毫米深（这是常识性的估计，这张桌面没有实测）；仿真里桌上的水没有这一项，网格 5 mm 的严格模式摊到平均 1.4 mm。
