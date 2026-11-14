@@ -465,12 +465,12 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
 
 <section class="block" id="alloy"><div class="container">
   <div class="section-intro">
-    <div class="kicker kicker--sdk">Engine comparison · 11-13</div>
+    <div class="kicker kicker--sdk">Engine comparison · 11-13 / 11-14</div>
     <h2>对照 Alloy：同样的场景，两个引擎并排</h2>
     <p class="lead"><b>11 月 13 日：</b>Argon Robotics 开源的 <a href="https://www.argonrobotics.ai/alloy">Alloy</a> 是把 Newton、MuJoCo Warp 两套引擎内嵌、再加一个 SPH 液体求解器的编排层，
     各求解器分开算、定时交换，接触用罚函数 / 软约束，没有无穿透保证。我们在同一张 A800 上把六个场景在两边各跑一遍：
     高速球打薄板（Alloy 10 m/s 起穿板）、小球压铝片（Alloy 从顶点之间穿过）、两指夹泡沫（Alloy 手指陷进 6.3 mm）这三组我们都没有穿透；
-    多层布落下两边都没有穿插；Alloy 的长处是速度与并行（单场景布料快约 3 倍，一张卡上同时跑上千个场景）；杯中水这组暴露了我们的问题——小容器里水面偏高 13–19 %。
+    多层布落下两边都没有穿插；Alloy 的长处是速度与并行（单场景布料快 3–6 倍，一张卡上同时跑上千个场景），但 11-14 用叠毛毯的柔软布料重做布料下垂时，它的台面棱角在 90 % 的帧里穿过了布（我们 0 帧）；杯中水这组暴露了我们的问题——小容器里水面偏高 13–19 %。
     <a class="more" href="docs/alloy.html">六组视频、方法对照与测试条件 →</a></p>
   </div>
   <figure class="fig">
