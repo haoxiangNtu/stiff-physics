@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>复现 VLA 与 WAM</title>
+<meta name="description" content="在 4 张 A800 上复现两个开源机器人策略模型：OpenWAM-α（世界-动作模型）和 MolmoAct2 / MolmoAct2-Think（视觉-语言-动作模型）。用发布的权重跑 LIBERO 全部 2000 次评测，与论文对比；并排视频；按原配方重新训练的进展。">
+<link rel="stylesheet" href="docs.css">
+<style>
+.fig { border: 1px solid var(--e300); background: var(--surface); border-radius: .75rem;
+  margin: 1.2rem 0 1.5rem; padding: .6rem; box-shadow: var(--fig-shadow); }
+.fig img, .fig video { border-radius: .4rem; width: 100%; height: auto; display: block; background: #fff; }
+.fig figcaption { color: var(--sub); text-align: center; padding: .6rem .5rem .1rem; font-size: .86rem; line-height: 1.6; }
+.fig figcaption b { color: var(--ink); font-weight: 600; }
+figure { margin: 0; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.low { color: #d0453a; font-weight: 600; }
+.tag { display: inline-block; border-radius: 999px; padding: 0 .55rem; font-size: .76rem; font-weight: 600;
+  background: var(--e200); white-space: nowrap; }
+.tag.ok { color: var(--acc-data); } .tag.part { color: var(--acc-hw); } .tag.no { color: #d0453a; }
+.taskgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .7rem; margin: .8rem 0 1.6rem; }
+.taskcard { border: 1px solid var(--e300); background: var(--surface); border-radius: .6rem; padding: .35rem; }
+.taskcard video { width: 100%; aspect-ratio: 1; display: block; border-radius: .35rem; background: #ddd; }
+.taskcard figcaption { font-size: .8rem; line-height: 1.45; padding: .35rem .15rem .1rem; color: var(--ink); }
+.taskcard .en { display: block; color: var(--sub); font-size: .72rem; margin-top: .15rem; }
+.taskcard .sc { display: block; margin-top: .2rem; font-variant-numeric: tabular-nums; color: var(--sub); }
+.taskcard .sc em { color: #d0453a; font-style: normal; font-weight: 600; }
+details.tasks summary { cursor: pointer; color: var(--primary); margin: .4rem 0; }
+</style>
+</head>
+<body>
+
+<nav class="navbar"><div class="container">
+  <span class="navbar__title"><a href="../" style="color:inherit">StiffGIPC<span class="dot"> ·</span> 触觉仿真</a></span>
+  <a class="item" href="outputs.html">技术详解</a>
+  <a class="item" href="../#vla-wam">返回首页 ↩</a>
+</div></nav>
+
+<article>
+<div class="crumb"><a href="../">首页</a> / 技术详解 / 复现 VLA 与 WAM</div>
+<div class="kicker">Policy reproduction · 2026-11-14 / 11-15</div>
+<h1>复现 VLA 与 WAM：LIBERO 评测与重新训练</h1>
+<p class="lead"><b>现状（11-16）：</b>第一步完成——两个开源策略模型用作者发布的权重，在 LIBERO 的 40 个任务上各跑满 2000 次，
+成功率与论文相差 0.2–0.4 个百分点，在 500 次评测的统计波动之内，<b>复现成功</b>。
+第二步按作者的完整配方从基座模型重新训练（<a href="#retrain">第四节</a>）：OpenWAM-α 11-15 开训，11-16 中午已完成 76 %，预计当晚出评测结果；
+之后 MolmoAct2（5 万步，约 14 天）和 Think 版（3 万步，约 8 天）依次训练，预计 12 月 9 日前后全部完成。
+不熟悉 LIBERO 的话，可以先看<a href="#tasks">第一节</a>：四组任务各自在考什么，每个任务配一段示范视频。</p>
+<p>两个模型代表两条路线：<a href="https://github.com/OpenWAM-Official/OpenWAM">OpenWAM-α</a> 是“世界-动作模型”（WAM），
+在 Wan2.2 视频生成模型（50 亿参数）上同时预测未来画面和动作；
+<a href="https://github.com/allenai/molmoact2">MolmoAct2</a> 是 Ai2 的“视觉-语言-动作模型”（VLA），在 Molmo2 视觉语言模型上接一个流匹配动作专家，
+Think 版在出动作之前先预测一张压缩的深度图。LIBERO 是常用的机械臂操作仿真基准（MuJoCo，Franka 臂），四组各 10 个任务：
+Spatial（同一物体、不同摆放）、Object（不同物体）、Goal（同一场景、不同目标）、Long（两步以上的长任务），详见<a href="#tasks">第一节</a>。</p>
+
+<div class="toc"><b>目录</b>
+  <a href="#tasks">一、四组任务是什么</a><a href="#results">二、成功率对比</a><a href="#videos">三、并排视频</a><a href="#retrain">四、重新训练</a><a href="#setup">五、测试条件</a>
+</div>
+
+<h2 id="tasks">一、LIBERO 的四组任务分别在做什么</h2>
+<p>LIBERO 是一个机械臂操作的仿真基准：一台 Franka 机械臂在 MuJoCo 里的桌面场景中，按一句英文指令完成操作，模型只能看到两路相机画面（第三人称 + 手腕相机）和机械臂自身状态。一共 4 组、每组 10 个任务，每组只改变一个因素，用来分别考察模型的不同能力。下面每个格子是该任务的一次成功示范（MolmoAct2 评测时录下的第三人称画面，加速播放，静止时显示的是任务完成时的最后一帧），格子下方是三个模型在 50 次里成功的次数（OpenWAM-α / MolmoAct2 / Think，低于 45 标红）。</p>
+<div class="tblwrap"><table><thead><tr><th>组</th><th>保持不变</th><th>改变的</th><th>考察的能力</th></tr></thead><tbody><tr><td>Spatial</td><td>物体（两个黑碗 + 盘子）</td><td>要拿的那个碗所在的位置</td><td>理解空间关系</td></tr><tr><td>Object</td><td>场景布局、篮子</td><td>要拿的物体（10 种杂货）</td><td>识别物体、抓不同形状</td></tr><tr><td>Goal</td><td>场景和物体</td><td>指令要完成的目标</td><td>理解指令</td></tr><tr><td>Long</td><td>—</td><td>场景、物体和目标都不同，每个任务两步以上</td><td>长序列操作、不出错</td></tr></tbody></table></div>
+<h3 id="tasks-spatial">Spatial（空间关系）</h3>
+<p><b>同一套物体、换摆放位置。</b>桌上总有两个一模一样的黑碗和一个盘子，指令永远是“把<u>某个位置的</u>黑碗放到盘子上”。10 个任务的差别只在于黑碗在哪：两个物体之间、饼干盒上、抽屉里、炉子上……模型必须读懂“between / next to / on / in”这类空间描述才能拿对碗。</p>
+<div class="taskgrid">
+<figure class="taskcard"><video data-src="../media/libero_spatial00.mp4?v=1116" poster="../media/libero_spatial00_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Spatial 0</b> 把盘子和小烤碗之间的黑碗放到盘子上<span class="en">pick up the black bowl between the plate and the ramekin and place it on the plate</span><span class="sc"><span>50</span> / 50 / 49</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_spatial01.mp4?v=1116" poster="../media/libero_spatial01_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Spatial 1</b> 把小烤碗旁边的黑碗放到盘子上<span class="en">pick up the black bowl next to the ramekin and place it on the plate</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_spatial02.mp4?v=1116" poster="../media/libero_spatial02_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Spatial 2</b> 把桌子中央的黑碗放到盘子上<span class="en">pick up the black bowl from table center and place it on the plate</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_spatial03.mp4?v=1116" poster="../media/libero_spatial03_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Spatial 3</b> 把饼干盒上的黑碗放到盘子上<span class="en">pick up the black bowl on the cookie box and place it on the plate</span><span class="sc"><span>50</span> / 48 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_spatial04.mp4?v=1116" poster="../media/libero_spatial04_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Spatial 4</b> 把木柜上层抽屉里的黑碗放到盘子上<span class="en">pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate</span><span class="sc"><span>48</span> / 47 / 49</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_spatial05.mp4?v=1116" poster="../media/libero_spatial05_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Spatial 5</b> 把小烤碗上面的黑碗放到盘子上<span class="en">pick up the black bowl on the ramekin and place it on the plate</span><span class="sc"><span>47</span> / 45 / 49</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_spatial06.mp4?v=1116" poster="../media/libero_spatial06_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Spatial 6</b> 把饼干盒旁边的黑碗放到盘子上<span class="en">pick up the black bowl next to the cookie box and place it on the plate</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_spatial07.mp4?v=1116" poster="../media/libero_spatial07_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Spatial 7</b> 把炉子上的黑碗放到盘子上<span class="en">pick up the black bowl on the stove and place it on the plate</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_spatial08.mp4?v=1116" poster="../media/libero_spatial08_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Spatial 8</b> 把盘子旁边的黑碗放到盘子上<span class="en">pick up the black bowl next to the plate and place it on the plate</span><span class="sc"><span>50</span> / 50 / 48</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_spatial09.mp4?v=1116" poster="../media/libero_spatial09_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Spatial 9</b> 把木柜顶上的黑碗放到盘子上<span class="en">pick up the black bowl on the wooden cabinet and place it on the plate</span><span class="sc"><span>50</span> / 49 / 48</span></figcaption></figure>
+</div>
+<h3 id="tasks-object">Object（物体识别）</h3>
+<p><b>同一个场景布局、换要拿的物体。</b>地上摆着一排杂货（罐头、酱料瓶、牛奶盒、黄油……）和一个篮子，指令是“把 X 放进篮子”。10 个任务只换 X，考的是认出具体物体，以及抓取不同形状的东西。</p>
+<div class="taskgrid">
+<figure class="taskcard"><video data-src="../media/libero_object00.mp4?v=1116" poster="../media/libero_object00_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Object 0</b> 把字母汤罐头放进篮子<span class="en">pick up the alphabet soup and place it in the basket</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_object01.mp4?v=1116" poster="../media/libero_object01_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Object 1</b> 把奶油奶酪放进篮子<span class="en">pick up the cream cheese and place it in the basket</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_object02.mp4?v=1116" poster="../media/libero_object02_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Object 2</b> 把沙拉酱放进篮子<span class="en">pick up the salad dressing and place it in the basket</span><span class="sc"><span>50</span> / 50 / 49</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_object03.mp4?v=1116" poster="../media/libero_object03_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Object 3</b> 把烧烤酱放进篮子<span class="en">pick up the bbq sauce and place it in the basket</span><span class="sc"><span>50</span> / 49 / 49</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_object04.mp4?v=1116" poster="../media/libero_object04_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Object 4</b> 把番茄酱瓶放进篮子<span class="en">pick up the ketchup and place it in the basket</span><span class="sc"><span>50</span> / 49 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_object05.mp4?v=1116" poster="../media/libero_object05_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Object 5</b> 把番茄沙司罐放进篮子<span class="en">pick up the tomato sauce and place it in the basket</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_object06.mp4?v=1116" poster="../media/libero_object06_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Object 6</b> 把黄油放进篮子<span class="en">pick up the butter and place it in the basket</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_object07.mp4?v=1116" poster="../media/libero_object07_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Object 7</b> 把牛奶放进篮子<span class="en">pick up the milk and place it in the basket</span><span class="sc"><span>48</span> / 48 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_object08.mp4?v=1116" poster="../media/libero_object08_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Object 8</b> 把巧克力布丁放进篮子<span class="en">pick up the chocolate pudding and place it in the basket</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_object09.mp4?v=1116" poster="../media/libero_object09_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Object 9</b> 把橙汁放进篮子<span class="en">pick up the orange juice and place it in the basket</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+</div>
+<h3 id="tasks-goal">Goal（目标理解）</h3>
+<p><b>同一个场景、同一批物体，换要完成的目标。</b>10 个任务的初始画面几乎一样（柜子、炉子、碗、盘子、酒瓶、奶酪），只有指令不同：开抽屉、开炉子、推盘子、把碗或瓶子放到不同地方。模型不能靠“看场景猜任务”，必须听懂指令。</p>
+<div class="taskgrid">
+<figure class="taskcard"><video data-src="../media/libero_goal00.mp4?v=1116" poster="../media/libero_goal00_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Goal 0</b> 打开柜子中间的抽屉<span class="en">open the middle drawer of the cabinet</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_goal01.mp4?v=1116" poster="../media/libero_goal01_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Goal 1</b> 把碗放到炉子上<span class="en">put the bowl on the stove</span><span class="sc"><span>50</span> / 49 / 49</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_goal02.mp4?v=1116" poster="../media/libero_goal02_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Goal 2</b> 把酒瓶放到柜子顶上<span class="en">put the wine bottle on top of the cabinet</span><span class="sc"><span>46</span> / 46 / 48</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_goal03.mp4?v=1116" poster="../media/libero_goal03_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Goal 3</b> 打开上层抽屉，把碗放进去<span class="en">open the top drawer and put the bowl inside</span><span class="sc"><span>50</span> / 47 / 46</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_goal04.mp4?v=1116" poster="../media/libero_goal04_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Goal 4</b> 把碗放到柜子顶上<span class="en">put the bowl on top of the cabinet</span><span class="sc"><span>50</span> / 50 / 49</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_goal05.mp4?v=1116" poster="../media/libero_goal05_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Goal 5</b> 把盘子推到炉子前面<span class="en">push the plate to the front of the stove</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_goal06.mp4?v=1116" poster="../media/libero_goal06_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Goal 6</b> 把奶油奶酪放进碗里<span class="en">put the cream cheese in the bowl</span><span class="sc"><span>50</span> / 49 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_goal07.mp4?v=1116" poster="../media/libero_goal07_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Goal 7</b> 打开炉子<span class="en">turn on the stove</span><span class="sc"><span>50</span> / 48 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_goal08.mp4?v=1116" poster="../media/libero_goal08_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Goal 8</b> 把碗放到盘子上<span class="en">put the bowl on the plate</span><span class="sc"><span>49</span> / 49 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_goal09.mp4?v=1116" poster="../media/libero_goal09_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Goal 9</b> 把酒瓶放到酒架上<span class="en">put the wine bottle on the rack</span><span class="sc"><span>49</span> / 50 / 49</span></figcaption></figure>
+</div>
+<h3 id="tasks-long">Long（长任务，又叫 LIBERO-10）</h3>
+<p><b>需要连续做两件事的长任务，场景也各不相同</b>（厨房、客厅、书房）。比如“打开炉子再把摩卡壶放上去”“把碗放进抽屉再关上”。中间任何一步出错都算失败，步数上限也更长，所以这一组分数最低，模型之间的差距也最大。</p>
+<div class="taskgrid">
+<figure class="taskcard"><video data-src="../media/libero_long00.mp4?v=1116" poster="../media/libero_long00_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Long 0</b> 把字母汤和番茄沙司都放进篮子<span class="en">put both the alphabet soup and the tomato sauce in the basket</span><span class="sc"><span>47</span> / 50 / 49</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_long01.mp4?v=1116" poster="../media/libero_long01_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Long 1</b> 把奶油奶酪盒和黄油都放进篮子<span class="en">put both the cream cheese box and the butter in the basket</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_long02.mp4?v=1116" poster="../media/libero_long02_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Long 2</b> 打开炉子，再把摩卡壶放上去<span class="en">turn on the stove and put the moka pot on it</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_long03.mp4?v=1116" poster="../media/libero_long03_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Long 3</b> 把黑碗放进柜子下层抽屉并关上<span class="en">put the black bowl in the bottom drawer of the cabinet and close it</span><span class="sc"><span>50</span> / 47 / 49</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_long04.mp4?v=1116" poster="../media/libero_long04_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Long 4</b> 白杯子放左边盘子，黄白杯子放右边盘子<span class="en">put the white mug on the left plate and put the yellow and white mug on the right plate</span><span class="sc"><span>50</span> / 49 / 48</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_long05.mp4?v=1116" poster="../media/libero_long05_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Long 5</b> 拿起书，放进书架盒的后格<span class="en">pick up the book and place it in the back compartment of the caddy</span><span class="sc"><span>50</span> / 50 / 50</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_long06.mp4?v=1116" poster="../media/libero_long06_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Long 6</b> 白杯子放到盘子上，巧克力布丁放到盘子右边<span class="en">put the white mug on the plate and put the chocolate pudding to the right of the plate</span><span class="sc"><span>48</span> / 45 / 46</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_long07.mp4?v=1116" poster="../media/libero_long07_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Long 7</b> 把字母汤和奶油奶酪盒都放进篮子<span class="en">put both the alphabet soup and the cream cheese box in the basket</span><span class="sc"><span>50</span> / 50 / 48</span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_long08.mp4?v=1116" poster="../media/libero_long08_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Long 8</b> 把两个摩卡壶都放到炉子上<span class="en">put both moka pots on the stove</span><span class="sc"><span>48</span> / <em>32</em> / <em>35</em></span></figcaption></figure>
+<figure class="taskcard"><video data-src="../media/libero_long09.mp4?v=1116" poster="../media/libero_long09_end.jpg?v=1116" muted loop playsinline preload="none"></video><figcaption><b>Long 9</b> 把黄白杯子放进微波炉并关上门<span class="en">put the yellow and white mug in the microwave and close it</span><span class="sc"><span>50</span> / <em>44</em> / 47</span></figcaption></figure>
+</div>
+
+
+<h2 id="results">二、成功率对比（发布权重，每任务 50 次）</h2>
+<div class="tblwrap"><table>
+<thead><tr><th>模型</th><th class="num">Spatial</th><th class="num">Object</th><th class="num">Goal</th><th class="num">Long</th><th class="num">平均</th><th class="num">论文平均</th></tr></thead>
+<tbody>
+<tr><td><b>OpenWAM-α</b>（WAM）</td><td class="num">99.0</td><td class="num">99.6</td><td class="num">98.8</td><td class="num">98.6</td><td class="num"><b>99.0</b></td><td class="num">99.3</td></tr>
+<tr><td class="small">　论文</td><td class="num">99.6</td><td class="num">99.6</td><td class="num">99.8</td><td class="num">98.2</td><td class="num"></td><td class="num"></td></tr>
+<tr><td><b>MolmoAct2</b>（VLA）</td><td class="num">97.8</td><td class="num">99.2</td><td class="num">97.6</td><td class="num">93.4</td><td class="num"><b>97.0</b></td><td class="num">97.2</td></tr>
+<tr><td class="small">　论文</td><td class="num">97.8</td><td class="num">100.0</td><td class="num">97.8</td><td class="num">93.2</td><td class="num"></td><td class="num"></td></tr>
+<tr><td><b>MolmoAct2-Think</b>（VLA + 深度推理）</td><td class="num">98.6</td><td class="num">99.6</td><td class="num">98.2</td><td class="num">94.4</td><td class="num"><b>97.7</b></td><td class="num">98.1</td></tr>
+<tr><td class="small">　论文</td><td class="num">98.8</td><td class="num">99.8</td><td class="num">98.5</td><td class="num">95.4</td><td class="num"></td><td class="num"></td></tr>
+</tbody></table></div>
+<p>单组 500 次的统计波动（二项分布标准差）在 98 % 附近约 ±0.6 个百分点、93 % 附近约 ±1.1 个百分点；三个模型每一组与论文的差都在这个范围内或略超（OpenWAM Goal 低 1.0），平均值都只低 0.2–0.4。
+三个模型的差距主要在 Long 组：<b>“把两个摩卡壶放到炉子上”</b>这一个任务，OpenWAM-α 50 次成功 48 次，MolmoAct2 只有 32 次、Think 版 35 次（第三节第一段视频）。</p>
+<details class="tasks"><summary>展开 40 个任务的逐项结果（50 次中成功的次数，低于 45 标红）</summary>
+<div class="tblwrap"><table>
+<thead><tr><th>任务</th><th>指令</th><th class="num">OpenWAM-α</th><th class="num">MolmoAct2</th><th class="num">Think</th></tr></thead>
+<tbody>
+<tr><td>Spatial 0</td><td>pick up the black bowl between the plate and the ramekin and place it on the plate</td><td class="num">50</td><td class="num">50</td><td class="num">49</td></tr>
+<tr><td>Spatial 1</td><td>pick up the black bowl next to the ramekin and place it on the plate</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Spatial 2</td><td>pick up the black bowl from table center and place it on the plate</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Spatial 3</td><td>pick up the black bowl on the cookie box and place it on the plate</td><td class="num">50</td><td class="num">48</td><td class="num">50</td></tr>
+<tr><td>Spatial 4</td><td>pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate</td><td class="num">48</td><td class="num">47</td><td class="num">49</td></tr>
+<tr><td>Spatial 5</td><td>pick up the black bowl on the ramekin and place it on the plate</td><td class="num">47</td><td class="num">45</td><td class="num">49</td></tr>
+<tr><td>Spatial 6</td><td>pick up the black bowl next to the cookie box and place it on the plate</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Spatial 7</td><td>pick up the black bowl on the stove and place it on the plate</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Spatial 8</td><td>pick up the black bowl next to the plate and place it on the plate</td><td class="num">50</td><td class="num">50</td><td class="num">48</td></tr>
+<tr><td>Spatial 9</td><td>pick up the black bowl on the wooden cabinet and place it on the plate</td><td class="num">50</td><td class="num">49</td><td class="num">48</td></tr>
+<tr><td>Object 0</td><td>pick up the alphabet soup and place it in the basket</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Object 1</td><td>pick up the cream cheese and place it in the basket</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Object 2</td><td>pick up the salad dressing and place it in the basket</td><td class="num">50</td><td class="num">50</td><td class="num">49</td></tr>
+<tr><td>Object 3</td><td>pick up the bbq sauce and place it in the basket</td><td class="num">50</td><td class="num">49</td><td class="num">49</td></tr>
+<tr><td>Object 4</td><td>pick up the ketchup and place it in the basket</td><td class="num">50</td><td class="num">49</td><td class="num">50</td></tr>
+<tr><td>Object 5</td><td>pick up the tomato sauce and place it in the basket</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Object 6</td><td>pick up the butter and place it in the basket</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Object 7</td><td>pick up the milk and place it in the basket</td><td class="num">48</td><td class="num">48</td><td class="num">50</td></tr>
+<tr><td>Object 8</td><td>pick up the chocolate pudding and place it in the basket</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Object 9</td><td>pick up the orange juice and place it in the basket</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Goal 0</td><td>open the middle drawer of the cabinet</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Goal 1</td><td>put the bowl on the stove</td><td class="num">50</td><td class="num">49</td><td class="num">49</td></tr>
+<tr><td>Goal 2</td><td>put the wine bottle on top of the cabinet</td><td class="num">46</td><td class="num">46</td><td class="num">48</td></tr>
+<tr><td>Goal 3</td><td>open the top drawer and put the bowl inside</td><td class="num">50</td><td class="num">47</td><td class="num">46</td></tr>
+<tr><td>Goal 4</td><td>put the bowl on top of the cabinet</td><td class="num">50</td><td class="num">50</td><td class="num">49</td></tr>
+<tr><td>Goal 5</td><td>push the plate to the front of the stove</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Goal 6</td><td>put the cream cheese in the bowl</td><td class="num">50</td><td class="num">49</td><td class="num">50</td></tr>
+<tr><td>Goal 7</td><td>turn on the stove</td><td class="num">50</td><td class="num">48</td><td class="num">50</td></tr>
+<tr><td>Goal 8</td><td>put the bowl on the plate</td><td class="num">49</td><td class="num">49</td><td class="num">50</td></tr>
+<tr><td>Goal 9</td><td>put the wine bottle on the rack</td><td class="num">49</td><td class="num">50</td><td class="num">49</td></tr>
+<tr><td>Long 0</td><td>put both the alphabet soup and the tomato sauce in the basket</td><td class="num">47</td><td class="num">50</td><td class="num">49</td></tr>
+<tr><td>Long 1</td><td>put both the cream cheese box and the butter in the basket</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Long 2</td><td>turn on the stove and put the moka pot on it</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Long 3</td><td>put the black bowl in the bottom drawer of the cabinet and close it</td><td class="num">50</td><td class="num">47</td><td class="num">49</td></tr>
+<tr><td>Long 4</td><td>put the white mug on the left plate and put the yellow and white mug on the right plate</td><td class="num">50</td><td class="num">49</td><td class="num">48</td></tr>
+<tr><td>Long 5</td><td>pick up the book and place it in the back compartment of the caddy</td><td class="num">50</td><td class="num">50</td><td class="num">50</td></tr>
+<tr><td>Long 6</td><td>put the white mug on the plate and put the chocolate pudding to the right of the plate</td><td class="num">48</td><td class="num">45</td><td class="num">46</td></tr>
+<tr><td>Long 7</td><td>put both the alphabet soup and the cream cheese box in the basket</td><td class="num">50</td><td class="num">50</td><td class="num">48</td></tr>
+<tr><td>Long 8</td><td>put both moka pots on the stove</td><td class="num">48</td><td class="num low">32</td><td class="num low">35</td></tr>
+<tr><td>Long 9</td><td>put the yellow and white mug in the microwave and close it</td><td class="num">50</td><td class="num low">44</td><td class="num">47</td></tr>
+</tbody></table></div>
+</details>
+
+<h2 id="videos">三、并排视频（同一任务、同一初始状态）</h2>
+<p>每段三列依次是 OpenWAM-α、MolmoAct2、MolmoAct2-Think，第三人称相机，2 倍速。两套评测程序在同一个回合编号下取 LIBERO 预存的同一个初始状态，所以三列开局完全相同。
+挑的都是至少有一个模型失败的回合；失败的一列在步数上限处停住（MolmoAct2 的上限沿用 LeRobot 的设置，Long 组 520 步；OpenWAM 的协议是 700 步）。</p>
+<figure class="fig">
+  <video src="../media/vla_long08.mp4?v=1115" poster="../media/vla_long08_poster.jpg?v=1115" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>Long 8：把两个摩卡壶都放到炉子上（第 1 回合）</b> — OpenWAM-α 386 步完成；MolmoAct2 把第二个壶放歪在炉子边上，到 520 步也没放好；Think 版 363 步完成。
+  这个任务 50 次里三者分别成功 48、32、35 次。</figcaption>
+</figure>
+<figure class="fig">
+  <video src="../media/vla_long09.mp4?v=1115" poster="../media/vla_long09_poster.jpg?v=1115" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>Long 9：把黄白杯子放进微波炉并关上门（第 9 回合）</b> — OpenWAM-α 和 Think 版完成；MolmoAct2 失败。50 次里分别 50、44、47。</figcaption>
+</figure>
+<figure class="fig">
+  <video src="../media/vla_goal02.mp4?v=1115" poster="../media/vla_goal02_poster.jpg?v=1115" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>Goal 2：把酒瓶放到柜子顶上（第 1 回合）</b> — 这回是 OpenWAM-α 失败、两个 MolmoAct2 完成。这是 OpenWAM-α 最弱的任务，50 次里三者 46、46、48。</figcaption>
+</figure>
+<figure class="fig">
+  <video src="../media/vla_spatial05.mp4?v=1115" poster="../media/vla_spatial05_poster.jpg?v=1115" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>Spatial 5：拿起小碗上的黑碗放到盘子上（第 4 回合）</b> — MolmoAct2 失败，另外两个完成。50 次里 47、45、49（OpenWAM 录像那次重跑是 49）。</figcaption>
+</figure>
+<figure class="fig">
+  <video src="../media/vla_object07.mp4?v=1115" poster="../media/vla_object07_poster.jpg?v=1115" muted loop playsinline controls preload="metadata"></video>
+  <figcaption><b>Object 7：拿起牛奶放进篮子（第 3 回合）</b> — MolmoAct2 失败，另外两个完成。50 次里 48、48、50。</figcaption>
+</figure>
+<p class="small">OpenWAM 的官方评测程序不录视频，我们在它的 LIBERO 客户端里加了一个只读的录像开关（只记录观测图像，不影响动作），
+把这 5 个任务按完整的 50 次协议重跑一遍录下来；重跑的成功次数是 49、48、46、47、49，与正式评测（47、48、46、48、50）相差 0–2 次。
+MolmoAct2 的视频是 LeRobot 评测时自带的（每个任务保存前 10 个回合）。</p>
+
+<h2 id="retrain">四、重新训练（进行中）</h2>
+<p>目标是按作者公布的配方，从同一个基座模型出发重新训练 LIBERO 策略，再用同样的评测比较。两个模型的配方和我们的实测速度：</p>
+<div class="tblwrap"><table>
+<thead><tr><th></th><th>OpenWAM-α</th><th>MolmoAct2 / MolmoAct2-Think</th></tr></thead>
+<tbody>
+<tr><td>出发点</td><td>OpenWAM-Alpha 预训练基座（15.4 万步，约 6400 小时的机器人与人手视频）</td><td>MolmoAct2 / MolmoAct2-Think 基座</td></tr>
+<tr><td>作者的配方</td><td>LIBERO 1693 条示范、27.3 万个训练窗口，10 轮；全局 batch 256，共 10690 步；学习率 1e-4（余弦）</td><td>5 万步，全局 batch 64，序列长度 2100；学习率：视觉 5e-6、语言模型 1e-5、动作专家 5e-5；32 张 H100，约 1152 GPU·小时；评测取 4 万步（Think 版 3 万步）</td></tr>
+<tr><td>我们的做法</td><td>4 张 A800，每卡 4 个样本 × 梯度累积 16 = 全局 batch 256，步数、学习率、轮数与作者完全相同</td><td>4 张 A800，每卡 1 个样本 × 梯度累积 16 = 全局 batch 64（每卡 2 个样本会显存不足），其余参数相同</td></tr>
+<tr><td>实测速度</td><td>每秒约 1.6 个小批（每卡 4 样本），每个优化步约 10 秒</td><td>每个优化步约 24 秒（每卡每秒约 1400 个 token，显存峰值约 60 GB）</td></tr>
+<tr><td>预计用时（4 张卡）</td><td><b>约 31 小时</b>（启动前按短测估计 43 小时，实际更快）</td><td>按论文跑满 5 万步约 14 天（存 3/4/5 万步，论文选用 4 万步）；Think 版学习率按 5 万步设置、跑到论文选用的 3 万步，约 8 天（Think 的单步速度开训后实测）</td></tr>
+<tr><td>状态</td><td><span class="tag part">训练中</span> 11-15 11:30 开训；11-16 11:38 完成 76 %（第 7/10 轮），无报错，预计 11-16 19:00 左右训完，随后跑 2000 次评测</td><td><span class="tag part">排队</span> 按论文完整配方训练（已确定）。训练流程已在 4 卡上跑通；数据集（35 GB）与基座逐文件校验一致。OpenWAM 评测后开训，MolmoAct2 预计 11-30、Think 版预计 12-09 完成并评测</td></tr>
+</tbody></table></div>
+<p>训练完成后，每个中间检查点都会用第二节同样的 2000 次评测打分，结果补在这一节。</p>
+
+<h2 id="setup">五、测试条件</h2>
+<ul>
+<li>硬件：一台 8 卡 A800（80 GB）服务器中的 4 张卡，驱动 535（CUDA 12.2）。</li>
+<li>权重：OpenWAM-Alpha-Sim-LIBERO（checkpoint_step_10690）、MolmoAct2-LIBERO、MolmoAct2-Think-LIBERO，均与 Hugging Face 上发布文件的 SHA-256 逐一核对一致。</li>
+<li>OpenWAM-α：官方仓库（提交 1dcaeea）的 LIBERO 评测程序和固定协议——LIBERO 提交 8f1084e、MuJoCo 3.3.2、种子 42、每任务 50 次连续试验、前三组 600 步 / Long 700 步上限、每次生成 32 步动作执行 10 步、10 步去噪。唯一改动是第三节提到的只读录像开关。</li>
+<li>MolmoAct2：Ai2 为复现论文 LIBERO 数字指定的 LeRobot 分支（molmoact2-hf-inference，LeRobot 0.5.1），种子 1000、batch 1、CUDA Graph、归一化标签 libero；Think 版另开深度推理和自适应深度。
+  按组分成 4 个进程并行，每个回合的种子只取决于回合编号，与一次跑完等价。</li>
+<li>重新训练的环境：OpenWAM 用官方仓库的训练脚本（DeepSpeed ZeRO-2，bf16）；MolmoAct2 用其仓库 experiments 目录（提交 6070080）。官方镜像是 PyTorch 2.10，我们的驱动只能用 2.7.1，视频解码库相应用 TorchCodec 0.5，其余依赖不变。</li>
+</ul>
+</article>
+<script>
+(function(){var vs=document.querySelectorAll('.taskcard video');
+if(!('IntersectionObserver' in window)){vs.forEach(function(v){v.src=v.dataset.src;v.controls=true;});return;}
+var io=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;
+ if(e.isIntersecting){if(!v.src)v.src=v.dataset.src;var p=v.play();if(p&&p.catch)p.catch(function(){});}else{v.pause();}});},{rootMargin:'100px'});
+vs.forEach(function(v){io.observe(v);});})();
+</script>
+
+<footer><div class="container">
+  <span><a href="alloy.html">← 对照 Alloy</a></span>
+  <span><a href="../">返回首页</a></span>
+</div></footer>
+</body>
+</html>

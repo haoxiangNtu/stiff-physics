@@ -213,6 +213,7 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
   <a class="item opt" href="#xense-mahjong">夹爪捏麻将</a>
   <a class="item opt" href="#liquid">液体</a>
   <a class="item opt" href="#rokae-dropper">滴管回放</a>
+  <a class="item opt" href="#vla-wam">VLA / WAM</a>
   <a class="item opt" href="#mpm">流固耦合</a>
   <a class="item opt" href="#cutting">切黄瓜</a>
   <a class="item opt" href="#robotgym">三个任务</a><a class="item opt" href="#washroom">晾衣间</a>
@@ -478,6 +479,25 @@ footer .fine { width: 100%; opacity: .6; font-size: .8rem; margin-top: 1rem; }
     <figcaption><b>直径 20 mm 钢球以 10 m/s（上）和 20 m/s（下）落到 10 mm 厚的钢板上</b> — 左 Alloy 0.1.2，右 StiffGIPC；慢放 1/32，板画成半透明。
     Alloy 的球连续三个刚体步陷到板面下 1.3、11.4、17.8 mm（穿出板的下表面），随后被它的健康检查判为“穿隧”并冻结；我们的球停在板面上。
     <a href="docs/alloy.html#film">小球压铝片、两指夹泡沫、多层布、杯中水、布料速度 →</a></figcaption>
+  </figure>
+</div></section>
+
+<section class="block" id="vla-wam"><div class="container">
+  <div class="section-intro">
+    <div class="kicker kicker--sdk">Policy reproduction · 11-14 / 11-16</div>
+    <h2>复现 VLA 与 WAM：LIBERO 2000 次评测</h2>
+    <p class="lead"><b>11 月 15 日：</b>在 4 张 A800 上复现两个开源机器人策略模型——世界-动作模型 <a href="https://github.com/OpenWAM-Official/OpenWAM">OpenWAM-α</a> 和视觉-语言-动作模型
+    <a href="https://github.com/allenai/molmoact2">MolmoAct2</a>（含深度推理的 Think 版）。用作者发布的权重在 LIBERO 的 40 个任务上各跑满 2000 次：
+    OpenWAM-α 平均 <b>99.0 %</b>（论文 99.3），MolmoAct2 <b>97.0 %</b>（97.2），Think 版 <b>97.7 %</b>（98.1），都在统计波动之内。
+    差距集中在长任务，“两个摩卡壶放上炉子”OpenWAM-α 50 次成功 48 次，MolmoAct2 只有 32 次。按作者完整配方从基座重新训练正在进行：OpenWAM-α 11-16 中午已完成 76 %，当晚出评测结果；MolmoAct2 与 Think 版随后依次训练，预计 12 月 9 日前后全部完成。
+    <a class="more" href="docs/vla_wam.html#tasks">LIBERO 四组任务各在做什么（40 段示范视频）→</a>
+    <a class="more" href="docs/vla_wam.html">逐任务结果、5 段并排视频与重训进度 →</a></p>
+  </div>
+  <figure class="fig">
+    <video src="media/vla_long08.mp4?v=1115" poster="media/vla_long08_poster.jpg?v=1115" muted loop playsinline controls preload="metadata"></video>
+    <figcaption><b>LIBERO Long 8：把两个摩卡壶都放到炉子上</b> — 左起 OpenWAM-α、MolmoAct2、MolmoAct2-Think，同一初始状态，2 倍速。
+    MolmoAct2 把第二个壶放歪在炉子边上，到步数上限也没放好；另外两个完成。
+    <a href="docs/vla_wam.html#videos">另外 4 个任务的并排视频 →</a></figcaption>
   </figure>
 </div></section>
 
